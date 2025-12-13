@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Update Desktop Sidebar
-        document.querySelectorAll('.app-sidebar a').forEach(link => {
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
             if (link.dataset.target === screenId) link.classList.add('active');
             else link.classList.remove('active');
         });
