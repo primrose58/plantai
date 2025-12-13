@@ -451,11 +451,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentLang = 'tr';
     const TRANSLATIONS = {
         tr: {
+            // Navigation
             home: "Ana Sayfa",
             community: "Topluluk",
             messages: "Mesajlar",
             profile: "Profilim",
             about: "Hakkında",
+
+            // Buttons
             scan_now: "Hemen Tara",
             upload_title: "Fotoğraf Yükle",
             upload_drag: "Dokunun veya Fotoğrafı Buraya Sürükleyin",
@@ -463,17 +466,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             login_prompt: "Giriş Yapmalısınız",
             login: "Giriş Yap",
             register: "Kayıt Ol",
-            logout: "Çıkış Yap",
+            logout: "Çıkış Yap / Logout",
             send_msg: "Mesaj Gönder",
             type_msg: "Mesaj yazın...",
-            confirm_logout: "Çıkış yapmak istediğinize emin misiniz?",
+            premium_btn: "Premium'a Geç",
+
+            // Rich Text Content (HTML)
+            home_hero_title: "Bitkilerinizin <br> Sağlığını Koruyun",
+            home_hero_desc: "Fotoğraf çekin, saniyeler içinde hastalık teşhisi ve tedavi önerileri alın.",
+            about_header: "Proje Hakkında",
+            about_content_html: `
+                <div class="about-card quote-card">
+                    <i class="ph-duotone ph-plant qt-icon"></i>
+                    <p>Bu proje, tarım zararlılarının tespitini ve onlarla mücadeleyi kolaylaştırmak amacıyla yapay zeka tabanlı bir sistem geliştirilmesini kapsamaktadır.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🌱 Küresel Tarım Ağı</h3>
+                    <p>PlantAI, tarımsal verimliliği artırmak ve ürün kayıplarını en aza indirmek için geliştirilmiş gelişmiş bir yapay zeka asistanıdır.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🌍 Kolektif Bilgi Gücü</h3>
+                    <p>Sadece bir teşhis aracı değil, aynı zamanda dev bir çiftçi topluluğudur.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🎯 Misyonumuz</h3>
+                    <p>Sürdürülebilir tarım için teknolojiyi herkesin cebine sokuyoruz.</p>
+                </div>
+            `,
+            premium_content_html: `
+                <h3>👑 Premium Özellikler</h3>
+                <p>Sınırsız analiz, uzman ziraat mühendisi desteği ve detaylı raporlama.</p>
+            `
         },
         en: {
+            // Navigation
             home: "Home",
             community: "Community",
             messages: "Messages",
             profile: "My Profile",
             about: "About",
+
+            // Buttons
             scan_now: "Scan Now",
             upload_title: "Upload Photo",
             upload_drag: "Tap or Drag Photo Here",
@@ -484,7 +517,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             logout: "Logout",
             send_msg: "Send Message",
             type_msg: "Type a message...",
-            confirm_logout: "Are you sure you want to logout?",
+            premium_btn: "Get Premium",
+
+            // Rich Text Content (HTML)
+            home_hero_title: "Protect Your <br> Plants' Health",
+            home_hero_desc: "Snap a photo, get disease diagnosis and treatment suggestions in seconds.",
+            about_header: "About Project",
+            about_content_html: `
+                <div class="about-card quote-card">
+                    <i class="ph-duotone ph-plant qt-icon"></i>
+                    <p>This project aims to facilitate the detection and control of agricultural pests using an AI-based system.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🌱 Global Agriculture Network</h3>
+                    <p>PlantAI is an advanced AI assistant developed to increase agricultural productivity and minimize crop losses.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🌍 Collective Intelligence</h3>
+                    <p>Not just a diagnostic tool, but a massive community of farmers.</p>
+                </div>
+                <div class="section-block">
+                    <h3>🎯 Our Mission</h3>
+                    <p>We are putting technology in everyone's pocket for sustainable agriculture.</p>
+                </div>
+            `,
+            premium_content_html: `
+                <h3>👑 Premium Features</h3>
+                <p>Unlimited analysis, expert agronomist support, and detailed reporting.</p>
+            `
         }
     };
 
@@ -492,32 +552,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentLang = lang;
         const t = TRANSLATIONS[lang];
 
-        // Update Sidebar/Nav
+        // Simple Text Updates
         updateText('[data-i18n="home"]', t.home);
         updateText('[data-i18n="community"]', t.community);
         updateText('[data-i18n="messages"]', t.messages);
         updateText('[data-i18n="profile"]', t.profile);
         updateText('[data-i18n="about"]', t.about);
 
-        // Update Common Buttons
+        updateText('[data-i18n="upload_title"]', t.upload_title);
+        updateText('[data-i18n="upload_drag"]', t.upload_drag);
+        updateText('[data-i18n="result"]', t.result);
+
+        // Buttons
         updateText('#btn-start', '📷 ' + t.scan_now);
         updateText('#btn-logout-profile', t.logout);
         updateText('#btn-send-message', '💬 ' + t.send_msg);
+        updateText('#btn-goto-support', '<i class="ph-bold ph-star"></i> ' + t.premium_btn);
 
-        // Placeholder updates
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) chatInput.placeholder = t.type_msg;
+        // Rich HTML Updates
+        const homeTitle = document.querySelector('#screen-home h1');
+        if (homeTitle) homeTitle.innerHTML = t.home_hero_title;
+
+        const homeDesc = document.querySelector('#screen-home p');
+        if (homeDesc) homeDesc.innerText = t.home_hero_desc;
+
+        const aboutHeader = document.querySelector('#screen-about h2');
+        if (aboutHeader) aboutHeader.innerText = t.about_header;
+
+        // --- NEW: HTML INJECTION ---
+        const aboutContainer = document.getElementById('about-text-container');
+        if (aboutContainer && t.about_content_html) {
+            aboutContainer.innerHTML = t.about_content_html;
+        }
 
         console.log("Language switched to", lang);
     };
 
     function updateText(selector, text) {
         document.querySelectorAll(selector).forEach(el => {
-            // Preserve icon if it exists as first child? 
-            // Simplest is to assume text needs replacing or specific span.
-            // For sidebar links: <i class="..."></i> Text.
-            // We should wrap text in span in HTML to be safe, or just append text node.
-            // Hacky way: get the icon, clear innerHTML, append icon, append text.
             const icon = el.querySelector('i');
             el.innerHTML = '';
             if (icon) {
@@ -548,13 +620,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         auth.onAuthStateChanged(user => {
             storedUser = user; // Sync Global User logic
 
-            // 1. Update Global UI
-            const profileLinks = document.querySelectorAll('[data-target="screen-profile"]');
-            const inboxLinks = document.querySelectorAll('[data-target="screen-inbox"]');
+            // --- DEEP FIX: CSS-BASED VISIBILITY ---
+            if (user) {
+                document.body.classList.add('is-logged-in');
+                document.body.classList.remove('is-logged-out');
+            } else {
+                document.body.classList.remove('is-logged-in');
+                document.body.classList.add('is-logged-out');
+            }
 
-            const displayStyle = user ? 'flex' : 'none';
-            profileLinks.forEach(link => link.style.display = displayStyle);
-            inboxLinks.forEach(link => link.style.display = displayStyle);
+            // 1. Update Global UI (Legacy support + specific tweaks)
+            // We rely on CSS now for sidebar hiding!
 
             // 2. Handle Auth Warning & Community
             if (user) {

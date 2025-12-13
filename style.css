@@ -1164,3 +1164,11 @@ p {
 /* Prevent Layout Shift */
 html { overflow-y: scroll; }
 
+
+/* --- AUTH VISIBILITY SYSTEM --- */
+body.is-logged-out [data-auth-required='true'] { display: none !important; }
+body.is-logged-in [data-auth-required='false'] { display: none !important; }
+/* UI POLISH */
+body { line-height: 1.6 !important; }
+p, li { margin-bottom: 0.5rem; }
+

@@ -29,13 +29,13 @@
             <div class="sidebar-menu">
                 <a class="sidebar-link active" data-target="screen-home" data-i18n="home"><i
                         class="ph-bold ph-house"></i> Ana Sayfa</a>
-                <a class="sidebar-link" data-target="screen-community" data-i18n="community"><i
-                        class="ph-bold ph-users-three"></i>
+                <a class="sidebar-link" data-target="screen-community" data-i18n="community"
+                    data-auth-required="true"><i class="ph-bold ph-users-three"></i>
                     Topluluk</a>
-                <a class="sidebar-link" data-target="screen-inbox" data-i18n="messages"><i
+                <a class="sidebar-link" data-target="screen-inbox" data-i18n="messages" data-auth-required="true"><i
                         class="ph-bold ph-chat-circle-dots"></i>
                     Mesajlar</a>
-                <a class="sidebar-link" data-target="screen-profile" data-i18n="profile"><i
+                <a class="sidebar-link" data-target="screen-profile" data-i18n="profile" data-auth-required="true"><i
                         class="ph-bold ph-user-circle"></i> Profilim</a>
                 <a class="sidebar-link" data-target="screen-about" data-i18n="about"><i class="ph-bold ph-info"></i>
                     Hakkında</a>
@@ -308,22 +308,25 @@
                 <h2>Proje Hakkında</h2>
             </div>
             <div class="about-content">
-                <div class="about-card quote-card">
-                    <i class="ph-duotone ph-plant qt-icon"></i>
-                    <p>Bu proje, tarım zararlılarının tespitini ve onlarla mücadeleyi kolaylaştırmak amacıyla yapay zeka
-                        tabanlı bir sistem geliştirilmesini kapsamaktadır.</p>
+                <!-- Lang Switcher (Permanent) -->
+                <div class="lang-switcher"
+                    style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #eee;">
+                    <h3>Dil / Language</h3>
+                    <div style="display:flex; gap:12px; margin-top:12px;">
+                        <button class="btn-outline" onclick="changeLanguage('tr')" style="flex:1;">🇹🇷
+                            Türkçe</button>
+                        <button class="btn-outline" onclick="changeLanguage('en')" style="flex:1;">🇬🇧
+                            English</button>
+                    </div>
                 </div>
 
-                <div class="section-block">
-                    <div class="lang-switcher"
-                        style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #eee;">
-                        <h3>Dil / Language</h3>
-                        <div style="display:flex; gap:12px; margin-top:12px;">
-                            <button class="btn-outline" onclick="changeLanguage('tr')" style="flex:1;">🇹🇷
-                                Türkçe</button>
-                            <button class="btn-outline" onclick="changeLanguage('en')" style="flex:1;">🇬🇧
-                                English</button>
-                        </div>
+                <!-- Text Container for Localization -->
+                <div id="about-text-container">
+                    <div class="about-card quote-card">
+                        <i class="ph-duotone ph-plant qt-icon"></i>
+                        <p>Bu proje, tarım zararlılarının tespitini ve onlarla mücadeleyi kolaylaştırmak amacıyla yapay
+                            zeka
+                            tabanlı bir sistem geliştirilmesini kapsamaktadır.</p>
                     </div>
 
                     <div class="section-block">
@@ -345,12 +348,15 @@
                         <p>Sürdürülebilir tarım için teknolojiyi herkesin cebine sokuyoruz. Hedefimiz, yanlış ilaç
                             kullanımını önlemek ve toprağımızı korumaktır.</p>
                     </div>
+                </div>
 
+                <div class="section-block">
                     <button class="btn-primary" id="btn-goto-support" style="margin-top: 32px;">
                         <i class="ph-bold ph-star"></i>
                         Premium'a Geç
                     </button>
                 </div>
+            </div>
         </section>
 
         <!-- 7. Support / Subscription Screen -->
