@@ -309,7 +309,7 @@ function updateProfileUI(user) {
 class GeminiService {
     constructor() {
         // We will call the API directly via fetch to avoid import issues with the SDK in non-module mode
-        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
         this.apiKey = CONFIG.GEMINI_API_KEY;
         console.log("Gemini Endpoint:", this.baseUrl);
     }
