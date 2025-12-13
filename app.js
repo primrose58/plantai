@@ -415,59 +415,64 @@ function loadProfile() {
     }
 
     // Fill Header
-    document.getElementById('profile-name').innerText = user.displayName || 'Çiftçi Dostu';
-    document.getElementById('profile-email').innerText = user.email;
+    const nameEl = document.getElementById('profile-name');
+    const emailEl = document.getElementById('profile-email');
+    if (nameEl) nameEl.innerText = user.displayName || 'Çiftçi Dostu';
+    if (emailEl) emailEl.innerText = user.email;
 
     // Load My Posts
     const myFeed = document.getElementById('my-posts-feed');
-    myFeed.innerHTML = '<div class=\"spinner\"></div>';
+    if (!myFeed) return;
+
+    myFeed.innerHTML = '<div class="spinner"></div>';
 
     db.collection('posts')
-        .where(\"userId\", \"==\", user.uid)
-            .orderBy('createdAt', 'desc')
-            .get()
-            .then(snapshot => {
-                myFeed.innerHTML = '';
-                if (snapshot.empty) {
-                    myFeed.innerHTML = \
-                    \<div class=\"empty-state-profile\">\
-                        <i class=\"ph-duotone ph-image\"></i>\
-                        <p>Henüz bir bitki analizi paylaşmadınız.</p>\
-                    </div>\;
-                    return;
-                }
+        .where("userId", "==", user.uid)
+        .orderBy('createdAt', 'desc')
+        .get()
+        .then(snapshot => {
+            myFeed.innerHTML = '';
+            if (snapshot.empty) {
+                myFeed.innerHTML = `
+                <div class="empty-state-profile">
+                    <i class="ph-duotone ph-image"></i>
+                    <p>Henüz bir bitki analizi paylaşmadınız.</p>
+                </div>`;
+                return;
+            }
 
-                snapshot.forEach(doc => {
-                    const post = doc.data();
-                    const html = \\
-                    <div class=\"post-card\">\
-                        <div class=\"post-header\">\
-                            <div class=\"avatar\">\</div>\
-                            <div class=\"user-info\">\
-                                <h4>\</h4>\
-                                <span class=\"time\">\</span>\
-                            </div>\
-                        </div>\
-                        <img src=\"\\" class=\"post-image\" alt=\"Hastalık\">\
-                        <div class=\"post-content\">\
-                            <h3>\</h3>\
-                            <p>\</p>\
-                        </div>\
-                    </div>\;
-                    myFeed.innerHTML += html;
-                });
-            })
-            .catch(err => {
-                console.error(\"Error loading my posts:\", err);
-                myFeed.innerHTML = '<p>Gönderiler yüklenirken hata oluştu.</p>';
+            snapshot.forEach(doc => {
+                const post = doc.data();
+                const dateStr = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : 'Az önce';
+                const html = `
+                <div class="post-card">
+                    <div class="post-header">
+                        <div class="avatar">${post.userAvatar || '👤'}</div>
+                        <div class="user-info">
+                            <h4>${post.userName}</h4>
+                            <span class="time">${dateStr}</span>
+                        </div>
+                    </div>
+                    <img src="${post.imageUrl}" class="post-image" alt="Hastalık">
+                    <div class="post-content">
+                        <h3>${post.diseaseName}</h3>
+                        <p>${post.description}</p>
+                    </div>
+                </div>`;
+                myFeed.innerHTML += html;
             });
+        })
+        .catch(err => {
+            console.error("Error loading my posts:", err);
+            myFeed.innerHTML = '<p>Gönderiler yüklenirken hata oluştu.</p>';
+        });
 }
 
 // Logout Handler
 const btnLogoutProfile = document.getElementById('btn-logout-profile');
 if (btnLogoutProfile) btnLogoutProfile.addEventListener('click', () => {
     auth.signOut().then(() => {
-        alert(\"Başarıyla çıkış yapıldı.\");
-            showScreen('screen-login');
+        alert("Başarıyla çıkış yapıldı.");
+        showScreen('screen-login');
     });
 });
