@@ -1,0 +1,22 @@
+{
+    "name": "PlantAI - Akıllı Bitki Asistanı",
+    "short_name": "PlantAI",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#1B4332",
+    "theme_color": "#2D6A4F",
+    "description": "Yapay zeka destekli bitki hastalık teşhis ve topluluk platformu.",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/628/628283.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/628/628283.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "orientation": "portrait-primary"
+}
