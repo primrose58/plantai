@@ -625,9 +625,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- LOGIN FORM ---
         if (loginForm) {
+            console.log("✅ Login Form Found");
+            // alert("DEBUG: Login Form Found!"); 
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 console.log("🚀 Login Submit Triggered");
+                alert("Giriş Yapılıyor... Lütfen Bekleyin.");
+
                 const email = document.getElementById('login-email').value;
                 const pass = document.getElementById('login-password').value;
 
@@ -639,6 +643,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             return;
                         }
                         console.log("✅ Login API Success");
+                        alert("Giriş Başarılı!");
                         // onAuthStateChanged will handle redirect
                     })
                     .catch(err => {
@@ -647,6 +652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
             });
         }
+
 
         // --- REGISTER FORM ---
         if (regForm) {
