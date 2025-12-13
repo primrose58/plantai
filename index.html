@@ -27,13 +27,18 @@
                 <i class="ph-fill ph-plant"></i> PlantAI
             </div>
             <div class="sidebar-menu">
-                <a class="sidebar-link active" data-target="screen-home"><i class="ph-bold ph-house"></i> Ana Sayfa</a>
-                <a class="sidebar-link" data-target="screen-community"><i class="ph-bold ph-users-three"></i>
+                <a class="sidebar-link active" data-target="screen-home" data-i18n="home"><i
+                        class="ph-bold ph-house"></i> Ana Sayfa</a>
+                <a class="sidebar-link" data-target="screen-community" data-i18n="community"><i
+                        class="ph-bold ph-users-three"></i>
                     Topluluk</a>
-                <a class="sidebar-link" data-target="screen-inbox"><i class="ph-bold ph-chat-circle-dots"></i>
+                <a class="sidebar-link" data-target="screen-inbox" data-i18n="messages"><i
+                        class="ph-bold ph-chat-circle-dots"></i>
                     Mesajlar</a>
-                <a class="sidebar-link" data-target="screen-profile"><i class="ph-bold ph-user-circle"></i> Profilim</a>
-                <a class="sidebar-link" data-target="screen-about"><i class="ph-bold ph-info"></i> Hakkında</a>
+                <a class="sidebar-link" data-target="screen-profile" data-i18n="profile"><i
+                        class="ph-bold ph-user-circle"></i> Profilim</a>
+                <a class="sidebar-link" data-target="screen-about" data-i18n="about"><i class="ph-bold ph-info"></i>
+                    Hakkında</a>
             </div>
         </aside>
 
@@ -44,8 +49,8 @@
                 <span>PlantAI</span>
             </div>
             <nav>
-                <a href="#" class="nav-link-item active" data-target="screen-home">Ana Sayfa</a>
-                <a href="#" class="nav-link-item" data-target="screen-about">Hakkında</a>
+                <a href="#" class="nav-link-item active" data-target="screen-home" data-i18n="home">Ana Sayfa</a>
+                <a href="#" class="nav-link-item" data-target="screen-about" data-i18n="about">Hakkında</a>
             </nav>
         </header>
 
@@ -117,7 +122,7 @@
             <section id="screen-result" class="screen">
                 <div class="screen-header">
                     <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-house"></i></button>
-                    <h2>Analiz Sonucu</h2>
+                    <h2 data-i18n="result">Analiz Sonucu</h2>
                 </div>
 
                 <div class="result-card">
@@ -310,6 +315,17 @@
                 </div>
 
                 <div class="section-block">
+                    <div class="lang-switcher"
+                        style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #eee;">
+                        <h3>Dil / Language</h3>
+                        <div style="display:flex; gap:12px; margin-top:12px;">
+                            <button class="btn-outline" onclick="changeLanguage('tr')" style="flex:1;">🇹🇷
+                                Türkçe</button>
+                            <button class="btn-outline" onclick="changeLanguage('en')" style="flex:1;">🇬🇧
+                                English</button>
+                        </div>
+                    </div>
+
                     <div class="section-block">
                         <h3>🌱 Küresel Tarım Ağı</h3>
                         <p>PlantAI, tarımsal verimliliği artırmak ve ürün kayıplarını en aza indirmek için geliştirilmiş

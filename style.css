@@ -1160,3 +1160,7 @@ p {
     justify-content: center;
 }
 
+
+/* Prevent Layout Shift */
+html { overflow-y: scroll; }
+

@@ -441,10 +441,93 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-target]');
         if (btn) {
+            e.preventDefault(); // Prevent reload/jump
             const target = btn.dataset.target;
             showScreen(target);
         }
     });
+
+    // --- LOCALIZATION ---
+    let currentLang = 'tr';
+    const TRANSLATIONS = {
+        tr: {
+            home: "Ana Sayfa",
+            community: "Topluluk",
+            messages: "Mesajlar",
+            profile: "Profilim",
+            about: "Hakkında",
+            scan_now: "Hemen Tara",
+            upload_title: "Fotoğraf Yükle",
+            upload_drag: "Dokunun veya Fotoğrafı Buraya Sürükleyin",
+            result: "Analiz Sonucu",
+            login_prompt: "Giriş Yapmalısınız",
+            login: "Giriş Yap",
+            register: "Kayıt Ol",
+            logout: "Çıkış Yap",
+            send_msg: "Mesaj Gönder",
+            type_msg: "Mesaj yazın...",
+            confirm_logout: "Çıkış yapmak istediğinize emin misiniz?",
+        },
+        en: {
+            home: "Home",
+            community: "Community",
+            messages: "Messages",
+            profile: "My Profile",
+            about: "About",
+            scan_now: "Scan Now",
+            upload_title: "Upload Photo",
+            upload_drag: "Tap or Drag Photo Here",
+            result: "Analysis Result",
+            login_prompt: "Login Required",
+            login: "Login",
+            register: "Register",
+            logout: "Logout",
+            send_msg: "Send Message",
+            type_msg: "Type a message...",
+            confirm_logout: "Are you sure you want to logout?",
+        }
+    };
+
+    window.changeLanguage = function (lang) {
+        currentLang = lang;
+        const t = TRANSLATIONS[lang];
+
+        // Update Sidebar/Nav
+        updateText('[data-i18n="home"]', t.home);
+        updateText('[data-i18n="community"]', t.community);
+        updateText('[data-i18n="messages"]', t.messages);
+        updateText('[data-i18n="profile"]', t.profile);
+        updateText('[data-i18n="about"]', t.about);
+
+        // Update Common Buttons
+        updateText('#btn-start', '📷 ' + t.scan_now);
+        updateText('#btn-logout-profile', t.logout);
+        updateText('#btn-send-message', '💬 ' + t.send_msg);
+
+        // Placeholder updates
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) chatInput.placeholder = t.type_msg;
+
+        console.log("Language switched to", lang);
+    };
+
+    function updateText(selector, text) {
+        document.querySelectorAll(selector).forEach(el => {
+            // Preserve icon if it exists as first child? 
+            // Simplest is to assume text needs replacing or specific span.
+            // For sidebar links: <i class="..."></i> Text.
+            // We should wrap text in span in HTML to be safe, or just append text node.
+            // Hacky way: get the icon, clear innerHTML, append icon, append text.
+            const icon = el.querySelector('i');
+            el.innerHTML = '';
+            if (icon) {
+                el.appendChild(icon);
+                el.appendChild(document.createTextNode(' ' + text));
+            } else {
+                el.innerText = text;
+            }
+        });
+    }
 
     // Auth Navigation Helpers (Global)
     const gotoReg = document.getElementById('goto-register');
@@ -463,11 +546,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- AUTH LOGIC ---
     if (isFirebaseReady) {
         auth.onAuthStateChanged(user => {
+            storedUser = user; // Sync Global User logic
+
             // 1. Update Global UI
             const profileLinks = document.querySelectorAll('[data-target="screen-profile"]');
-            profileLinks.forEach(link => {
-                link.style.display = user ? 'flex' : 'none';
-            });
+            const inboxLinks = document.querySelectorAll('[data-target="screen-inbox"]');
+
+            const displayStyle = user ? 'flex' : 'none';
+            profileLinks.forEach(link => link.style.display = displayStyle);
+            inboxLinks.forEach(link => link.style.display = displayStyle);
 
             // 2. Handle Auth Warning & Community
             if (user) {
@@ -711,9 +798,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- PROFILE LOGIC ---
+let storedUser = null; // Sync with auth state
+
 function loadProfile() {
-    const user = auth.currentUser;
+    // Priority: storedUser > auth.currentUser
+    const user = storedUser || auth.currentUser;
+
+    // Debug
+    console.log("Loading profile for:", user ? user.email : "No User");
+
     if (!user) {
+        // Double check auth state asynchronously if needed, or just redirect
+        // For now, redirect.
         showScreen('screen-login');
         return;
     }
@@ -747,23 +843,7 @@ function loadProfile() {
 
             snapshot.forEach(doc => {
                 const post = doc.data();
-                const dateStr = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : 'Az önce';
-                const html = `
-                <div class="post-card">
-                    <div class="post-header">
-                        <div class="avatar">${post.userAvatar || '👤'}</div>
-                        <div class="user-info">
-                            <h4>${post.userName}</h4>
-                            <span class="time">${dateStr}</span>
-                        </div>
-                    </div>
-                    <img src="${post.imageUrl}" class="post-image" alt="Hastalık">
-                    <div class="post-content">
-                        <h3>${post.diseaseName}</h3>
-                        <p>${post.description}</p>
-                    </div>
-                </div>`;
-                myFeed.innerHTML += html;
+                myFeed.innerHTML += renderPost(post);
             });
         })
         .catch(err => {
