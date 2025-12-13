@@ -629,8 +629,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.body.classList.add('is-logged-out');
             }
 
-            // 1. Update Global UI (Legacy support + specific tweaks)
-            // We rely on CSS now for sidebar hiding!
+            // --- DYNAMIC SIDEBAR LINK ---
+            const loginLink = document.querySelector('a[data-target="screen-login"]');
+            if (loginLink) {
+                if (user) {
+                    // Turn into Logout
+                    loginLink.innerHTML = '<i class="ph-bold ph-sign-out"></i> Çıkış Yap';
+                    loginLink.setAttribute('data-target', 'logout-action');
+                    // Note: Event listener needs to handle 'logout-action' or we rebind
+                    loginLink.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        auth.signOut().then(() => alert("Çıkış yapıldı."));
+                    };
+                } else {
+                    // Turn into Login
+                    loginLink.innerHTML = '<i class="ph-bold ph-sign-in"></i> Giriş Yap / Kayıt Ol';
+                    loginLink.setAttribute('data-target', 'screen-login');
+                    loginLink.onclick = (e) => {
+                        e.preventDefault();
+                        showScreen('screen-login');
+                    };
+                }
+            }
 
             // 2. Handle Auth Warning & Community
             if (user) {
@@ -643,11 +664,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 updateProfileUI(user);
 
-                // If we have a pending result and just logged in, go there
-                if (currentDiagnosis) {
-                    const activeScreen = document.querySelector('.screen.active');
-                    if (activeScreen && (activeScreen.id === 'screen-login' || activeScreen.id === 'screen-verify')) {
+                // REDIRECT LOGIC: Preserve Result or Go Home
+                // Only redirect if we are currently on a "Login/Reg/Verify" screen
+                const activeScreen = document.querySelector('.screen.active');
+                if (activeScreen && (activeScreen.id === 'screen-login' || activeScreen.id === 'screen-register' || activeScreen.id === 'screen-verify')) {
+                    if (currentDiagnosis) {
+                        console.log("Restoring Diagnosis Screen");
                         showScreen('screen-result');
+                    } else {
+                        showScreen('screen-home');
                     }
                 }
             } else {
@@ -661,7 +686,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnLoginResult) btnLoginResult.addEventListener('click', () => showScreen('screen-login'));
 
         // Forms
-        const loginForm = document.getElementById('login-form');
         if (loginForm) loginForm.addEventListener('submit', e => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -673,8 +697,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         alert("Giriş yapmadan önce lütfen e-posta adresinizi doğrulayın! Size bir onay linki gönderdik.");
                         return;
                     }
-                    alert("Hoşgeldiniz!");
-                    showScreen('screen-home');
+                    // SUCCESS - Do NOT manually redirect here. 
+                    // onAuthStateChanged will handle it.
+                    console.log("Login successful, waiting for auth state change...");
                 })
                 .catch(err => alert("Hata: " + err.message));
         });
