@@ -84,8 +84,17 @@ class GeminiService {
 
         const data = await response.json();
 
+        if (data.error) {
+            console.error("Gemini API Error:", data.error);
+            throw new Error(data.error.message || "API Connection Error");
+        }
+
         if (!data.candidates || !data.candidates[0].content) {
-            throw new Error("AI Service Failed");
+            if (data.promptFeedback) {
+                console.warn("Safety Block:", data.promptFeedback);
+                throw new Error("Görsel güvenlik filtresine takıldı. Lütfen daha net bir bitki fotoğrafı çekin.");
+            }
+            throw new Error("Yapay zeka yanıt veremedi. Lütfen tekrar deneyin.");
         }
 
         const text = data.candidates[0].content.parts[0].text;
