@@ -936,3 +936,10 @@ if (btnLogoutProfile) btnLogoutProfile.addEventListener('click', () => {
         showScreen('screen-login');
     });
 });
+
+// --- ROBUST INIT ---
+document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('is-logged-out');
+    if(window.changeLanguage) window.changeLanguage('tr');
+});
+
