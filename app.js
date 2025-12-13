@@ -793,6 +793,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target.files[0]) processImage(e.target.files[0]);
     });
 
+    // --- NEW: Login Navigation Listeners ---
+    const btnLoginResult = document.getElementById('btn-login-result');
+    if (btnLoginResult) btnLoginResult.addEventListener('click', () => showScreen('screen-login'));
+
+    // Sidebar Login Link
+    const loginLink = document.querySelector('a[data-target="screen-login"]');
+    if (loginLink) loginLink.addEventListener('click', () => showScreen('screen-login'));
+
     function processImage(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
