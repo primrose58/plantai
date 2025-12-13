@@ -601,324 +601,194 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Auth Navigation Helpers (Global)
-    const gotoReg = document.getElementById('goto-register');
-    const gotoLog = document.getElementById('goto-login');
+    // --- 4. AUTH & EVENT BINDING (Consolidated) ---
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("🔧 Initializing Critical Events...");
 
-    if (gotoReg) gotoReg.addEventListener('click', (e) => {
-        e.preventDefault();
-        showScreen('screen-register');
-    });
+        // Ensure Firebase is Ready (Retry if needed)
+        if (!auth) {
+            console.log("⚠️ Auth not ready, initializing...");
+            initFirebase();
+        }
 
-    if (gotoLog) gotoLog.addEventListener('click', (e) => {
-        e.preventDefault();
-        showScreen('screen-login');
-    });
-
-    // --- AUTH LOGIC ---
-    if (isFirebaseReady) {
-        auth.onAuthStateChanged(user => {
-            storedUser = user; // Sync Global User logic
-
-            // --- DEEP FIX: CSS-BASED VISIBILITY ---
-            if (user) {
-                document.body.classList.add('is-logged-in');
-                document.body.classList.remove('is-logged-out');
-            } else {
-                document.body.classList.remove('is-logged-in');
-                document.body.classList.add('is-logged-out');
-            }
-
-            // --- DYNAMIC SIDEBAR LINK ---
-            const loginLink = document.querySelector('a[data-target="screen-login"]');
-            if (loginLink) {
-                if (user) {
-                    // Turn into Logout
-                    loginLink.innerHTML = '<i class="ph-bold ph-sign-out"></i> Çıkış Yap';
-                    loginLink.setAttribute('data-target', 'logout-action');
-                    // Note: Event listener needs to handle 'logout-action' or we rebind
-                    loginLink.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        auth.signOut().then(() => alert("Çıkış yapıldı."));
-                    };
-                } else {
-                    // Turn into Login
-                    loginLink.innerHTML = '<i class="ph-bold ph-sign-in"></i> Giriş Yap / Kayıt Ol';
-                    loginLink.setAttribute('data-target', 'screen-login');
-                    loginLink.onclick = (e) => {
-                        e.preventDefault();
-                        showScreen('screen-login');
-                    };
-                }
-            }
-
-            // 2. Handle Auth Warning & Community
-            if (user) {
-                if (authWarning) authWarning.classList.add('hidden');
-                if (communityContent) communityContent.classList.remove('hidden');
-
-                // Unblur result if present
-                const resultOverlay = document.getElementById('result-blur-overlay');
-                if (resultOverlay) resultOverlay.classList.add('hidden');
-
-                updateProfileUI(user);
-
-                // REDIRECT LOGIC: Preserve Result or Go Home
-                // Only redirect if we are currently on a "Login/Reg/Verify" screen
-                const activeScreen = document.querySelector('.screen.active');
-                if (activeScreen && (activeScreen.id === 'screen-login' || activeScreen.id === 'screen-register' || activeScreen.id === 'screen-verify')) {
-                    if (currentDiagnosis) {
-                        console.log("Restoring Diagnosis Screen");
-                        showScreen('screen-result');
-                    } else {
-                        showScreen('screen-home');
-                    }
-                }
-            } else {
-                if (authWarning) authWarning.classList.remove('hidden');
-                if (communityContent) communityContent.classList.add('hidden');
-            }
-        });
-
-        // Result Overlay Login Button
-        const btnLoginResult = document.getElementById('btn-login-result');
-        if (btnLoginResult) btnLoginResult.addEventListener('click', () => showScreen('screen-login'));
-
-        // Forms
-        if (loginForm) loginForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            auth.signInWithEmailAndPassword(email, pass)
-                .then((cred) => {
-                    if (!cred.user.emailVerified) {
-                        auth.signOut();
-                        alert("Giriş yapmadan önce lütfen e-posta adresinizi doğrulayın! Size bir onay linki gönderdik.");
-                        return;
-                    }
-                    // SUCCESS - Do NOT manually redirect here. 
-                    // onAuthStateChanged will handle it.
-                    console.log("Login successful, waiting for auth state change...");
-                })
-                .catch(err => alert("Hata: " + err.message));
-        });
-
+        // --- GLOBAL SELECTORS ---
+        const loginForm = document.getElementById('login-form');
         const regForm = document.getElementById('register-form');
-        if (regForm) regForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-password').value;
-            const name = document.getElementById('reg-name').value;
+        const btnLoginResult = document.getElementById('btn-login-result');
+        const loginLink = document.querySelector('a[data-target="screen-login"]');
+        const gotoReg = document.getElementById('goto-register');
+        const gotoLog = document.getElementById('goto-login');
 
-            auth.createUserWithEmailAndPassword(email, pass)
-                .then(cred => {
-                    return cred.user.updateProfile({ displayName: name }).then(() => cred.user);
-                })
-                .then((user) => {
-                    user.sendEmailVerification();
-                    // Don't sign out yet, keep them in 'pending' state to show the screen with their email
-                    document.getElementById('verify-email-text').innerText = email;
-                    showScreen('screen-verify');
-                })
-                .catch(err => alert("Hata: " + err.message));
-        });
+        // --- NAVIGATION HELPERS ---
+        if (gotoReg) gotoReg.addEventListener('click', (e) => { e.preventDefault(); showScreen('screen-register'); });
+        if (gotoLog) gotoLog.addEventListener('click', (e) => { e.preventDefault(); showScreen('screen-login'); });
 
-        // Verification Check Button
-        const btnVerifyCheck = document.getElementById('btn-check-verify');
-        if (btnVerifyCheck) btnVerifyCheck.addEventListener('click', async () => {
-            const user = auth.currentUser;
-            if (user) {
-                await user.reload(); // Poll server for update
-                if (user.emailVerified) {
-                    alert("Teşekkürler! Hesabınız onaylandı.");
-                    showScreen('screen-home');
-                } else {
-                    alert("Henüz onaylanmamış görünüyor. Lütfen maildeki linke tıklayın.");
-                }
-            } else {
+        // --- LOGIN FORM ---
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log("🚀 Login Submit Triggered");
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
+
+                auth.signInWithEmailAndPassword(email, pass)
+                    .then((cred) => {
+                        if (!cred.user.emailVerified) {
+                            auth.signOut();
+                            alert("Lütfen önce e-posta adresinizi onaylayın (Spam kutusunu kontrol edin).");
+                            return;
+                        }
+                        console.log("✅ Login API Success");
+                        // onAuthStateChanged will handle redirect
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Giriş Başarısız: " + err.message);
+                    });
+            });
+        }
+
+        // --- REGISTER FORM ---
+        if (regForm) {
+            regForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log("🚀 Register Submit Triggered");
+                const email = document.getElementById('reg-email').value;
+                const pass = document.getElementById('reg-password').value;
+                const name = document.getElementById('reg-name').value;
+
+                auth.createUserWithEmailAndPassword(email, pass)
+                    .then(cred => {
+                        return cred.user.updateProfile({ displayName: name }).then(() => cred.user);
+                    })
+                    .then((user) => {
+                        user.sendEmailVerification();
+                        document.getElementById('verify-email-text').innerText = email;
+                        showScreen('screen-verify');
+                    })
+                    .catch(err => alert("Kayıt Başarısız: " + err.message));
+            });
+        }
+
+        // --- RESULT OVERLAY LOGIN BTN ---
+        if (btnLoginResult) {
+            btnLoginResult.addEventListener('click', () => {
+                console.log("Overlay Login Clicked");
                 showScreen('screen-login');
-            }
-        });
-    }
+            });
+        }
 
+        // --- SIDEBAR LOGIN LINK (Initial Bind) ---
+        if (loginLink) {
+            loginLink.addEventListener('click', (e) => {
+                // If logged out, prevent default and show login
+                if (!auth.currentUser) {
+                    e.preventDefault();
+                    showScreen('screen-login');
+                }
+            });
+        }
+
+        // --- AUTH STATE LISTENER ---
+        if (auth) {
+            auth.onAuthStateChanged(user => {
+                console.log("Auth State Logic -> User:", user ? user.email : "None");
+
+                // 1. CSS VISIBILITY
+                if (user) {
+                    document.body.classList.add('is-logged-in');
+                    document.body.classList.remove('is-logged-out');
+                } else {
+                    document.body.classList.remove('is-logged-in');
+                    document.body.classList.add('is-logged-out');
+                }
+
+                // 2. SIDEBAR UPDATE
+                if (loginLink) {
+                    if (user) {
+                        loginLink.innerHTML = '<i class="ph-bold ph-sign-out"></i> Çıkış Yap';
+                        loginLink.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            auth.signOut().then(() => {
+                                alert("Hoşçakalın! Çıkış yapıldı.");
+                                showScreen('screen-login');
+                            });
+                        };
+                    } else {
+                        loginLink.innerHTML = '<i class="ph-bold ph-sign-in"></i> Giriş Yap / Kayıt Ol';
+                        loginLink.onclick = (e) => {
+                            e.preventDefault();
+                            showScreen('screen-login');
+                        };
+                    }
+                }
+
+                // 3. REDIRECT / RESTORE LOGIC
+                if (user) {
+                    // Update Profile Header
+                    if (typeof updateProfileUI === 'function') updateProfileUI(user);
+
+                    // Unhide Community
+                    const commContent = document.getElementById('community-content');
+                    if (commContent) commContent.classList.remove('hidden');
+                    const authWarn = document.getElementById('auth-warning');
+                    if (authWarn) authWarn.classList.add('hidden');
+                    const blur = document.getElementById('result-blur-overlay');
+                    if (blur) blur.classList.add('hidden');
+
+                    // Smart Redirect: Only redirect if stuck on Auth Screens
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (activeScreen && ['screen-login', 'screen-register', 'screen-verify'].includes(activeScreen.id)) {
+                        if (window.currentDiagnosis) {
+                            console.log("Restoring pending diagnosis...");
+                            showScreen('screen-result');
+                        } else {
+                            showScreen('screen-home');
+                        }
+                    }
+                } else {
+                    // Logged Out
+                    const commContent = document.getElementById('community-content');
+                    if (commContent) commContent.classList.add('hidden');
+                    const authWarn = document.getElementById('auth-warning');
+                    if (authWarn) authWarn.classList.remove('hidden');
+                }
+            });
+        }
+
+    });
+
+    // --- HELPER FUNCTIONS (Hoisted) ---
     function updateProfileUI(user) {
-        // Could update sidebar profile pic here
-        console.log("Logged in as: ", user.email);
-    }
+        // Basic Profile UI Sync
+        const nameEl = document.getElementById('profile-name');
+        const emailEl = document.getElementById('profile-email');
+        if (nameEl) nameEl.innerText = user.displayName || 'Çiftçi Dostu';
+        if (emailEl) emailEl.innerText = user.email;
 
-    // --- COMMUNITY LOGIC ---
-    function loadCommunity() {
-        if (!db) return;
-        const feedContainer = document.getElementById('community-feed');
-        feedContainer.innerHTML = '<div class="spinner"></div>';
-
-        db.collection('posts').orderBy('createdAt', 'desc').limit(20)
-            .onSnapshot(snapshot => {
-                feedContainer.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const post = doc.data();
-                    const html = `
-                    <div class="post-card">
-                        <div class="post-header">
-                            <div class="avatar">${post.userAvatar || '👤'}</div>
-                            <div class="user-info">
-                                <h4>${post.userName}</h4>
-                                <span>${new Date(post.createdAt?.toDate()).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        <div class="post-content">
-                            <h3>${post.diseaseName}</h3>
-                            <p>${post.description}</p>
-                            ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ''}
-                        </div>
-                    </div>`;
-                    feedContainer.innerHTML += html;
-                });
-            });
-    }
-
-    // --- AI & CAMERA LOGIC ---
-    const fileInput = document.getElementById('file-input');
-    const scanPreview = document.getElementById('scan-preview-img');
-    const scanText = document.getElementById('scan-text');
-
-    // Handle File Selection
-    window.handleFileUpload = function (input) {
-        if (input.files && input.files[0]) {
-            processImage(input.files[0]);
-        }
-    };
-
-    // Bind Browse Button
-    const btnBrowse = document.getElementById('btn-browse');
-    if (btnBrowse) btnBrowse.addEventListener('click', () => fileInput.click());
-
-    // --- FIX: MISSING LISTENERS ---
-    const btnStart = document.getElementById('btn-start');
-    if (btnStart) btnStart.addEventListener('click', () => showScreen('screen-upload'));
-
-    const btnNavScan = document.getElementById('btn-nav-scan');
-    if (btnNavScan) btnNavScan.addEventListener('click', () => showScreen('screen-upload'));
-
-    const btnFab = document.getElementById('btn-share-diagnosis');
-    if (btnFab) btnFab.addEventListener('click', () => {
-        alert("Lütfen önce bitkiyi taratın, sonucu oradan paylaşabilirsiniz.");
-        showScreen('screen-upload');
-    });
-
-    const btnCam = document.getElementById('btn-camera');
-    const camInput = document.getElementById('camera-input');
-    if (btnCam) btnCam.addEventListener('click', () => camInput.click());
-
-    if (fileInput) fileInput.addEventListener('change', (e) => {
-        if (e.target.files[0]) processImage(e.target.files[0]);
-    });
-    if (camInput) camInput.addEventListener('change', (e) => {
-        if (e.target.files[0]) processImage(e.target.files[0]);
-    });
-
-    // --- NEW: Login Navigation Listeners ---
-    const btnLoginResult = document.getElementById('btn-login-result');
-    if (btnLoginResult) btnLoginResult.addEventListener('click', () => showScreen('screen-login'));
-
-    // Sidebar Login Link
-    const loginLink = document.querySelector('a[data-target="screen-login"]');
-    if (loginLink) loginLink.addEventListener('click', () => showScreen('screen-login'));
-
-    function processImage(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64 = e.target.result;
-            scanPreview.src = base64;
-            runAI(base64);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function runAI(base64) {
-        showScreen('screen-scanning');
-        scanText.innerText = "Yapay Zeka Analiz Ediyor...";
-
-        try {
-            const result = await gemini.analyzePlant(base64);
-            currentDiagnosis = { ...result, image: base64 };
-            displayResult(result, base64);
-        } catch (e) {
-            alert("Analiz Hatası: " + e.message);
-            showScreen('screen-upload');
+        // Avatar Sync
+        const avatarEl = document.getElementById('current-user-avatar');
+        if (avatarEl && user.photoURL) {
+            if (user.photoURL.startsWith('http')) {
+                avatarEl.innerHTML = '';
+                avatarEl.style.backgroundImage = `url(${user.photoURL})`;
+                avatarEl.style.backgroundSize = 'cover';
+            } else {
+                avatarEl.innerText = user.photoURL;
+                avatarEl.style.backgroundImage = 'none';
+            }
         }
     }
-
-    function displayResult(data, image) {
-        // Blur Check
-        const resultOverlay = document.getElementById('result-blur-overlay');
-        if (resultOverlay) {
-            if (!auth.currentUser) resultOverlay.classList.remove('hidden');
-            else resultOverlay.classList.add('hidden');
-        }
-
-        document.querySelector('.disease-title').textContent = data.disease_name;
-        document.querySelector('.disease-latin').textContent = data.latin_name;
-        document.querySelector('.confidence-badge').innerText = `%${data.confidence} Güven`;
-        document.getElementById('result-img-mini').src = image;
-
-        const list = document.querySelector('.step-list');
-        list.innerHTML = '';
-        data.treatment_steps.forEach((step, i) => {
-            list.innerHTML += `<div class="step"><div class="step-num">${i + 1}</div><div class="step-text">${step}</div></div>`;
-        });
-
-        renderShareBtn();
-        showScreen('screen-result');
-    }
-
-    function renderShareBtn() {
-        const container = document.querySelector('.action-section');
-        const old = document.getElementById('btn-share-result');
-        if (old) old.remove();
-
-        const btn = document.createElement('button');
-        btn.id = 'btn-share-result';
-        btn.className = 'btn-secondary';
-        btn.innerHTML = 'Toplulukla Paylaş';
-        btn.onclick = async () => {
-            if (!auth.currentUser) return alert("Giriş yapın!");
-
-            btn.innerText = "Kontrol Ediliyor...";
-            const safe = await gemini.checkSafety(currentDiagnosis.description, currentDiagnosis.image);
-            if (!safe) return alert("İçerik Uygunsuz Bulundu!");
-
-            btn.innerText = "Paylaşılıyor...";
-            await db.collection('posts').add({
-                userId: auth.currentUser.uid,
-                userName: auth.currentUser.displayName || 'Anonim',
-                diseaseName: currentDiagnosis.disease_name,
-                description: currentDiagnosis.description,
-                imageUrl: currentDiagnosis.image,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            alert("Paylaşıldı!");
-            showScreen('screen-community');
-        };
-        container.appendChild(btn);
-    }
-
 });
-
-// --- PROFILE LOGIC ---
-let storedUser = null; // Sync with auth state
-
+// --- RESTORED PROFILE LOGIC ---
 function loadProfile() {
     // Priority: storedUser > auth.currentUser
-    const user = storedUser || auth.currentUser;
+    const user = (typeof storedUser !== 'undefined' ? storedUser : null) || auth.currentUser;
 
-    // Debug
     console.log("Loading profile for:", user ? user.email : "No User");
 
     if (!user) {
-        // Double check auth state asynchronously if needed, or just redirect
-        // For now, redirect.
         showScreen('screen-login');
         return;
     }
@@ -935,44 +805,45 @@ function loadProfile() {
 
     myFeed.innerHTML = '<div class="spinner"></div>';
 
-    db.collection('posts')
-        .where("userId", "==", user.uid)
-        .orderBy('createdAt', 'desc')
-        .get()
-        .then(snapshot => {
-            myFeed.innerHTML = '';
-            if (snapshot.empty) {
-                myFeed.innerHTML = `
+    if (db) {
+        db.collection('posts')
+            .where("userId", "==", user.uid)
+            .orderBy('createdAt', 'desc')
+            .get()
+            .then(snapshot => {
+                myFeed.innerHTML = '';
+                if (snapshot.empty) {
+                    myFeed.innerHTML = `
                 <div class="empty-state-profile">
                     <i class="ph-duotone ph-image"></i>
                     <p>Henüz bir bitki analizi paylaşmadınız.</p>
                 </div>`;
-                return;
-            }
+                    return;
+                }
 
-            snapshot.forEach(doc => {
-                const post = doc.data();
-                myFeed.innerHTML += renderPost(post);
+                snapshot.forEach(doc => {
+                    const post = doc.data();
+                    if (typeof renderPost === 'function') {
+                        myFeed.innerHTML += renderPost(post);
+                    }
+                });
+            })
+            .catch(err => {
+                console.error("Error loading my posts:", err);
+                myFeed.innerHTML = '<p>Gönderiler yüklenirken hata oluştu.</p>';
             });
-        })
-        .catch(err => {
-            console.error("Error loading my posts:", err);
-            myFeed.innerHTML = '<p>Gönderiler yüklenirken hata oluştu.</p>';
-        });
+    }
 }
 
-// Logout Handler
+// Logout Handler (Global Bind)
 const btnLogoutProfile = document.getElementById('btn-logout-profile');
-if (btnLogoutProfile) btnLogoutProfile.addEventListener('click', () => {
-    auth.signOut().then(() => {
-        alert("Başarıyla çıkış yapıldı.");
-        showScreen('screen-login');
+if (btnLogoutProfile) {
+    btnLogoutProfile.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            alert("Başarıyla çıkış yapıldı.");
+            showScreen('screen-login');
+        });
     });
-});
+}
 
-// --- ROBUST INIT ---
-document.addEventListener('DOMContentLoaded', () => {
-    document.body.classList.add('is-logged-out');
-    if (window.changeLanguage) window.changeLanguage('tr');
-});
 
