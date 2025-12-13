@@ -24,7 +24,7 @@ const CONFIG = {
 // --- 2. SERVICES ---
 
 // A. FIREBASE SERVICE
-let auth, db;
+let auth, db, storage;
 function initFirebase() {
     if (typeof firebase === 'undefined') {
         console.error("Firebase SDK not loaded!");
@@ -34,6 +34,7 @@ function initFirebase() {
         const app = firebase.initializeApp(CONFIG.FIREBASE);
         auth = firebase.auth();
         db = firebase.firestore();
+        storage = firebase.storage();
         console.log("Firebase Connected");
         return true;
     } catch (e) {
@@ -42,12 +43,275 @@ function initFirebase() {
     }
 }
 
+// ... (Gemini Service remains same) ...
+
+// ... (Inside DOMContentLoaded) ...
+
+// --- AVATAR LOGIC ---
+const modalAvatar = document.getElementById('modal-avatar-selector');
+const btnEditAvatar = document.getElementById('btn-edit-avatar');
+const btnCloseAvatar = document.getElementById('btn-close-avatar-modal');
+const avatarInput = document.getElementById('avatar-input');
+const btnUploadAvatar = document.getElementById('btn-upload-avatar');
+
+// Open Modal
+if (btnEditAvatar) btnEditAvatar.addEventListener('click', () => {
+    modalAvatar.classList.remove('hidden');
+});
+
+// Close Modal
+if (btnCloseAvatar) btnCloseAvatar.addEventListener('click', () => {
+    modalAvatar.classList.add('hidden');
+});
+
+// Preset Selection
+document.querySelectorAll('.avatar-preset').forEach(preset => {
+    preset.addEventListener('click', () => {
+        updateUserAvatar(preset.innerText); // Store emoji directly
+        modalAvatar.classList.add('hidden');
+    });
+});
+
+// Upload Click
+if (btnUploadAvatar) btnUploadAvatar.addEventListener('click', () => avatarInput.click());
+
+// File Upload Main Logic
+if (avatarInput) avatarInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Upload to Firebase Storage
+    const ref = storage.ref(`avatars/${auth.currentUser.uid}`);
+    try {
+        btnUploadAvatar.innerText = "Yükleniyor...";
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        updateUserAvatar(url);
+        modalAvatar.classList.add('hidden');
+        btnUploadAvatar.innerText = "Fotoğraf Yükle";
+    } catch (err) {
+        console.error(err);
+        alert("Yükleme başarısız: " + err.message);
+        btnUploadAvatar.innerText = "Hata oluştu";
+    }
+});
+
+function updateUserAvatar(avatarUrlOrEmoji) {
+    if (!auth.currentUser) return;
+    auth.currentUser.updateProfile({ photoURL: avatarUrlOrEmoji }).then(() => {
+        updateProfileUI(auth.currentUser);
+        // Optional: Batch update recent posts? Too expensive for client.
+        // Future posts will have new avatar.
+        alert("Profil fotoğrafı güncellendi!");
+    });
+}
+
+// --- PUBLIC PROFILE LOGIC ---
+window.openPublicProfile = function (userId, name, avatar) {
+    document.getElementById('public-profile-name').innerText = name;
+    document.getElementById('public-profile-avatar').innerText = avatar.startsWith('http') ? '' : avatar;
+    if (avatar.startsWith('http')) {
+        document.getElementById('public-profile-avatar').style.backgroundImage = `url(${avatar})`;
+        document.getElementById('public-profile-avatar').style.backgroundSize = 'cover';
+        document.getElementById('public-profile-avatar').innerText = '';
+    } else {
+        document.getElementById('public-profile-avatar').style.background = '#eee';
+    }
+
+    // Load Posts
+    const feed = document.getElementById('public-posts-feed');
+    feed.innerHTML = '<div class="spinner"></div>';
+    db.collection('posts').where('userId', '==', userId).orderBy('createdAt', 'desc').limit(10).get()
+        .then(snap => {
+            feed.innerHTML = '';
+            snap.forEach(doc => {
+                feed.innerHTML += renderPost(doc.data());
+            });
+        });
+
+    // Bind Message Button
+    document.getElementById('btn-send-message').onclick = () => startChat(userId, name, avatar);
+
+    showScreen('screen-public-profile');
+};
+
+// --- MESSAGING LOGIC ---
+async function startChat(targetId, targetName, targetAvatar) {
+    if (!auth.currentUser) return alert("Giriş yapmalısınız!");
+
+    const myId = auth.currentUser.uid;
+    // Check if chat exists (naive check: query chats where participants array-contains myId, then filter in memory for targetId)
+    // Better: Construct a unique ID if 1-on-1, e.g., sorted UIDs.
+    const combinedId = [myId, targetId].sort().join('_');
+
+    // Show Chat Screen immediately with temp data
+    document.getElementById('chat-header-name').innerText = targetName;
+    document.getElementById('screen-chat').dataset.chatId = combinedId;
+    showScreen('screen-chat');
+    loadMessages(combinedId);
+
+    // Ensure Chat Doc Exists
+    const chatRef = db.collection('chats').doc(combinedId);
+    const doc = await chatRef.get();
+    if (!doc.exists) {
+        await chatRef.set({
+            participants: [myId, targetId],
+            participantData: {
+                [myId]: { name: auth.currentUser.displayName, avatar: auth.currentUser.photoURL || '👨‍🌾' },
+                [targetId]: { name: targetName, avatar: targetAvatar }
+            },
+            lastMessage: '',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+}
+
+let unsubscribeChat = null;
+function loadMessages(chatId) {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '<div class="spinner"></div>';
+    if (unsubscribeChat) unsubscribeChat();
+
+    unsubscribeChat = db.collection('chats').doc(chatId).collection('messages')
+        .orderBy('createdAt', 'asc')
+        .limit(50)
+        .onSnapshot(snap => {
+            container.innerHTML = '';
+            snap.forEach(doc => {
+                const msg = doc.data();
+                const isMine = msg.senderId === auth.currentUser.uid;
+                container.innerHTML += `
+                        <div class="chat-bubble ${isMine ? 'mine' : 'theirs'}">
+                            ${msg.text}
+                        </div>
+                    `;
+            });
+            container.scrollTop = container.scrollHeight;
+        });
+}
+
+// Send Message
+document.getElementById('btn-send-chat').addEventListener('click', async () => {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const chatId = document.getElementById('screen-chat').dataset.chatId;
+    if (!chatId) return;
+
+    input.value = '';
+
+    await db.collection('chats').doc(chatId).collection('messages').add({
+        text,
+        senderId: auth.currentUser.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await db.collection('chats').doc(chatId).update({
+        lastMessage: text,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+});
+
+// Load Inbox
+if (document.querySelector('[data-target="screen-inbox"]')) {
+    document.querySelector('[data-target="screen-inbox"]').addEventListener('click', loadInbox);
+}
+
+function loadInbox() {
+    if (!auth.currentUser) return showScreen('screen-login');
+    const list = document.getElementById('inbox-list');
+    list.innerHTML = '<div class="spinner"></div>';
+
+    db.collection('chats').where('participants', 'array-contains', auth.currentUser.uid)
+        .orderBy('updatedAt', 'desc')
+        .onSnapshot(snap => {
+            list.innerHTML = '';
+            if (snap.empty) {
+                list.innerHTML = '<div class="empty-state"><p>Henüz mesaj yok.</p></div>';
+                return;
+            }
+            snap.forEach(doc => {
+                const chat = doc.data();
+                const otherId = chat.participants.find(p => p !== auth.currentUser.uid);
+                const otherUser = chat.participantData[otherId] || { name: 'Kullanıcı', avatar: '👤' };
+
+                const div = document.createElement('div');
+                div.className = 'inbox-item';
+                div.innerHTML = `
+                        <div class="avatar-small">${otherUser.avatar.startsWith('http') ? '<img src="' + otherUser.avatar + '" style="width:100%;height:100%;border-radius:50%;">' : otherUser.avatar}</div>
+                        <div class="inbox-info">
+                            <h4>${otherUser.name}</h4>
+                            <p>${chat.lastMessage || 'Fotoğraf'}</p>
+                        </div>
+                    `;
+                div.onclick = () => startChat(otherId, otherUser.name, otherUser.avatar);
+                list.appendChild(div);
+            });
+        });
+}
+
+// Render Post Helper (to reuse in Profile and Community)
+function renderPost(post) {
+    // Add click handler to user info
+    const avatarDisplay = post.userAvatar && post.userAvatar.startsWith('http') ?
+        `<img src="${post.userAvatar}" class="avatar-img" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` :
+        (post.userAvatar || '👤');
+
+    return `
+            <div class="post-card">
+                <div class="post-header" onclick="window.openPublicProfile('${post.userId}', '${post.userName}', '${post.userAvatar || '👤'}')">
+                    <div class="avatar" style="overflow:hidden; cursor:pointer">${avatarDisplay}</div>
+                    <div class="user-info" style="cursor:pointer">
+                        <h4>${post.userName}</h4>
+                        <span class="time">${new Date(post.createdAt?.seconds * 1000).toLocaleDateString()}</span>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <h3>${post.diseaseName}</h3>
+                    <p>${post.description}</p>
+                    ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image">` : ''}
+                </div>
+            </div>`;
+}
+
+// --- REPLACED EXISTING FUNCTIONS TO USE NEW RENDER ---
+
+function loadCommunity() {
+    if (!db) return;
+    const feedContainer = document.getElementById('community-feed');
+    feedContainer.innerHTML = '<div class="spinner"></div>';
+    db.collection('posts').orderBy('createdAt', 'desc').limit(20)
+        .onSnapshot(snapshot => {
+            feedContainer.innerHTML = '';
+            snapshot.forEach(doc => {
+                feedContainer.innerHTML += renderPost(doc.data());
+            });
+        });
+}
+
+function updateProfileUI(user) {
+    console.log("Logged in as: ", user.email);
+    const avatarEl = document.getElementById('current-user-avatar');
+    if (user.photoURL) {
+        if (user.photoURL.startsWith('http')) {
+            avatarEl.innerHTML = '';
+            avatarEl.style.backgroundImage = `url(${user.photoURL})`;
+            avatarEl.style.backgroundSize = 'cover';
+        } else {
+            avatarEl.innerText = user.photoURL;
+            avatarEl.style.backgroundImage = 'none';
+        }
+    }
+}
+
 // B. GEMINI SERVICE
 class GeminiService {
     constructor() {
         // We will call the API directly via fetch to avoid import issues with the SDK in non-module mode
-        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent";
+        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
         this.apiKey = CONFIG.GEMINI_API_KEY;
+        console.log("Gemini Endpoint:", this.baseUrl);
     }
 
     async analyzePlant(base64Image, lang = 'tr') {
@@ -199,15 +463,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- AUTH LOGIC ---
     if (isFirebaseReady) {
         auth.onAuthStateChanged(user => {
+            // 1. Update Global UI
+            const profileLinks = document.querySelectorAll('[data-target="screen-profile"]');
+            profileLinks.forEach(link => {
+                link.style.display = user ? 'flex' : 'none';
+            });
+
+            // 2. Handle Auth Warning & Community
             if (user) {
                 if (authWarning) authWarning.classList.add('hidden');
                 if (communityContent) communityContent.classList.remove('hidden');
+
+                // Unblur result if present
+                const resultOverlay = document.getElementById('result-blur-overlay');
+                if (resultOverlay) resultOverlay.classList.add('hidden');
+
                 updateProfileUI(user);
+
+                // If we have a pending result and just logged in, go there
+                if (currentDiagnosis) {
+                    const activeScreen = document.querySelector('.screen.active');
+                    if (activeScreen && (activeScreen.id === 'screen-login' || activeScreen.id === 'screen-verify')) {
+                        showScreen('screen-result');
+                    }
+                }
             } else {
                 if (authWarning) authWarning.classList.remove('hidden');
                 if (communityContent) communityContent.classList.add('hidden');
             }
         });
+
+        // Result Overlay Login Button
+        const btnLoginResult = document.getElementById('btn-login-result');
+        if (btnLoginResult) btnLoginResult.addEventListener('click', () => showScreen('screen-login'));
 
         // Forms
         const loginForm = document.getElementById('login-form');
@@ -367,6 +655,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function displayResult(data, image) {
+        // Blur Check
+        const resultOverlay = document.getElementById('result-blur-overlay');
+        if (resultOverlay) {
+            if (!auth.currentUser) resultOverlay.classList.remove('hidden');
+            else resultOverlay.classList.add('hidden');
+        }
+
         document.querySelector('.disease-title').textContent = data.disease_name;
         document.querySelector('.disease-latin').textContent = data.latin_name;
         document.querySelector('.confidence-badge').innerText = `%${data.confidence} Güven`;

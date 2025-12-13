@@ -30,6 +30,8 @@
                 <a class="sidebar-link active" data-target="screen-home"><i class="ph-bold ph-house"></i> Ana Sayfa</a>
                 <a class="sidebar-link" data-target="screen-community"><i class="ph-bold ph-users-three"></i>
                     Topluluk</a>
+                <a class="sidebar-link" data-target="screen-inbox"><i class="ph-bold ph-chat-circle-dots"></i>
+                    Mesajlar</a>
                 <a class="sidebar-link" data-target="screen-profile"><i class="ph-bold ph-user-circle"></i> Profilim</a>
                 <a class="sidebar-link" data-target="screen-about"><i class="ph-bold ph-info"></i> Hakkında</a>
             </div>
@@ -119,45 +121,56 @@
                 </div>
 
                 <div class="result-card">
-                    <div class="confidence-badge high">
-                        <i class="ph-fill ph-check-circle"></i> %94 Güven
-                    </div>
-                    <div class="image-preview-mini">
-                        <img id="result-img-mini" src="" alt="Analyzed">
-                    </div>
-                    <h2 class="disease-title">Erken Yaprak Yanıklığı</h2>
-                    <p class="disease-latin">Alternaria solani</p>
-
-                    <div class="status-indicators">
-                        <div class="indicator critical">
-                            <span class="label">Aciliyet</span>
-                            <div class="bar">
-                                <div class="fill" style="width: 80%"></div>
-                            </div>
-                        </div>
-                        <div class="indicator warning">
-                            <span class="label">Yayılma</span>
-                            <div class="bar">
-                                <div class="fill" style="width: 60%"></div>
-                            </div>
+                    <div id="result-blur-overlay" class="blur-overlay hidden">
+                        <div class="overlay-content">
+                            <i class="ph-duotone ph-lock-key"></i>
+                            <h3>Sonucu Görmek İçin Giriş Yapın</h3>
+                            <p>Detaylı analiz raporu ve tedavi önerileri için ücretsiz üye olun.</p>
+                            <button class="btn-primary" id="btn-login-result">Giriş Yap / Üye Ol</button>
                         </div>
                     </div>
 
-                    <div class="action-section">
-                        <h3>Tedavi Önerileri</h3>
-                        <div class="step-list">
-                            <div class="step">
-                                <div class="step-num">1</div>
-                                <div class="step-text">Etkilenen yaprakları steril bir makasla budayın.</div>
+                    <div id="result-content-wrapper">
+                        <div class="confidence-badge high">
+                            <i class="ph-fill ph-check-circle"></i> %94 Güven
+                        </div>
+                        <div class="image-preview-mini">
+                            <img id="result-img-mini" src="" alt="Analyzed">
+                        </div>
+                        <h2 class="disease-title">Erken Yaprak Yanıklığı</h2>
+                        <p class="disease-latin">Alternaria solani</p>
+
+                        <div class="status-indicators">
+                            <div class="indicator critical">
+                                <span class="label">Aciliyet</span>
+                                <div class="bar">
+                                    <div class="fill" style="width: 80%"></div>
+                                </div>
                             </div>
-                            <div class="step">
-                                <div class="step-num">2</div>
-                                <div class="step-text">Bitkiyi sabah erken saatlerde sulayın, yaprakları ıslatmaktan
-                                    kaçının.</div>
+                            <div class="indicator warning">
+                                <span class="label">Yayılma</span>
+                                <div class="bar">
+                                    <div class="fill" style="width: 60%"></div>
+                                </div>
                             </div>
-                            <div class="step">
-                                <div class="step-num">3</div>
-                                <div class="step-text">Organik bakır bazlı bir fungisit uygulayın.</div>
+                        </div>
+
+                        <div class="action-section">
+                            <h3>Tedavi Önerileri</h3>
+                            <div class="step-list">
+                                <div class="step">
+                                    <div class="step-num">1</div>
+                                    <div class="step-text">Etkilenen yaprakları steril bir makasla budayın.</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-num">2</div>
+                                    <div class="step-text">Bitkiyi sabah erken saatlerde sulayın, yaprakları ıslatmaktan
+                                        kaçının.</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-num">3</div>
+                                    <div class="step-text">Organik bakır bazlı bir fungisit uygulayın.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -376,7 +389,8 @@
             <div class="profile-header-card">
                 <div class="profile-avatar-wrapper">
                     <div class="profile-avatar" id="current-user-avatar">👨‍🌾</div>
-                    <!-- <button class="btn-edit-avatar" id="btn-edit-avatar"><i class="ph-fill ph-pencil-simple"></i></button> -->
+                    <button class="btn-edit-avatar" id="btn-edit-avatar"><i
+                            class="ph-fill ph-pencil-simple"></i></button>
                 </div>
                 <h2 id="profile-name">Yükleniyor...</h2>
                 <p id="profile-email">...</p>
@@ -384,6 +398,38 @@
                 <button class="btn-logout" id="btn-logout-profile">
                     <i class="ph-bold ph-sign-out"></i> Çıkış Yap
                 </button>
+            </div>
+
+            <!-- Avatar Edit Modal (Hidden by default) -->
+            <div id="modal-avatar-selector" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Profil Fotoğrafı Seç</h3>
+                        <button class="btn-close-modal" id="btn-close-avatar-modal"><i
+                                class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div class="avatar-options">
+                        <p>Kamera veya Galeri</p>
+                        <div class="avatar-actions">
+                            <button class="btn-outline" id="btn-upload-avatar">
+                                <i class="ph-bold ph-upload-simple"></i> Fotoğraf Yükle
+                            </button>
+                            <input type="file" id="avatar-input" accept="image/*" hidden>
+                        </div>
+                        <p>Veya Bir İkon Seçin</p>
+                        <div class="avatar-grid">
+                            <div class="avatar-preset">👨‍🌾</div>
+                            <div class="avatar-preset">👩‍🌾</div>
+                            <div class="avatar-preset">🚜</div>
+                            <div class="avatar-preset">🌻</div>
+                            <div class="avatar-preset">🌽</div>
+                            <div class="avatar-preset">🍅</div>
+                            <div class="avatar-preset">🍆</div>
+                            <div class="avatar-preset">🥕</div>
+                        </div>
+                        <button class="btn-primary" id="btn-save-avatar">Kaydet</button>
+                    </div>
+                </div>
             </div>
 
             <div class="section-title">
@@ -395,6 +441,58 @@
             </div>
         </section>
 
+        <!-- 9. Public Profile Screen -->
+        <section id="screen-public-profile" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" data-target="screen-community"><i class="ph-bold ph-arrow-left"></i></button>
+                <h2>Çiftçi Profili</h2>
+            </div>
+            <div class="profile-header-card">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="public-profile-avatar">👤</div>
+                </div>
+                <h2 id="public-profile-name">Kullanıcı</h2>
+                <button class="btn-primary" id="btn-send-message">
+                    <i class="ph-bold ph-chat-circle-text"></i> Mesaj Gönder
+                </button>
+            </div>
+            <div class="section-title">
+                <h3>Paylaşımları</h3>
+            </div>
+            <div class="community-feed" id="public-posts-feed"></div>
+        </section>
+
+        <!-- 10. Inbox Screen -->
+        <section id="screen-inbox" class="screen">
+            <div class="screen-header">
+                <h2>Mesajlar</h2>
+            </div>
+            <div class="inbox-list" id="inbox-list">
+                <!-- Populated by JS -->
+                <div class="empty-state">
+                    <i class="ph-duotone ph-chat-circle-dots"></i>
+                    <p>Henüz mesajınız yok.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11. Chat Screen -->
+        <section id="screen-chat" class="screen">
+            <div class="chat-header">
+                <button class="btn-back" data-target="screen-inbox"><i class="ph-bold ph-arrow-left"></i></button>
+                <div class="chat-user-info">
+                    <div class="avatar-small">👤</div>
+                    <h3 id="chat-header-name">Kullanıcı</h3>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Bubbles go here -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Mesaj yazın...">
+                <button id="btn-send-chat"><i class="ph-fill ph-paper-plane-right"></i></button>
+            </div>
+        </section>
 
     </div>
 
@@ -404,14 +502,18 @@
             <i class="ph-fill ph-house"></i>
             <span>Ana Sayfa</span>
         </button>
+        <button class="nav-item" data-target="screen-community">
+            <i class="ph-fill ph-users-three"></i>
+            <span>Topluluk</span>
+        </button>
         <button class="nav-item-scan" id="btn-nav-scan">
             <div class="scan-btn-inner">
                 <i class="ph-bold ph-camera"></i>
             </div>
         </button>
-        <button class="nav-item" data-target="screen-community">
-            <i class="ph-fill ph-users-three"></i>
-            <span>Topluluk</span>
+        <button class="nav-item" data-target="screen-inbox">
+            <i class="ph-fill ph-chat-circle-dots"></i>
+            <span>Mesajlar</span>
         </button>
         <button class="nav-item" data-target="screen-profile">
             <i class="ph-fill ph-user"></i>
