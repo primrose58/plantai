@@ -46,7 +46,7 @@ function initFirebase() {
 class GeminiService {
     constructor() {
         // We will call the API directly via fetch to avoid import issues with the SDK in non-module mode
-        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+        this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent";
         this.apiKey = CONFIG.GEMINI_API_KEY;
     }
 
