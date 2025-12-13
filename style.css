@@ -883,3 +883,65 @@ p {
 .desktop-sidebar {
     display: none;
 }
+/* Profile & Logout Styles */
+.profile-header-card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 32px 20px;
+    text-align: center;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 16px;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #e9f5f0;
+    font-size: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--primary);
+}
+
+#profile-name {
+    font-size: 1.5rem;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+#profile-email {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-bottom: 24px;
+}
+
+.btn-logout {
+    background: #fff0f0;
+    color: #e63946;
+    border: 1px solid #ffcccc;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-logout:hover {
+    background: #ffe6e6;
+    transform: translateY(-2px);
+}
+

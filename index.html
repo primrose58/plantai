@@ -30,6 +30,7 @@
                 <a class="sidebar-link active" data-target="screen-home"><i class="ph-bold ph-house"></i> Ana Sayfa</a>
                 <a class="sidebar-link" data-target="screen-community"><i class="ph-bold ph-users-three"></i>
                     Topluluk</a>
+                <a class="sidebar-link" data-target="screen-profile"><i class="ph-bold ph-user-circle"></i> Profilim</a>
                 <a class="sidebar-link" data-target="screen-about"><i class="ph-bold ph-info"></i> Hakkında</a>
             </div>
         </aside>
@@ -194,7 +195,7 @@
                         </div>
                     </div>
 
-                    <button class="fab-add" id="btn-share-diagnosis" title="Teşhis Paylaş" disabled>
+                    <button class="fab-add" id="btn-share-diagnosis" title="Teşhis Paylaş">
                         <i class="ph-bold ph-plus"></i>
                     </button>
                 </div>
@@ -371,6 +372,30 @@
             </div>
         </section>
 
+        <!-- 8. Profile Screen -->
+        <section id="screen-profile" class="screen">
+            <div class="profile-header-card">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="current-user-avatar">👨‍🌾</div>
+                    <!-- <button class="btn-edit-avatar" id="btn-edit-avatar"><i class="ph-fill ph-pencil-simple"></i></button> -->
+                </div>
+                <h2 id="profile-name">Yükleniyor...</h2>
+                <p id="profile-email">...</p>
+
+                <button class="btn-logout" id="btn-logout-profile">
+                    <i class="ph-bold ph-sign-out"></i> Çıkış Yap
+                </button>
+            </div>
+
+            <div class="section-title">
+                <h3>Paylaşımlarım</h3>
+            </div>
+
+            <div class="community-feed" id="my-posts-feed">
+                <!-- JS populates this -->
+            </div>
+        </section>
+
 
     </div>
 
@@ -388,6 +413,10 @@
         <button class="nav-item" data-target="screen-community">
             <i class="ph-fill ph-users-three"></i>
             <span>Topluluk</span>
+        </button>
+        <button class="nav-item" data-target="screen-profile">
+            <i class="ph-fill ph-user"></i>
+            <span>Profil</span>
         </button>
     </nav>
 

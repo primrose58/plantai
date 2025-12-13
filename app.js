@@ -161,6 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (screenId === 'screen-community') loadCommunity();
+        if (screenId === 'screen-profile') loadProfile();
     };
 
     // Global Click Listener for Navigation
@@ -308,6 +309,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnBrowse = document.getElementById('btn-browse');
     if (btnBrowse) btnBrowse.addEventListener('click', () => fileInput.click());
 
+    // --- FIX: MISSING LISTENERS ---
+    const btnStart = document.getElementById('btn-start');
+    if (btnStart) btnStart.addEventListener('click', () => showScreen('screen-upload'));
+
+    const btnNavScan = document.getElementById('btn-nav-scan');
+    if (btnNavScan) btnNavScan.addEventListener('click', () => showScreen('screen-upload'));
+
+    const btnFab = document.getElementById('btn-share-diagnosis');
+    if (btnFab) btnFab.addEventListener('click', () => {
+        alert("Lütfen önce bitkiyi taratın, sonucu oradan paylaşabilirsiniz.");
+        showScreen('screen-upload');
+    });
+
+    const btnCam = document.getElementById('btn-camera');
+    const camInput = document.getElementById('camera-input');
+    if (btnCam) btnCam.addEventListener('click', () => camInput.click());
+
+    if (fileInput) fileInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) processImage(e.target.files[0]);
+    });
+    if (camInput) camInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) processImage(e.target.files[0]);
+    });
+
     function processImage(file) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -379,4 +404,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.appendChild(btn);
     }
 
+});
+
+// --- PROFILE LOGIC ---
+function loadProfile() {
+    const user = auth.currentUser;
+    if (!user) {
+        showScreen('screen-login');
+        return;
+    }
+
+    // Fill Header
+    document.getElementById('profile-name').innerText = user.displayName || 'Çiftçi Dostu';
+    document.getElementById('profile-email').innerText = user.email;
+
+    // Load My Posts
+    const myFeed = document.getElementById('my-posts-feed');
+    myFeed.innerHTML = '<div class=\"spinner\"></div>';
+
+    db.collection('posts')
+        .where(\"userId\", \"==\", user.uid)
+            .orderBy('createdAt', 'desc')
+            .get()
+            .then(snapshot => {
+                myFeed.innerHTML = '';
+                if (snapshot.empty) {
+                    myFeed.innerHTML = \
+                    \<div class=\"empty-state-profile\">\
+                        <i class=\"ph-duotone ph-image\"></i>\
+                        <p>Henüz bir bitki analizi paylaşmadınız.</p>\
+                    </div>\;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const post = doc.data();
+                    const html = \\
+                    <div class=\"post-card\">\
+                        <div class=\"post-header\">\
+                            <div class=\"avatar\">\</div>\
+                            <div class=\"user-info\">\
+                                <h4>\</h4>\
+                                <span class=\"time\">\</span>\
+                            </div>\
+                        </div>\
+                        <img src=\"\\" class=\"post-image\" alt=\"Hastalık\">\
+                        <div class=\"post-content\">\
+                            <h3>\</h3>\
+                            <p>\</p>\
+                        </div>\
+                    </div>\;
+                    myFeed.innerHTML += html;
+                });
+            })
+            .catch(err => {
+                console.error(\"Error loading my posts:\", err);
+                myFeed.innerHTML = '<p>Gönderiler yüklenirken hata oluştu.</p>';
+            });
+}
+
+// Logout Handler
+const btnLogoutProfile = document.getElementById('btn-logout-profile');
+if (btnLogoutProfile) btnLogoutProfile.addEventListener('click', () => {
+    auth.signOut().then(() => {
+        alert(\"Başarıyla çıkış yapıldı.\");
+            showScreen('screen-login');
+    });
 });
