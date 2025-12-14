@@ -1,5 +1,5 @@
-const GEMINI_API_KEY = "AIzaSyBZsgE07GnD6GGpOdeHCFbSQs8tT7Gnd20";
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY;
+const GEMINI_API_KEY = "AIzaSyAvs2v0QuOfrwMzI9-3i5BBsCpkGuyX5b0";
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + GEMINI_API_KEY;
 
 /**
  * Analyzes plant images with optional user context.
