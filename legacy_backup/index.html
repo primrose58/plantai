@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantAI - Akıllı Bitki Doktoru</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons (Phosphor Icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2D6A4F">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Desktop Sidebar -->
+        <aside class="desktop-sidebar">
+            <div class="logo">
+                <i class="ph-fill ph-plant"></i> PlantAI
+            </div>
+            <div class="sidebar-menu">
+                <a class="sidebar-link active" data-target="screen-home" data-i18n="home"><i
+                        class="ph-bold ph-house"></i> Ana Sayfa</a>
+                <a class="sidebar-link" data-target="screen-community" data-i18n="community"
+                    data-auth-required="true"><i class="ph-bold ph-users-three"></i>
+                    Topluluk</a>
+                <a class="sidebar-link" data-target="screen-inbox" data-i18n="messages" data-auth-required="true"><i
+                        class="ph-bold ph-chat-circle-dots"></i>
+                    Mesajlar</a>
+                <a class="sidebar-link" data-target="screen-profile" data-i18n="profile" data-auth-required="true"><i
+                        class="ph-bold ph-user-circle"></i> Profilim</a>
+                <a class="sidebar-link" data-target="screen-about" data-i18n="about"><i class="ph-bold ph-info"></i>
+                    Hakkında</a>
+                <a class="sidebar-link" data-target="screen-login" data-i18n="login_register"
+                    data-auth-required="false"><i class="ph-bold ph-sign-in"></i>
+                    Giriş Yap / Kayıt Ol</a>
+            </div>
+        </aside>
+
+        <!-- Navigation / Header (Mobile Only) -->
+        <header class="app-header">
+            <div class="logo">
+                <i class="ph-fill ph-plant"></i>
+                <span>PlantAI</span>
+            </div>
+            <nav>
+                <a href="#" class="nav-link-item active" data-target="screen-home" data-i18n="home">Ana Sayfa</a>
+                <a href="#" class="nav-link-item" data-target="screen-about" data-i18n="about">Hakkında</a>
+            </nav>
+        </header>
+
+        <!-- Screens -->
+        <main id="main-content">
+            <!-- 1. Landing Screen -->
+            <section id="screen-home" class="screen active">
+                <div class="hero-content">
+                    <div class="badge">✨ Yapay Zeka Destekli</div>
+                    <h1>Bitkilerinizin <br> Sağlığını Koruyun</h1>
+                    <p>Fotoğraf çekin, saniyeler içinde hastalık teşhisi ve tedavi önerileri alın.</p>
+                    <button id="btn-start" class="btn-primary">
+                        <i class="ph-bold ph-camera"></i>
+                        Hemen Tara
+                    </button>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-num">98%</span>
+                            <span class="stat-desc">Doğruluk</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-num">50+</span>
+                            <span class="stat-desc">Hastalık Tespiti</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hero Image removed from HTML to be handled by CSS or if I generate one later -->
+                <div class="hero-decoration"></div>
+            </section>
+
+            <!-- 2. Upload Screen -->
+            <section id="screen-upload" class="screen">
+                <div class="screen-header">
+                    <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-arrow-left"></i></button>
+                    <h2>Fotoğraf Yükle</h2>
+                </div>
+                <div class="upload-area" id="drop-zone">
+                    <div class="upload-icon">
+                        <i class="ph-duotone ph-cloud-arrow-up"></i>
+                    </div>
+                    <h3>Dokunun veya Fotoğrafı Buraya Sürükleyin</h3>
+                    <p>Net bir yaprak fotoğrafı yükleyin</p>
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+                    <button class="btn-secondary" id="btn-browse">Galeriden Seç</button>
+                </div>
+                <div class="camera-option">
+                    <span>veya</span>
+                    <button class="btn-icon-large" id="btn-camera"><i class="ph-fill ph-camera"></i></button>
+                </div>
+            </section>
+
+            <!-- 3. Scanning Screen -->
+            <section id="screen-scanning" class="screen">
+                <div class="scanner-container">
+                    <div class="scan-image-wrapper">
+                        <img id="scan-preview-img" src="" alt="Scanning plant">
+                        <div class="scan-overlay"></div>
+                        <div class="scan-line"></div>
+                    </div>
+                    <div class="scan-status">
+                        <div class="spinner"></div>
+                        <p id="scan-text">Analiz ediliyor...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Result Screen -->
+            <section id="screen-result" class="screen">
+                <div class="screen-header">
+                    <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-house"></i></button>
+                    <h2 data-i18n="result">Analiz Sonucu</h2>
+                </div>
+
+                <div class="result-card">
+                    <div id="result-blur-overlay" class="blur-overlay hidden">
+                        <div class="overlay-content">
+                            <i class="ph-duotone ph-lock-key"></i>
+                            <h3>Sonucu Görmek İçin Giriş Yapın</h3>
+                            <p>Detaylı analiz raporu ve tedavi önerileri için ücretsiz üye olun.</p>
+                            <button class="btn-primary" id="btn-login-result">Giriş Yap / Üye Ol</button>
+                        </div>
+                    </div>
+
+                    <div id="result-content-wrapper">
+                        <div class="confidence-badge high">
+                            <i class="ph-fill ph-check-circle"></i> %94 Güven
+                        </div>
+                        <div class="image-preview-mini">
+                            <img id="result-img-mini" src="" alt="Analyzed">
+                        </div>
+                        <h2 class="disease-title">Erken Yaprak Yanıklığı</h2>
+                        <p class="disease-latin">Alternaria solani</p>
+
+                        <div class="status-indicators">
+                            <div class="indicator critical">
+                                <span class="label">Aciliyet</span>
+                                <div class="bar">
+                                    <div class="fill" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div class="indicator warning">
+                                <span class="label">Yayılma</span>
+                                <div class="bar">
+                                    <div class="fill" style="width: 60%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="action-section">
+                            <h3>Tedavi Önerileri</h3>
+                            <div class="step-list">
+                                <div class="step">
+                                    <div class="step-num">1</div>
+                                    <div class="step-text">Etkilenen yaprakları steril bir makasla budayın.</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-num">2</div>
+                                    <div class="step-text">Bitkiyi sabah erken saatlerde sulayın, yaprakları ıslatmaktan
+                                        kaçının.</div>
+                                </div>
+                                <div class="step">
+                                    <div class="step-num">3</div>
+                                    <div class="step-text">Organik bakır bazlı bir fungisit uygulayın.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Community Screen (Real) -->
+            <section id="screen-community" class="screen">
+                <div class="screen-header">
+                    <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-arrow-left"></i></button>
+                    <h2>Çiftçi Ağı</h2>
+                </div>
+
+                <!-- Auth/Login Warning -->
+                <div id="auth-warning" class="auth-warning hidden">
+                    <div class="empty-state">
+                        <i class="ph-duotone ph-lock-key"></i>
+                        <h3>Giriş Yapmalısınız</h3>
+                        <p>Topluluğa katılmak ve paylaşım yapmak için lütfen giriş yapın.</p>
+                        <button class="btn-primary" data-target="screen-login">Giriş Yap / Kayıt Ol</button>
+                    </div>
+                </div>
+
+                <!-- Real Feed -->
+                <div id="community-content">
+                    <div class="community-filters">
+                        <button class="filter-chip active">Tümü</button>
+                        <button class="filter-chip">Benim Paylaşımlarım</button>
+                    </div>
+
+                    <div class="post-feed" id="community-feed">
+                        <!-- Loading State -->
+                        <div class="spinner-container">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+
+                    <button class="fab-add" id="btn-share-diagnosis" title="Teşhis Paylaş">
+                        <i class="ph-bold ph-plus"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 8. Login & Register Screen -->
+            <section id="screen-login" class="screen">
+                <div class="screen-header">
+                    <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-arrow-left"></i></button>
+                    <h2>Giriş Yap</h2>
+                </div>
+                <div class="auth-container">
+                    <form id="login-form">
+                        <div class="input-group">
+                            <label>E-posta</label>
+                            <input type="email" id="login-email" required placeholder="ornek@email.com">
+                        </div>
+                        <div class="input-group">
+                            <label>Şifre</label>
+                            <input type="password" id="login-password" required placeholder="******">
+                        </div>
+                        <button type="submit" class="btn-primary">Giriş Yap</button>
+                    </form>
+                    <div class="auth-switch">
+                        Hesabınız yok mu? <a href="#" id="goto-register">Kayıt Ol</a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="screen-register" class="screen">
+                <div class="screen-header">
+                    <button class="btn-back" data-target="screen-login"><i class="ph-bold ph-arrow-left"></i></button>
+                    <h2>Kayıt Ol</h2>
+                </div>
+                <div class="auth-container">
+                    <form id="register-form">
+                        <div class="input-group">
+                            <label>Ad Soyad</label>
+                            <input type="text" id="reg-name" required placeholder="Adınız">
+                        </div>
+                        <div class="input-group">
+                            <label>E-posta</label>
+                            <input type="email" id="reg-email" required placeholder="ornek@email.com">
+                        </div>
+                        <div class="input-group">
+                            <label>Şifre</label>
+                            <input type="password" id="reg-password" required placeholder="******">
+                        </div>
+                        <button type="submit" class="btn-primary">Kayıt Ol</button>
+                    </form>
+                    <div class="auth-switch">
+                        Zaten üye misiniz? <a href="#" id="goto-login">Giriş Yap</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. Verification Pending Screen -->
+            <section id="screen-verify" class="screen">
+                <div class="auth-container">
+                    <div class="verify-icon" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;">
+                        <i class="ph-duotone ph-envelope-open"></i>
+                    </div>
+                    <h2>Son Bir Adım!</h2>
+                    <p style="margin-bottom: 24px;">Girdiğiniz e-posta adresine bir onay linki gönderdik.</p>
+
+                    <div class="verification-box"
+                        style="background: #f0f7f4; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+                        <p style="font-weight: 600; color: var(--primary);" id="verify-email-text">email@adresiniz.com
+                        </p>
+                    </div>
+
+                    <p style="font-size: 0.9rem; margin-bottom: 30px;">Lütfen gelen kutunuzu (ve spam klasörünü) kontrol
+                        edin ve linke tıklayın. Sonra aşağıdaki butona basın.</p>
+
+                    <button id="btn-check-verify" class="btn-primary">
+                        <i class="ph-bold ph-check"></i>
+                        Onayladım, Giriş Yap
+                    </button>
+
+                    <button class="btn-secondary" style="border:none; margin-top:10px;" onclick="location.reload()">
+                        Vazgeç / Çıkış Yap
+                    </button>
+                </div>
+            </section>
+            </section>
+        </main>
+
+        <!-- 6. About Screen -->
+        <section id="screen-about" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" data-target="screen-home"><i class="ph-bold ph-arrow-left"></i></button>
+                <h2>Proje Hakkında</h2>
+            </div>
+            <div class="about-content">
+                <!-- Lang Switcher (Permanent) -->
+                <div class="lang-switcher"
+                    style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #eee;">
+                    <h3>Dil / Language</h3>
+                    <div style="display:flex; gap:12px; margin-top:12px;">
+                        <button class="btn-outline" onclick="changeLanguage('tr')" style="flex:1;">🇹🇷
+                            Türkçe</button>
+                        <button class="btn-outline" onclick="changeLanguage('en')" style="flex:1;">🇬🇧
+                            English</button>
+                    </div>
+                </div>
+
+                <!-- Text Container for Localization -->
+                <div id="about-text-container">
+                    <div class="about-card quote-card">
+                        <i class="ph-duotone ph-plant qt-icon"></i>
+                        <p>Bu proje, tarım zararlılarının tespitini ve onlarla mücadeleyi kolaylaştırmak amacıyla yapay
+                            zeka
+                            tabanlı bir sistem geliştirilmesini kapsamaktadır.</p>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>🌱 Küresel Tarım Ağı</h3>
+                        <p>PlantAI, tarımsal verimliliği artırmak ve ürün kayıplarını en aza indirmek için geliştirilmiş
+                            gelişmiş bir yapay zeka asistanıdır. Google Gemini altyapısı ile güçlendirilmiş modelimiz,
+                            bitki hastalıklarını saniyeler içinde %98 doğrulukla tespit eder.</p>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>🌍 Kolektif Bilgi Gücü</h3>
+                        <p>Sadece bir teşhis aracı değil, aynı zamanda dev bir çiftçi topluluğudur. Dünyanın dört bir
+                            yanından gelen veriler ve uzman görüşleri ile sürekli öğrenen sistemimiz, her geçen gün daha
+                            akıllı hale gelmektedir.</p>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>🎯 Misyonumuz</h3>
+                        <p>Sürdürülebilir tarım için teknolojiyi herkesin cebine sokuyoruz. Hedefimiz, yanlış ilaç
+                            kullanımını önlemek ve toprağımızı korumaktır.</p>
+                    </div>
+                </div>
+
+                <div class="section-block">
+                    <button class="btn-primary" id="btn-goto-support" style="margin-top: 32px;">
+                        <i class="ph-bold ph-star"></i>
+                        Premium'a Geç
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Support / Subscription Screen -->
+        <section id="screen-support" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" data-target="screen-about"><i class="ph-bold ph-arrow-left"></i></button>
+                <h2>Abonelik ve Destek</h2>
+            </div>
+
+            <div class="pricing-container">
+                <!-- Free Tier -->
+                <div class="price-card">
+                    <div class="price-header">
+                        <h3>Çiftçi (Ücretsiz)</h3>
+                        <div class="price-val">₺0<span>/ay</span></div>
+                    </div>
+                    <ul class="features">
+                        <li><i class="ph-fill ph-check-circle"></i> Sınırsız Hastalık Taraması</li>
+                        <li><i class="ph-fill ph-check-circle"></i> Topluluk Erişimi</li>
+                        <li><i class="ph-fill ph-check-circle"></i> Temel Tedavi Önerileri</li>
+                    </ul>
+                    <button class="btn-outline">Mevcut Plan</button>
+                </div>
+
+                <!-- Pro Tier -->
+                <div class="price-card featured">
+                    <div class="badge-featured">Popüler</div>
+                    <div class="price-header">
+                        <h3>Ziraat Pro</h3>
+                        <div class="price-val">₺49<span>/ay</span></div>
+                    </div>
+                    <ul class="features">
+                        <li><i class="ph-fill ph-check-circle"></i> <b>Uzman Ziraat Müh. Desteği</b></li>
+                        <li><i class="ph-fill ph-check-circle"></i> Detaylı Analiz Raporları</li>
+                        <li><i class="ph-fill ph-check-circle"></i> Erken Uyarı Sistemi</li>
+                        <li><i class="ph-fill ph-check-circle"></i> Reklamsız Deneyim</li>
+                    </ul>
+                    <button class="btn-primary-small">Abone Ol</button>
+                </div>
+
+                <!-- Donation -->
+                <div class="donation-section">
+                    <h3>☕ Projeye Destek Olun</h3>
+                    <p>Okul projemizi geliştirmemiz için bize kahve ısmarlayabilirsiniz.</p>
+                    <button class="btn-secondary">Bağış Yap</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Profile Screen -->
+        <section id="screen-profile" class="screen">
+            <div class="profile-header-card">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="current-user-avatar">👨‍🌾</div>
+                    <button class="btn-edit-avatar" id="btn-edit-avatar"><i
+                            class="ph-fill ph-pencil-simple"></i></button>
+                </div>
+                <h2 id="profile-name">Yükleniyor...</h2>
+                <p id="profile-email">...</p>
+
+                <button class="btn-logout" id="btn-logout-profile">
+                    <i class="ph-bold ph-sign-out"></i> Çıkış Yap
+                </button>
+            </div>
+
+            <!-- Avatar Edit Modal (Hidden by default) -->
+            <div id="modal-avatar-selector" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Profil Fotoğrafı Seç</h3>
+                        <button class="btn-close-modal" id="btn-close-avatar-modal"><i
+                                class="ph-bold ph-x"></i></button>
+                    </div>
+                    <div class="avatar-options">
+                        <p>Kamera veya Galeri</p>
+                        <div class="avatar-actions">
+                            <button class="btn-outline" id="btn-upload-avatar">
+                                <i class="ph-bold ph-upload-simple"></i> Fotoğraf Yükle
+                            </button>
+                            <input type="file" id="avatar-input" accept="image/*" hidden>
+                        </div>
+                        <p>Veya Bir İkon Seçin</p>
+                        <div class="avatar-grid">
+                            <div class="avatar-preset">👨‍🌾</div>
+                            <div class="avatar-preset">👩‍🌾</div>
+                            <div class="avatar-preset">🚜</div>
+                            <div class="avatar-preset">🌻</div>
+                            <div class="avatar-preset">🌽</div>
+                            <div class="avatar-preset">🍅</div>
+                            <div class="avatar-preset">🍆</div>
+                            <div class="avatar-preset">🥕</div>
+                        </div>
+                        <button class="btn-primary" id="btn-save-avatar">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <h3>Paylaşımlarım</h3>
+            </div>
+
+            <div class="community-feed" id="my-posts-feed">
+                <!-- JS populates this -->
+            </div>
+        </section>
+
+        <!-- 9. Public Profile Screen -->
+        <section id="screen-public-profile" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" data-target="screen-community"><i class="ph-bold ph-arrow-left"></i></button>
+                <h2>Çiftçi Profili</h2>
+            </div>
+            <div class="profile-header-card">
+                <div class="profile-avatar-wrapper">
+                    <div class="profile-avatar" id="public-profile-avatar">👤</div>
+                </div>
+                <h2 id="public-profile-name">Kullanıcı</h2>
+                <button class="btn-primary" id="btn-send-message">
+                    <i class="ph-bold ph-chat-circle-text"></i> Mesaj Gönder
+                </button>
+            </div>
+            <div class="section-title">
+                <h3>Paylaşımları</h3>
+            </div>
+            <div class="community-feed" id="public-posts-feed"></div>
+        </section>
+
+        <!-- 10. Inbox Screen -->
+        <section id="screen-inbox" class="screen">
+            <div class="screen-header">
+                <h2>Mesajlar</h2>
+            </div>
+            <div class="inbox-list" id="inbox-list">
+                <!-- Populated by JS -->
+                <div class="empty-state">
+                    <i class="ph-duotone ph-chat-circle-dots"></i>
+                    <p>Henüz mesajınız yok.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11. Chat Screen -->
+        <section id="screen-chat" class="screen">
+            <div class="chat-header">
+                <button class="btn-back" data-target="screen-inbox"><i class="ph-bold ph-arrow-left"></i></button>
+                <div class="chat-user-info">
+                    <div class="avatar-small">👤</div>
+                    <h3 id="chat-header-name">Kullanıcı</h3>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Bubbles go here -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Mesaj yazın...">
+                <button id="btn-send-chat"><i class="ph-fill ph-paper-plane-right"></i></button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Bottom Nav for Mobile convenience (Simulated inside main container for this demo) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-target="screen-home">
+            <i class="ph-fill ph-house"></i>
+            <span>Ana Sayfa</span>
+        </button>
+        <button class="nav-item" data-target="screen-community">
+            <i class="ph-fill ph-users-three"></i>
+            <span>Topluluk</span>
+        </button>
+        <button class="nav-item-scan" id="btn-nav-scan">
+            <div class="scan-btn-inner">
+                <i class="ph-bold ph-camera"></i>
+            </div>
+        </button>
+        <button class="nav-item" data-target="screen-inbox">
+            <i class="ph-fill ph-chat-circle-dots"></i>
+            <span>Mesajlar</span>
+        </button>
+        <button class="nav-item" data-target="screen-profile">
+            <i class="ph-fill ph-user"></i>
+            <span>Profil</span>
+        </button>
+    </nav>
+
+    <!-- Firebase SDK (Compat - non-module) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Main App Bundle -->
+    <script src="app.js"></script>
+</body>
+
+</html>

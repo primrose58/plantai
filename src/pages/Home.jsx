@@ -1,0 +1,336 @@
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine } from 'lucide-react';
+import { analyzePlantImage } from '../services/gemini';
+import { saveAnalysis } from '../services/analysisService'; // Import Service
+import DiagnosisResult from '../components/Plant/DiagnosisResult';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+export default function Home() {
+    const { t, i18n } = useTranslation();
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const fileInputRef = useRef(null);
+
+    // Wizard State: 'landing' | 'input_type' | 'capture_main' | 'analyzing' | 'result' | 'capture_macro'
+    const [step, setStep] = useState('landing');
+    const [plantType, setPlantType] = useState('');
+    const [images, setImages] = useState({ main: null, macro: null });
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const [error, setError] = useState('');
+
+    // Restore state from navigation (e.g. after login)
+    useEffect(() => {
+        if (location.state?.restoredResult) {
+            setResult(location.state.restoredResult);
+            // If we have a result, assume we are at the result step
+            setStep('result');
+
+            // Auto-save logic after login redirect (now with images!)
+            if (currentUser && location.state.restoredImages) {
+                const imagesData = location.state.restoredImages;
+                const pType = location.state.restoredPlantType;
+                // Restore local state for viewing
+                setImages(imagesData);
+                setPlantType(pType);
+
+                // Save to DB
+                saveAnalysis(currentUser.uid, pType, imagesData, location.state.restoredResult)
+                    .then(() => console.log("Restored analysis saved!"))
+                    .catch(err => console.error("Auto-save failed on restore:", err));
+            }
+
+            // Clean up state to prevent loops
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, currentUser]);
+
+    const handleNextStep = () => {
+        if (step === 'input_type') setStep('capture_main');
+    };
+
+    const handleSkipType = () => {
+        setPlantType('');
+        setStep('capture_main');
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result;
+
+            if (step === 'capture_main') {
+                setImages(prev => ({ ...prev, main: base64String }));
+                await performDiagnosis(base64String, false);
+            } else if (step === 'capture_macro') {
+                setImages(prev => ({ ...prev, macro: base64String }));
+                // Analyze with BOTH images
+                await performDiagnosis([images.main, base64String], true);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const performDiagnosis = async (imageData, isMacroRetry) => {
+        setLoading(true);
+        setError('');
+        setStep('analyzing');
+
+        try {
+            const analysis = await analyzePlantImage(imageData, i18n.language, plantType);
+
+            if (analysis.status === 'needs_details') {
+                setError(t('need_macro_photo')); // Show as info/warning, not hard error
+                setStep('capture_macro');
+            } else if (analysis.status === 'error') {
+                throw new Error(analysis.error);
+            } else {
+                setResult(analysis);
+                setStep('result');
+
+                // Auto-save if logged in
+                if (currentUser) {
+                    saveAnalysis(currentUser.uid, plantType, { main: imageData, macro: isMacroRetry ? imageData[1] : null }, analysis)
+                        .catch(err => console.error("Auto-save failed:", err));
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            // Use specific error message if available, otherwise generic
+            const msg = err.message || t('error_diagnosis_failed') || 'Diagnosis failed.';
+            setError(msg);
+            // Go back to main capture if it failed completely
+            setStep('capture_main');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLoginRedirect = () => {
+        navigate('/login', {
+            state: {
+                pendingResult: result,
+                pendingImages: images, // Pass images
+                pendingPlantType: plantType, // Pass plant type
+                returnUrl: '/'
+            }
+        });
+    };
+
+    const resetScan = () => {
+        setImages({ main: null, macro: null });
+        setPlantType('');
+        setResult(null);
+        setError('');
+        setStep('input_type');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    // --- RENDER HELPERS ---
+
+    // --- LANDING PAGE COMPONENT ---
+    const renderLanding = () => (
+        <div className="flex flex-col items-center justify-center py-10 px-4 animate-fade-in w-full">
+            <div className="text-center max-w-3xl mb-12">
+                <span className="inline-block px-4 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold text-sm mb-4">
+                    {t('hero_badge')}
+                </span>
+                <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: t('hero_title') }} />
+                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                    {t('hero_desc')}
+                </p>
+                <button
+                    onClick={() => setStep('input_type')}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all text-lg flex items-center justify-center gap-3 mx-auto"
+                >
+                    <Sprout className="w-6 h-6" />
+                    {t('start_diagnosis')}
+                </button>
+            </div>
+
+            {/* Steps Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                {[
+                    { title: t('step_1_title'), desc: t('step_1_desc'), icon: ScanLine, color: 'bg-blue-100 text-blue-600' },
+                    { title: t('step_2_title'), desc: t('step_2_desc'), icon: Camera, color: 'bg-purple-100 text-purple-600' },
+                    { title: t('step_3_title'), desc: t('step_3_desc'), icon: Sprout, color: 'bg-orange-100 text-orange-600' },
+                ].map((s, i) => {
+                    const Icon = s.icon;
+                    return (
+                        <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:scale-105 transition-transform">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${s.color} dark:bg-opacity-20`}>
+                                <Icon className="w-8 h-8" />
+                            </div>
+                            <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">{s.title}</h3>
+                            <p className="text-gray-500 dark:text-gray-400">{s.desc}</p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    const renderInputType = () => (
+        <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
+            <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full mb-6 text-green-600 dark:text-green-400">
+                <Sprout className="w-12 h-12" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-center">{t('scan_step_1')}</h2>
+            <p className="text-gray-500 mb-6 text-center">{t('what_plant_question')}</p>
+
+            <input
+                type="text"
+                value={plantType}
+                onChange={(e) => setPlantType(e.target.value)}
+                placeholder={t('what_plant_placeholder')}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 mb-4 focus:ring-2 focus:ring-green-500 outline-none"
+            />
+
+            <button
+                onClick={handleNextStep}
+                disabled={!plantType.trim()}
+                className="w-full bg-green-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+                {t('next_step')} <ArrowRight className="w-4 h-4" />
+            </button>
+            <button onClick={handleSkipType} className="mt-4 text-gray-500 text-sm hover:underline">
+                {t('skip')}
+            </button>
+        </div>
+    );
+
+    const renderCapture = (isMacro) => (
+        <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-6 text-blue-600 dark:text-blue-400">
+                {isMacro ? <ScanLine className="w-12 h-12" /> : <Camera className="w-12 h-12" />}
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-center">
+                {isMacro ? t('take_macro_photo') : t('scan_step_2')}
+            </h2>
+            {/* Show error context if we are in macro mode or had an error */}
+            {error && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <p>{error}</p>
+                </div>
+            )}
+            {!error && isMacro && (
+                <p className="text-gray-500 mb-6 text-center">{t('need_macro_photo')}</p>
+            )}
+
+            <button
+                onClick={triggerFileInput}
+                className="group bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-10 rounded-2xl shadow-xl flex items-center justify-center gap-4 text-xl transition-all w-full"
+            >
+                <Camera className="w-8 h-8" />
+                {isMacro ? t('take_macro_photo') : t('take_photo')}
+            </button>
+        </div>
+    );
+
+    const renderAnalyzing = () => (
+        <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+            <div className="relative w-64 h-64 mb-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-green-500">
+                {images.main && <img src={images.main} alt="Analyzing" className="w-full h-full object-cover opacity-50" />}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Loader2 className="w-16 h-16 text-white animate-spin" />
+                </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white animate-bounce">
+                {t('analyzing')}
+            </h2>
+            <p className="text-gray-500 mt-2">AI Botanist is thinking...</p>
+        </div>
+    );
+
+    const renderResult = () => (
+        <div className="w-full flex gap-8 flex-col md:flex-row items-start animate-fade-in relative">
+            {/* Image Side */}
+            <div className="w-full md:w-1/3 flex-shrink-0 z-0">
+                <div className="sticky top-4">
+                    <img src={images.main} alt="Analyzed Plant" className="w-full rounded-2xl shadow-lg border-2 border-green-100 dark:border-green-900" />
+                    {images.macro && (
+                        <img src={images.macro} alt="Macro Detail" className="w-24 h-24 rounded-lg shadow border border-white absolute bottom-4 right-4" />
+                    )}
+                    <button
+                        onClick={resetScan}
+                        className="mt-4 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-3 px-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all"
+                    >
+                        {t('take_photo')} (Reset)
+                    </button>
+                </div>
+            </div>
+
+            {/* Result Side */}
+            <div className="w-full md:w-2/3 relative">
+                {/* BLUR OVERLAY LOGIC */}
+                <div className={`transition-all duration-500 ${!currentUser ? 'filter blur-md select-none pointer-events-none opacity-50' : ''}`}>
+                    <DiagnosisResult result={result} onReset={resetScan} />
+                </div>
+
+                {!currentUser && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 h-full min-h-[400px]">
+                        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl text-center max-w-sm border border-white/20">
+                            <div className="bg-green-100 dark:bg-green-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ScanLine className="w-8 h-8 text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('login_to_view')}</h3>
+                            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('login_blur_text')}</p>
+                            <button
+                                onClick={handleLoginRedirect}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/25"
+                            >
+                                {t('login')}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-full max-w-5xl mx-auto w-full p-4">
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+            />
+
+            {/* Conditional Rendering */}
+            {step === 'landing' ? renderLanding() : (
+                <>
+                    {/* Tiny Back Button for Wizard */}
+                    {step !== 'result' && (
+                        <button
+                            onClick={() => setStep('landing')}
+                            className="self-start mb-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 flex items-center gap-2"
+                        >
+                            &larr; {t('back')}
+                        </button>
+                    )}
+
+                    {step === 'input_type' && renderInputType()}
+                    {step === 'capture_main' && renderCapture(false)}
+                    {step === 'capture_macro' && renderCapture(true)}
+                    {step === 'analyzing' && renderAnalyzing()}
+                    {step === 'result' && renderResult()}
+                </>
+            )}
+        </div>
+    );
+}

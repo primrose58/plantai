@@ -1,28 +1,16 @@
-# Plant AI - Bitki Sağlığı Uygulaması
+# React + Vite
 
-Bu proje, bitki hastalıklarını tespit eden bir yapay zeka arayüzü simülasyonudur.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Nasıl Çalıştırılır?
+Currently, two official plugins are available:
 
-Bu proje için herhangi bir kuruluma (npm, node vb.) ihtiyaç yoktur.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-1. `index.html` dosyasını çift tıklayarak tarayıcınızda açın.
-2. "Hemen Tara" butonuna basın.
-3. Bir bitki/yaprak fotoğrafı yükleyin (veya sürükleyip bırakın).
-4. Yapay zeka simülasyonunu izleyin ve sonuçları görün.
+## React Compiler
 
-## 🌍 Canlı Yayınlama (GitHub Pages)
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Bu projeyi GitHub'a yüklediyseniz, herkesin erişebileceği (ve telefonda uygulama gibi çalışacak) bir link oluşturmak çok kolaydır:
+## Expanding the ESLint configuration
 
-1.  GitHub reponuzun **Settings** (Ayarlar) sekmesine gidin.
-2.  Sol menüden **Pages** seçeneğine tıklayın.
-3.  **Build and deployment** altında, **Branch** kısmını `main` (veya `master`) olarak seçin ve **Save** butonuna basın.
-4.  Birkaç dakika bekleyin. Sayfanın üst kısmında size `https://kullaniciadiniz.github.io/repo-adiniz/` şeklinde bir link verecektir.
-
-Bu linki telefonunuzda açıp tarayıcı menüsünden "Ana Ekrana Ekle" derseniz, tıpkı bir uygulama gibi çalışır.
-
-## Teknolojiler
-- HTML5
-- CSS3 (Glassmorphism, CSS Variables, Animations)
-- Modern Vanilla JavaScript
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
