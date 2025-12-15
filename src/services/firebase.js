@@ -13,6 +13,8 @@ const firebaseConfig = {
     measurementId: "G-LSJ7Q09VS0"
 };
 
+console.log("Initializing Firebase with project:", firebaseConfig.projectId);
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);

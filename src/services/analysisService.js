@@ -96,15 +96,22 @@ export async function createPost(userId, postData) {
         let imageUrl = null;
         if (postData.image) {
             const storageRef = ref(storage, `posts/${userId}/${Date.now()}.jpg`);
+            console.log("Starting upload to:", storageRef.fullPath);
+
             // Handle both base64 and blob/file
             if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
                 await uploadString(storageRef, postData.image, 'data_url');
             } else {
-                await uploadBytes(storageRef, postData.image);
+                // Add metadata to ensure content type is set (helps with some storage issues)
+                const metadata = { contentType: postData.image.type || 'image/jpeg' };
+                await uploadBytes(storageRef, postData.image, metadata);
             }
+            console.log("Upload done, getting URL...");
             imageUrl = await getDownloadURL(storageRef);
+            console.log("Got URL:", imageUrl);
         }
 
+        console.log("Adding doc to Firestore...");
         await addDoc(collection(db, 'posts'), {
             userId,
             authorName: postData.authorName || "Gardener",
