@@ -26,6 +26,7 @@ export default function Layout() {
     const { t, i18n } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const toggleLang = () => {
         i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en');
