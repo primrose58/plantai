@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine, Save, CheckCircle } from 'lucide-react';
 import { analyzePlantImage } from '../services/gemini';
 import { saveAnalysis } from '../services/analysisService'; // Import Service
 import DiagnosisResult from '../components/Plant/DiagnosisResult';
@@ -22,6 +22,7 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const [isSaved, setIsSaved] = useState(false); // New state for manual save
 
     // Restore state from navigation (e.g. after login)
     useEffect(() => {
@@ -30,25 +31,14 @@ export default function Home() {
             // If we have a result, assume we are at the result step
             setStep('result');
 
-            // Auto-save logic after login redirect (now with images!)
-            // Auto-save logic after login redirect (now with images!)
-            if (currentUser && location.state?.restoredImages) {
-                const imagesData = location.state.restoredImages;
-                const pType = location.state.restoredPlantType;
-                // Restore local state for viewing
-                setImages(imagesData);
-                setPlantType(pType);
-
-                // Save to DB
-                saveAnalysis(currentUser.uid, pType, imagesData, location.state.restoredResult)
-                    .then(() => console.log("Restored analysis saved!"))
-                    .catch(err => console.error("Auto-save failed on restore:", err));
+            // Restore images and plant type if available
+            if (location.state?.restoredImages) {
+                setImages(location.state.restoredImages);
+                setPlantType(location.state.restoredPlantType || '');
             }
-
-            // Clean up state to prevent loops
-            // window.history.replaceState({}, document.title); // Commented out to prevent aggressive clearing if re-renders happen
+            // NO AUTO SAVE HERE ANYMORE
         }
-    }, [location.state, currentUser]);
+    }, [location.state]);
 
     const handleNextStep = () => {
         if (step === 'input_type') setStep('capture_main');
@@ -87,6 +77,7 @@ export default function Home() {
         setLoading(true);
         setError('');
         setStep('analyzing');
+        setIsSaved(false); // Reset save state on new diagnosis
 
         try {
             const analysis = await analyzePlantImage(imageData, i18n.language, plantType);
@@ -99,12 +90,7 @@ export default function Home() {
             } else {
                 setResult(analysis);
                 setStep('result');
-
-                // Auto-save if logged in
-                if (currentUser) {
-                    saveAnalysis(currentUser.uid, plantType, { main: imageData, macro: isMacroRetry ? imageData[1] : null }, analysis)
-                        .catch(err => console.error("Auto-save failed:", err));
-                }
+                // NO AUTO SAVE HERE ANYMORE
             }
         } catch (err) {
             console.error(err);
@@ -115,6 +101,20 @@ export default function Home() {
             setStep('capture_main');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveResult = async () => {
+        if (!currentUser) return; // Should be handled by UI state, but safety check
+        if (isSaved) return;
+
+        try {
+            await saveAnalysis(currentUser.uid, plantType, images, result);
+            setIsSaved(true);
+            alert(t('save_success') || "Analysis saved successfully!");
+        } catch (error) {
+            console.error("Manual save failed:", error);
+            alert("Failed to save analysis.");
         }
     };
 
@@ -134,6 +134,7 @@ export default function Home() {
         setPlantType('');
         setResult(null);
         setError('');
+        setIsSaved(false);
         setStep('input_type');
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -264,6 +265,22 @@ export default function Home() {
                     {images.macro && (
                         <img src={images.macro} alt="Macro Detail" className="w-24 h-24 rounded-lg shadow border border-white absolute bottom-4 right-4" />
                     )}
+
+                    {/* Manual Save Button - Only show if logged in, otherwise logic handles hiding/login prompt */}
+                    {currentUser && (
+                        <button
+                            onClick={handleSaveResult}
+                            disabled={isSaved}
+                            className={`mt-4 w-full font-bold py-3 px-6 rounded-xl border shadow-sm transition-all flex items-center justify-center gap-2 ${isSaved
+                                    ? 'bg-green-100 text-green-700 border-green-200 cursor-default'
+                                    : 'bg-green-600 hover:bg-green-700 text-white border-transparent'
+                                }`}
+                        >
+                            {isSaved ? <CheckCircle className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+                            {isSaved ? (t('saved') || 'Saved') : (t('save_analysis') || 'Save Analysis')}
+                        </button>
+                    )}
+
                     <button
                         onClick={resetScan}
                         className="mt-4 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-3 px-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all"
