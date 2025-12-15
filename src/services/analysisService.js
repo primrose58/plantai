@@ -134,7 +134,7 @@ export async function createPost(userId, postData, onProgress) {
         await addDoc(collection(db, 'posts'), {
             userId,
             authorName: postData.authorName || "Gardener",
-            title: postData.title || "Community Question",
+            title: postData.title || "", // No default title
             content: postData.content,
             image: imageUrl,
             plantType: postData.plantType || 'Unknown',
