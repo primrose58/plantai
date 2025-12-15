@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence, catchAllErrors } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -13,12 +13,26 @@ const firebaseConfig = {
     measurementId: "G-LSJ7Q09VS0"
 };
 
-console.log("Initializing Firebase with project:", firebaseConfig.projectId);
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
+
+// Enable offline persistence
+// This helps with unstable connections and "slow" feel
+try {
+    enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code == 'failed-precondition') {
+            // Multiple tabs open, persistence can only be enabled in one tab at a a time.
+            console.warn("Firebase persistence failed: multiple tabs");
+        } else if (err.code == 'unimplemented') {
+            // The current browser does not support all of the features required to enable persistence
+            console.warn("Firebase persistence not supported");
+        }
+    });
+} catch (e) {
+    // Ignore if already initialized
+}
 
 export { auth, db, storage, googleProvider };
