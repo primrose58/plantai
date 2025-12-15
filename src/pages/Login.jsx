@@ -18,7 +18,19 @@ export default function Login() {
 
     // Auto-redirect if already logged in
     if (currentUser) {
-        navigate(location.state?.returnUrl || '/');
+        // CRITICAL: Ensure we pass back the pending state if it exists, otherwise data is lost!
+        if (location.state?.returnUrl && location.state?.pendingResult) {
+            navigate(location.state.returnUrl, {
+                replace: true,
+                state: {
+                    restoredResult: location.state.pendingResult,
+                    restoredImages: location.state.pendingImages,
+                    restoredPlantType: location.state.pendingPlantType
+                }
+            });
+        } else {
+            navigate(location.state?.returnUrl || '/');
+        }
         return null;
     }
 

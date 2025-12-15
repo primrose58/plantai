@@ -256,7 +256,7 @@ export default function Home() {
     );
 
     const renderResult = () => (
-        <div className="w-full flex gap-8 flex-col md:flex-row items-start animate-fade-in relative">
+        <div className="w-full flex gap-8 flex-col md:flex-row items-start animate-fade-in relative justify-center">
             {/* Image Side */}
             <div className="w-full md:w-1/3 flex-shrink-0 z-0">
                 <div className="sticky top-4">
@@ -302,7 +302,7 @@ export default function Home() {
     );
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-full w-full max-w-7xl mx-auto p-4 lg:p-8">
+        <div className={`flex flex-col w-full max-w-7xl mx-auto p-4 lg:p-8 ${step === 'result' ? 'items-start' : 'items-center justify-center min-h-full'}`}>
             <input
                 type="file"
                 accept="image/*"
