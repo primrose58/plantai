@@ -106,35 +106,43 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         setUploadProgress(0);
 
         try {
-            // 1. Safe Compression
-            let finalImage = image;
+            // 1. Aggressive Compression for Firestore Base64 (Target < 300KB)
+            let base64Image = null;
             if (image) {
                 try {
-                    console.log("Attempting compression...");
+                    console.log("Compressing for Base64 storage...");
                     const options = {
-                        maxSizeMB: 1,
-                        maxWidthOrHeight: 1920,
-                        useWebWorker: true,
-                        maxIteration: 10 // Prevent infinite loops
+                        maxSizeMB: 0.3, // Very small to fit in document
+                        maxWidthOrHeight: 800,
+                        useWebWorker: true
                     };
-                    finalImage = await imageCompression(image, options);
-                    console.log("Compression success:", finalImage.size / 1024 / 1024, "MB");
+                    const compressedFile = await imageCompression(image, options);
+
+                    // Convert to Base64
+                    base64Image = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(compressedFile);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                    });
+                    console.log("Base64 string ready, length:", base64Image.length);
                 } catch (cErr) {
-                    console.error("Compression failed, using original file:", cErr);
-                    // Fallback to original image
-                    finalImage = image;
+                    console.error("Compression failed:", cErr);
+                    // Skip image if compression fails to avoid breaking DB limit
+                    setError("Image is too large and could not be compressed.");
+                    setLoading(false);
+                    return;
                 }
             }
 
-            // 2. Create Post
+            // 2. Create Post (Pass Base64 string directly)
             await createPost(currentUser.uid, {
                 authorName: currentUser.displayName || 'Gardener',
                 content,
                 plantType: plantType || 'other',
-                image: finalImage,
-            }, (progress) => {
-                setUploadProgress(progress);
+                image: base64Image, // This is now a string, not a File
             });
+
             onPostCreated();
             onClose();
         } catch (err) {

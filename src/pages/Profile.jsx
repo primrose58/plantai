@@ -26,48 +26,45 @@ export default function Profile() {
         setMessage(t('saving') || 'Uploading...');
 
         try {
-            // Compress Image
-            let uploadFile = file;
+            // 1. Compress Image (Very aggressive for Avatar -> Base64)
+            // Target: < 50KB for efficiency
+            let base64Avatar = '';
             try {
                 const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1024,
+                    maxSizeMB: 0.05,
+                    maxWidthOrHeight: 300,
                     useWebWorker: true
                 };
-                uploadFile = await imageCompression(file, options);
+                const compressedFile = await imageCompression(file, options);
+
+                base64Avatar = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedFile);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+
             } catch (cErr) {
-                console.warn("Avatar compression failed, using original:", cErr);
-                // Fallback to original
+                console.warn("Avatar compression failed:", cErr);
+                setMessage("Image too large.");
+                setLoading(false);
+                return;
             }
 
-            // 1. Create unique reference
-            const timestamp = Date.now();
-            const storageRef = ref(storage, `avatars/${currentUser.uid}_${timestamp}`);
+            // 2. Update Local State
+            setAvatar(base64Avatar);
 
-            // 2. Upload file (Resumable)
-            const uploadTask = uploadBytesResumable(storageRef, uploadFile);
+            // 3. Update Firebase Profile (PhotoURL can hold Base64 strings!)
+            await updateProfile(auth.currentUser, { photoURL: base64Avatar });
 
-            await new Promise((resolve, reject) => {
-                uploadTask.on('state_changed',
-                    null,
-                    (error) => reject(error),
-                    () => resolve()
-                );
-            });
-
-            // 3. Get URL
-            const url = await getDownloadURL(storageRef);
-
-            // 4. Update local state
-            setAvatar(url);
-
-            // 5. Update Firebase Profile
-            await updateProfile(auth.currentUser, { photoURL: url });
+            // 4. Sync with existing posts
+            // We need to re-import this function or move it if not available
+            // Note: updateProfile is enough for new posts, but for old posts we rely on the separate sync action.
 
             setMessage(t('profile_updated') || 'Profile updated!');
         } catch (err) {
             console.error(err);
-            setMessage('Error uploading avatar: ' + err.message);
+            setMessage('Error updating avatar: ' + err.message);
         } finally {
             setLoading(false);
         }
