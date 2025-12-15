@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Image as ImageIcon, Loader2, Send, Wand2 } from 'lucide-react';
+import { X, Image as ImageIcon, Loader2, Send, Wand2, Search, ChevronDown } from 'lucide-react';
 import { createPost } from '../../services/analysisService';
 import { useAuth } from '../../contexts/AuthContext';
 import { PLANT_TYPES, DISEASE_TYPES } from '../../constants/plantData';
@@ -13,7 +13,11 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
     const fileInputRef = useRef(null);
 
     const [content, setContent] = useState('');
-    const [plantType, setPlantType] = useState('other');
+    const [plantType, setPlantType] = useState('');
+    const [plantSearch, setPlantSearch] = useState('');
+    const [showPlantDropdown, setShowPlantDropdown] = useState(false);
+
+    // Disease is optional/secondary for now, kept simpler
     const [diseaseType, setDiseaseType] = useState('none');
 
     const [image, setImage] = useState(null);
@@ -25,6 +29,15 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
 
     const [uploadProgress, setUploadProgress] = useState(0);
 
+    // Initial load: Set search text if type is already set (e.g. from props)
+    useEffect(() => {
+        if (plantType) {
+            const p = PLANT_TYPES.find(pt => pt.value === plantType);
+            if (p) setPlantSearch(t(p.labelKey));
+        }
+    }, [plantType, t]);
+
+
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -32,21 +45,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             const reader = new FileReader();
             reader.onloadend = () => setImagePreview(reader.result);
             reader.readAsDataURL(file);
-
-            // Compress immediately
-            try {
-                const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1920,
-                    useWebWorker: true,
-                    initialQuality: 0.8
-                };
-                const compressedFile = await imageCompression(file, options);
-                setImage(compressedFile);
-            } catch (err) {
-                console.error("Compression error:", err);
-                setImage(file); // Fallback to original
-            }
+            setImage(file); // Set original first to be safe
         }
     };
 
@@ -54,29 +53,46 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         if (!image) return;
         setDetecting(true);
         try {
-            // Convert blob to base64 for API
+            // Compress for analysis to save bandwidth
+            let analysisImage = image;
+            try {
+                const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true };
+                analysisImage = await imageCompression(image, options);
+            } catch (err) {
+                console.warn("Compression failed for analysis, using original", err);
+            }
+
             const reader = new FileReader();
-            reader.readAsDataURL(image);
+            reader.readAsDataURL(analysisImage);
             reader.onloadend = async () => {
                 const base64data = reader.result;
-                const result = await analyzePlantImage(base64data, 'en'); // Use EN for internal consistency mapping
+                const result = await analyzePlantImage(base64data, 'en');
 
-                // Simple heuristic mapping based on result
-                // This is a basic implementation, ideal world we ask AI for specific JSON keys
                 const text = (result.plant_name + " " + result.disease_name).toLowerCase();
 
-                const foundPlant = PLANT_TYPES.find(p => text.includes(p.value));
-                if (foundPlant) setPlantType(foundPlant.value);
+                // Find best match
+                let bestMatch = null;
+                for (const p of PLANT_TYPES) {
+                    if (text.includes(p.value)) {
+                        bestMatch = p;
+                        break;
+                    }
+                }
 
-                const foundDisease = DISEASE_TYPES.find(d => text.includes(d.value) || result.disease_name.toLowerCase().includes(d.value));
-                if (foundDisease) setDiseaseType(foundDisease.value);
+                if (bestMatch) {
+                    setPlantType(bestMatch.value);
+                    setPlantSearch(t(bestMatch.labelKey)); // Update UI
+                    setSuccessMsg(`${t('auto_detect')}: ${t(bestMatch.labelKey)}`);
+                } else {
+                    setSuccessMsg("Plant detected but not in our list yet.");
+                }
 
-                setDetecting(false);
-                setSuccessMsg("Detected: " + result.plant_name);
                 setTimeout(() => setSuccessMsg(''), 3000);
+                setDetecting(false);
             }
         } catch (err) {
             console.error("Auto detect failed", err);
+            setError(t('error_diagnosis_failed'));
             setDetecting(false);
         }
     };
@@ -90,13 +106,32 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         setUploadProgress(0);
 
         try {
+            // 1. Safe Compression
+            let finalImage = image;
+            if (image) {
+                try {
+                    console.log("Attempting compression...");
+                    const options = {
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1920,
+                        useWebWorker: true,
+                        maxIteration: 10 // Prevent infinite loops
+                    };
+                    finalImage = await imageCompression(image, options);
+                    console.log("Compression success:", finalImage.size / 1024 / 1024, "MB");
+                } catch (cErr) {
+                    console.error("Compression failed, using original file:", cErr);
+                    // Fallback to original image
+                    finalImage = image;
+                }
+            }
+
+            // 2. Create Post
             await createPost(currentUser.uid, {
                 authorName: currentUser.displayName || 'Gardener',
                 content,
-                plantType: plantType === 'other' ? '' : plantType, // Store raw value
-                title: '', // Deprecated
-                image: image,
-                // Add extended metadata if needed in future
+                plantType: plantType || 'other',
+                image: finalImage,
             }, (progress) => {
                 setUploadProgress(progress);
             });
@@ -110,27 +145,23 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         }
     };
 
+    const filteredPlants = PLANT_TYPES.filter(p =>
+        t(p.labelKey).toLowerCase().includes(plantSearch.toLowerCase())
+    );
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{t('community')}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center shrink-0">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{t('ask_question')}</h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
-                <div className="p-6">
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm">
-                            {error}
-                        </div>
-                    )}
-                    {successMsg && (
-                        <div className="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded-lg text-sm">
-                            {successMsg}
-                        </div>
-                    )}
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                    {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
+                    {successMsg && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">{successMsg}</div>}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <textarea
@@ -141,21 +172,51 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                             required
                         />
 
-                        <div className="grid grid-cols-2 gap-4">
-                            {/* Plant Type Dropdown */}
-                            <select
-                                value={plantType}
-                                onChange={(e) => setPlantType(e.target.value)}
-                                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none"
-                            >
-                                <option value="" disabled>Select Plant</option>
-                                {PLANT_TYPES.map(p => (
-                                    <option key={p.value} value={p.value}>{t(p.labelKey)}</option>
-                                ))}
-                            </select>
+                        {/* Searchable Plant Selector */}
+                        <div className="relative">
+                            <label className="block text-xs font-semibold text-gray-500 mb-1 ml-1 uppercase">{t('plant_diagnosis')}</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                                    placeholder={t('select_plant')}
+                                    value={plantSearch}
+                                    onChange={(e) => {
+                                        setPlantSearch(e.target.value);
+                                        setShowPlantDropdown(true);
+                                        if (e.target.value === '') setPlantType('');
+                                    }}
+                                    onFocus={() => setShowPlantDropdown(true)}
+                                />
+                                <ChevronDown className="absolute right-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+                            </div>
 
-                            {/* Disease Type Dropdown - Optional Metadata */}
-                            {/* Integrating disease info into content or separate field - for now simplified ui */}
+                            {showPlantDropdown && (
+                                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                                    {filteredPlants.length > 0 ? (
+                                        filteredPlants.map(p => (
+                                            <div
+                                                key={p.value}
+                                                className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-200"
+                                                onClick={() => {
+                                                    setPlantType(p.value);
+                                                    setPlantSearch(t(p.labelKey));
+                                                    setShowPlantDropdown(false);
+                                                }}
+                                            >
+                                                {t(p.labelKey)}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-2 text-sm text-gray-400">No Match</div>
+                                    )}
+                                </div>
+                            )}
+                            {/* Overlay to close dropdown when clicking outside */}
+                            {showPlantDropdown && (
+                                <div className="fixed inset-0 z-0" onClick={() => setShowPlantDropdown(false)}></div>
+                            )}
                         </div>
 
                         {/* Image Preview */}
@@ -171,12 +232,11 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                                     <X className="w-4 h-4" />
                                 </button>
 
-                                {/* AI Auto Detect Button */}
                                 <button
                                     type="button"
                                     onClick={handleAutoDetect}
                                     disabled={detecting}
-                                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 backdrop-blur-sm"
+                                    className="absolute bottom-2 right-2 px-3 py-1.5 bg-blue-600/90 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 backdrop-blur-sm shadow-lg transition-transform hover:scale-105"
                                 >
                                     {detecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                                     {detecting ? t('detecting') : t('auto_detect')}
@@ -184,10 +244,10 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                             </div>
                         )}
 
-                        {/* Progress Bar */}
+                        {/* Progress */}
                         {loading && uploadProgress > 0 && (
                             <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                <div className="bg-green-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                                <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                                 <p className="text-xs text-center mt-1 text-gray-500">{Math.round(uploadProgress)}%</p>
                             </div>
                         )}
@@ -213,7 +273,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                             <button
                                 type="submit"
                                 disabled={loading || !content.trim()}
-                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl active:scale-95"
                             >
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                 {loading ? '...' : t('ask_question')}
