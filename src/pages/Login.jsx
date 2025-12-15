@@ -1,20 +1,25 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sprout, ArrowRight } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [verificationNeeded, setVerificationNeeded] = useState(false); // New State
+    const [resendLoading, setResendLoading] = useState(false); // New State
+
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
-    const { currentUser } = useAuth(); // Access currentUser
+    const { currentUser } = useAuth();
+    const { addToast } = useToast();
 
     // Auto-redirect if already logged in AND verified
     if (currentUser?.emailVerified) {
@@ -34,18 +39,42 @@ export default function Login() {
         return null;
     }
 
+    const handleResendVerification = async () => {
+        setResendLoading(true);
+        try {
+            // Need to sign in temporarily to send the email
+            const cred = await signInWithEmailAndPassword(auth, email, password);
+            await sendEmailVerification(cred.user);
+            await auth.signOut();
+
+            addToast(t('verification_sent') || "Verification email sent! Check your inbox.", "success");
+        } catch (err) {
+            console.error("Resend error:", err);
+            if (err.code === 'auth/too-many-requests') {
+                addToast(t('too_many_requests') || "Too many attempts. Please wait.", "error");
+            } else {
+                addToast(t('resend_failed') || "Failed to resend email.", "error");
+            }
+        } finally {
+            setResendLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setVerificationNeeded(false);
         setLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            // Perform login
+            const credential = await signInWithEmailAndPassword(auth, email, password);
+            const user = credential.user;
 
             if (!user.emailVerified) {
                 await auth.signOut();
-                setError(t('email_not_verified') || "Email not verified. Please check your inbox.");
+                setVerificationNeeded(true); // Trigger UI
+                // setError(t('email_not_verified') || "Email not verified. Please check your inbox."); // Optional: Keep generic error or let UI handle it
                 return;
             }
 
@@ -97,42 +126,66 @@ export default function Login() {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                required
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
+                    {verificationNeeded ? (
+                        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl animate-fade-in">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-full text-yellow-600 dark:text-yellow-400">
+                                    <Sprout className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 dark:text-white">
+                                    {t('verify_email_title') || "Verify your email"}
+                                </h3>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                                {t('verify_email_desc') || "We've sent a confirmation link to your inbox. Please check your spam folder too."}
+                            </p>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
+                            <button
+                                onClick={handleResendVerification}
+                                disabled={resendLoading}
+                                className="w-full py-2 px-4 bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/50 dark:hover:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                            >
+                                {resendLoading ? 'Sending...' : (t('resend_verification') || 'Resend Verification Email')}
+                            </button>
                         </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? 'Logging in...' : t('login')}
-                            {!loading && <ArrowRight className="w-4 h-4" />}
-                        </button>
-                    </form>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Logging in...' : t('login')}
+                                {!loading && <ArrowRight className="w-4 h-4" />}
+                            </button>
+                        </form>
+                    )}
 
                     <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                         Don't have an account?{' '}
