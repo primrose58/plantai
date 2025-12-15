@@ -17,18 +17,19 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Optionally fetch additional user data from Firestore
-                let userData = {};
+                // Set fundamental user immediately to unblock UI
+                setCurrentUser(user);
+
+                // Fetch profile in background
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
-                        userData = userDoc.data();
+                        // Merge profile data
+                        setCurrentUser(prev => ({ ...prev, ...userDoc.data() }));
                     }
                 } catch (error) {
                     console.error("Error fetching user profile:", error);
                 }
-                // Set user even if profile fetch fails
-                setCurrentUser({ ...user, ...userData });
             } else {
                 setCurrentUser(null);
             }

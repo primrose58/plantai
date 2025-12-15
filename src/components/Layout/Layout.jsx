@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -22,6 +22,7 @@ export default function Layout() {
     const { currentUser, logout } = useAuth();
     const { t, i18n } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
 
     const toggleLang = () => {
         i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en');
@@ -116,8 +117,7 @@ export default function Layout() {
                             <button
                                 onClick={async () => {
                                     await logout();
-                                    // Force navigation to ensure UI clears
-                                    window.location.href = '/login';
+                                    navigate('/login');
                                 }}
                                 className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
                             >
@@ -135,12 +135,12 @@ export default function Layout() {
                         </Link>
                     )}
                 </div>
-            </aside>
+            </aside >
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden relative">
+            < main className="flex-1 flex flex-col overflow-hidden relative" >
                 {/* Mobile Header for Lang Switch & Logo */}
-                <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
+                < header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10" >
                     <div className="flex items-center gap-2">
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg text-green-700 dark:text-green-500">PlantAI</span>
@@ -148,7 +148,7 @@ export default function Layout() {
                     <button onClick={toggleLang} className="text-sm font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                         {i18n.language.toUpperCase()}
                     </button>
-                </header>
+                </header >
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scroll-smooth">
                     <div className="w-full h-full flex flex-col">
@@ -194,7 +194,7 @@ export default function Layout() {
                         </Link>
                     )}
                 </nav>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
