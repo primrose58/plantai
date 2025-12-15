@@ -1,6 +1,6 @@
 import { db, storage } from './firebase';
 import { collection, addDoc, query, where, orderBy, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
-import { ref, uploadString, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref } from 'firebase/storage'; // Kept ref just in case, but uploads are gone
 
 const COLLECTION_NAME = 'analyses';
 
@@ -98,36 +98,15 @@ export async function createPost(userId, postData, onProgress) {
     try {
         let imageUrl = null;
         if (postData.image) {
-            const storageRef = ref(storage, `posts/${userId}/${Date.now()}.jpg`);
-            console.log("Starting upload to:", storageRef.fullPath);
-
-            // Failsafe for onProgress if not provided
-            const reportProgress = (val) => {
-                if (onProgress) onProgress(val);
-                console.log(`Upload Progress: ${val}%`);
-            };
-
-            reportProgress(10); // Start
-
-            // Handle both base64 and blob/file
+            // Check if it's a Base64 string (direct database storage)
             if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
-                await uploadString(storageRef, postData.image, 'data_url');
+                console.log("Saving image as Base64 string in Firestore (No Storage Bucket)...");
+                imageUrl = postData.image; // Use the Base64 string directly
             } else {
-                console.log("Using Standard UploadBytes...");
-                // Note: uploadBytes does not support progress stream easily in SDK v9 without XHR hook, 
-                // but it is more robust against hanging listeners.
-                // We fake progress for UX or use resumable if strictly needed. 
-                // Given the issues, let's try uploadBytes for reliability. 
-                // If user really needs progress, we can revert, but let's fix the hang first.
-
-                reportProgress(30);
-                const snapshot = await uploadBytes(storageRef, postData.image);
-                reportProgress(90);
+                // If it's a File object, we can't upload it without Storage Plan. 
+                // CreatePostModal should have converted it to Base64 already.
+                console.warn("Received File object but Storage is disabled. Skipping image.");
             }
-            console.log("Upload done, getting URL...");
-            imageUrl = await getDownloadURL(storageRef);
-            reportProgress(100);
-            console.log("Got URL:", imageUrl);
         }
 
         console.log("Adding doc to Firestore...");
