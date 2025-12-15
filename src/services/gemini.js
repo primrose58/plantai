@@ -1,5 +1,5 @@
-const GEMINI_API_KEY = "AIzaSyAvs2v0QuOfrwMzI9-3i5BBsCpkGuyX5b0";
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + GEMINI_API_KEY;
+// API Key and Base URL are now handled in the backend (api/analyze.js)
+// to prevent exposing the key in the browser.
 
 /**
  * Analyzes plant images with optional user context.
@@ -60,7 +60,9 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
     };
 
     try {
-        const response = await fetch(`${BASE_URL}?key=${GEMINI_API_KEY}`, {
+        // Call our own backend (Vercel Serverless Function)
+        // This hides the API key from the browser
+        const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
