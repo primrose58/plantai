@@ -146,8 +146,9 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             onPostCreated();
             onClose();
         } catch (err) {
-            setError(t('error_diagnosis_failed') || 'Failed to share post.');
-            console.error(err);
+            console.error("FULL POST ERROR:", err);
+            // Show detailed error if available, else generic
+            setError(err.message || t('error_diagnosis_failed') || 'Failed to share post.');
         } finally {
             setLoading(false);
         }
