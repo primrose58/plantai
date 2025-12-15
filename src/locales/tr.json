@@ -131,5 +131,14 @@
     "like": "Beğen",
     "comment": "Yorum",
     "edit": "Düzenle",
-    "delete": "Sil"
+    "delete": "Sil",
+    "full_name": "Ad Soyad",
+    "password": "Şifre",
+    "create_account_desc": "Topluluğa katılmak için hesap oluşturun.",
+    "verification_email_sent": "Doğrulama E-postası Gönderildi! Lütfen gelen kutunuzu (ve SPAM klasörünü) kontrol edin.",
+    "verify_email_title": "E-postanızı Doğrulayın",
+    "verify_email_desc": "Doğrulama bağlantısını gönderdik. Devam etmek için lütfen e-postanızı kontrol edin.",
+    "open_email_app": "E-posta Uygulamasını Aç",
+    "i_verified_it": "Doğruladım, Giriş Yap",
+    "already_have_account": "Zaten hesabınız var mı?"
 }
