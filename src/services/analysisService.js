@@ -131,7 +131,9 @@ export async function createPost(userId, postData, onProgress) {
         }
 
         console.log("Adding doc to Firestore...");
-        await addDoc(collection(db, 'posts'), {
+
+        // Create the document promise
+        const addDocPromise = addDoc(collection(db, 'posts'), {
             userId,
             authorName: postData.authorName || "Gardener",
             title: postData.title || "", // No default title
@@ -141,8 +143,20 @@ export async function createPost(userId, postData, onProgress) {
             likes: [],
             comments: [],
             createdAt: serverTimestamp(),
-            // No relatedAnalysisId for generic posts usually
         });
+
+        // Race against a 5-second timeout to prevent UI hanging
+        // If Firestore is offline/slow, the local cache handles it (optimistic UI)
+        // We don't want to trap the user in "Posting..." forever.
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), 5000));
+
+        const result = await Promise.race([addDocPromise, timeoutPromise]);
+
+        if (result === 'timeout') {
+            console.log("Firestore write timed out (likely offline). Proceeding optimistically.");
+        } else {
+            console.log("Firestore write confirmed by server.");
+        }
 
         return true;
     } catch (error) {
