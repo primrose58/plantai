@@ -122,7 +122,10 @@ export default function Layout() {
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
                 <div className="p-6 flex items-center gap-2">
                     <Sprout className="w-8 h-8 text-green-600" />
-                    <h1 className="text-2xl font-bold tracking-tight text-green-700 dark:text-green-500">PlantAI</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        <span className="text-green-700 dark:text-green-500">Plant</span>
+                        <span className="text-blue-500 dark:text-blue-400">AI</span>
+                    </h1>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2">
@@ -204,7 +207,10 @@ export default function Layout() {
                 <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
                     <div className="flex items-center gap-2">
                         <Sprout className="w-6 h-6 text-green-600" />
-                        <span className="font-bold text-lg text-green-700 dark:text-green-500">PlantAI</span>
+                        <span className="font-bold text-lg">
+                            <span className="text-green-700 dark:text-green-500">Plant</span>
+                            <span className="text-blue-500 dark:text-blue-400">AI</span>
+                        </span>
                     </div>
                     <button onClick={toggleLang} className="text-sm font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                         {i18n.language.toUpperCase()}
@@ -218,7 +224,8 @@ export default function Layout() {
                 </div>
 
                 {/* Bottom Nav (Mobile) */}
-                <nav className="md:hidden absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-around p-2 z-50 safe-area-bottom">
+                {/* Bottom Nav (Mobile) */}
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-around p-2 z-50 safe-area-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                     {visibleNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
