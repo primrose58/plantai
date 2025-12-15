@@ -176,7 +176,7 @@ export default function Profile() {
                         />
                     </div>
 
-                    {message && <div className={`text-center text-sm ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{message}</div>}
+
 
                     <button
                         type="submit"
