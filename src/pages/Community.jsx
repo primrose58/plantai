@@ -170,15 +170,67 @@ export default function Community() {
                 </div>
             )}
 
-            {/* Modal */}
-            {isModalOpen && (
-                <CreatePostModal
-                    onClose={() => setIsModalOpen(false)}
-                    onPostCreated={() => {
-                        // Snapshot listener handles refresh
-                    }}
-                />
-            )}
-        </div>
-    );
+            import UserPreviewModal from '../components/Community/UserPreviewModal';
+
+            // ... inside Community component ...
+
+            const [selectedUser, setSelectedUser] = useState(null);
+
+            // ...
+
+            return (
+            <div className="max-w-3xl mx-auto space-y-6 pb-20 p-4">
+
+                {/* ... Header & Filter ... */}
+
+                {loading ? (
+                    <div className="flex justify-center py-10">
+                        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                    </div>
+                ) : posts.length > 0 ? (
+                    <div className="space-y-6">
+                        {posts.map(post => (
+                            <PostCard
+                                key={post.id}
+                                post={post}
+                                onUserClick={(userId) => {
+                                    // Create minimal user object for preview
+                                    setSelectedUser({
+                                        id: userId,
+                                        name: post.authorName || 'Gardener',
+                                        avatar: post.userAvatar
+                                    });
+                                }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    // ... No posts ...
+                    null
+                )}
+
+                {/* Same layout for No Posts */}
+                {posts.length === 0 && !loading && (
+                    <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                        <p className="text-lg mb-2">👋 No posts yet</p>
+                        <p className="text-sm">Be the first to share your garden!</p>
+                    </div>
+                )}
+
+                {/* Modals */}
+                {isModalOpen && (
+                    <CreatePostModal
+                        onClose={() => setIsModalOpen(false)}
+                        onPostCreated={() => { }}
+                    />
+                )}
+
+                {selectedUser && (
+                    <UserPreviewModal
+                        user={selectedUser}
+                        onClose={() => setSelectedUser(null)}
+                    />
+                )}
+            </div>
+            );
 }

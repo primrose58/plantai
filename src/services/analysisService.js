@@ -1,5 +1,5 @@
 import { db, storage } from './firebase';
-import { collection, addDoc, query, where, orderBy, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
 import { ref, uploadString, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'analyses';
@@ -277,6 +277,40 @@ export async function addComment(postId, userId, userName, text) {
         return true;
     } catch (error) {
         console.error("Error adding comment:", error);
+        throw error;
+    }
+}
+/**
+ * Start or Retrieve a Chat Session.
+ */
+export async function startChat(currentUserId, otherUserId, otherUserData) {
+    try {
+        // Query for existing chat
+        // Note: Firestore doesn't support array-contains=[a,b], so we usually query for one and filter in client (or use a composite ID).
+        // Best approach for 1:1 chats: deterministic ID.
+        // ID: min(uid1, uid2) + "_" + max(uid1, uid2)
+        const sortedIds = [currentUserId, otherUserId].sort();
+        const chatId = `${sortedIds[0]}_${sortedIds[1]}`;
+
+        const chatRef = doc(db, 'chats', chatId);
+        const chatSnap = await getDoc(chatRef);
+
+        if (!chatSnap.exists()) {
+            // Create new chat
+            await setDoc(chatRef, {
+                participants: [currentUserId, otherUserId],
+                participantData: {
+                    [otherUserId]: otherUserData // Cache basic info
+                },
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastMessage: ''
+            });
+        }
+
+        return chatId;
+    } catch (error) {
+        console.error("Error starting chat:", error);
         throw error;
     }
 }
