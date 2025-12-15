@@ -5,6 +5,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
 import { Camera, Save, User as UserIcon, Loader2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 export default function Profile() {
     const { t } = useTranslation();
@@ -21,22 +22,30 @@ export default function Profile() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validations
-        if (file.size > 5 * 1024 * 1024) {
-            setMessage('File is too large (max 5MB)');
-            return;
-        }
-
         setLoading(true);
-        setMessage('Uploading...');
+        setMessage(t('saving') || 'Uploading...');
 
         try {
+            // Compress Image
+            let uploadFile = file;
+            try {
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1024,
+                    useWebWorker: true
+                };
+                uploadFile = await imageCompression(file, options);
+            } catch (cErr) {
+                console.warn("Avatar compression failed, using original:", cErr);
+                // Fallback to original
+            }
+
             // 1. Create unique reference
             const timestamp = Date.now();
             const storageRef = ref(storage, `avatars/${currentUser.uid}_${timestamp}`);
 
             // 2. Upload file (Resumable)
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            const uploadTask = uploadBytesResumable(storageRef, uploadFile);
 
             await new Promise((resolve, reject) => {
                 uploadTask.on('state_changed',
@@ -72,7 +81,7 @@ export default function Profile() {
         setMessage('');
         try {
             await updateProfile(auth.currentUser, { displayName: name });
-            setMessage('Profile updated successfully!');
+            setMessage(t('profile_updated') || 'Profile updated successfully!');
         } catch {
             setMessage('Failed to update profile.');
         } finally {
@@ -80,18 +89,18 @@ export default function Profile() {
         }
     };
 
-    if (!currentUser) return <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-xl">Please login.</div>;
+    if (!currentUser) return <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-xl">{t('login_required')}</div>;
 
     return (
         <div className="max-w-md mx-auto w-full">
-            <h1 className="text-2xl font-bold mb-6">{t('profile')}</h1>
+            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{t('profile')}</h1>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
 
                 {/* Avatar Section */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-lg bg-gray-100">
+                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-lg bg-gray-100 dark:bg-gray-900">
                             {avatar ? (
                                 <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
@@ -106,26 +115,26 @@ export default function Profile() {
                         {loading && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 rounded-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>}
                     </div>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                    <p className="text-sm text-gray-500 mt-2">Tap to change avatar</p>
+                    <p className="text-sm text-gray-500 mt-2">{t('change_avatar')}</p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSave} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Display Name
+                            {t('display_name')}
                         </label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email
+                            {t('email')}
                         </label>
                         <input
                             type="email"
@@ -142,7 +151,7 @@ export default function Profile() {
                         disabled={loading}
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
                     >
-                        {loading ? 'Saving...' : 'Save Changes'}
+                        {loading ? t('saving') : t('save_changes')}
                         {!loading && <Save className="w-5 h-5" />}
                     </button>
                 </form>
