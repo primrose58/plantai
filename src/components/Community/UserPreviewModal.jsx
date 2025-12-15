@@ -1,4 +1,4 @@
-import { X, MessageCircle, User } from 'lucide-react';
+import { X, MessageCircle, User as UserIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { startChat } from '../../services/analysisService';
