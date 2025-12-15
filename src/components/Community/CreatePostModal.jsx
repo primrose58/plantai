@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Image as ImageIcon, Loader2, Send } from 'lucide-react';
-import { createPost } from '../services/analysisService';
+import { createPost } from '../../services/analysisService';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function CreatePostModal({ onClose, onPostCreated }) {
