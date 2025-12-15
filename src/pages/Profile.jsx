@@ -1,38 +1,52 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '../services/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebase'; // Added db
 import { useTranslation } from 'react-i18next';
 import { Camera, Save, User as UserIcon, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import { useToast } from '../contexts/ToastContext';
+import { updateUserPostsName } from '../services/analysisService'; // Import this
 
 export default function Profile() {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
+    const { addToast } = useToast();
 
     const [name, setName] = useState(currentUser?.displayName || '');
     const [avatar, setAvatar] = useState(currentUser?.photoURL || '');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
 
     const fileInputRef = useRef(null);
+
+    // Load avatar from Firestore if Auth Profile is empty (or to get high-res)
+    useEffect(() => {
+        const loadUserAvatar = async () => {
+            if (currentUser) {
+                const docRef = doc(db, 'users', currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().avatar) {
+                    setAvatar(docSnap.data().avatar);
+                }
+            }
+        };
+        loadUserAvatar();
+    }, [currentUser]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         setLoading(true);
-        setMessage(t('saving') || 'Uploading...');
 
         try {
-            // 1. Compress Image (Very aggressive for Avatar -> Base64)
-            // Target: < 50KB for efficiency
+            // 1. Compress Image (Target: < 100KB for Firestore Document)
             let base64Avatar = '';
             try {
                 const options = {
-                    maxSizeMB: 0.05,
-                    maxWidthOrHeight: 300,
+                    maxSizeMB: 0.1, // 100KB limit
+                    maxWidthOrHeight: 400,
                     useWebWorker: true
                 };
                 const compressedFile = await imageCompression(file, options);
@@ -46,25 +60,37 @@ export default function Profile() {
 
             } catch (cErr) {
                 console.warn("Avatar compression failed:", cErr);
-                setMessage("Image too large.");
+                addToast("Image too large or invalid.", "error");
                 setLoading(false);
                 return;
             }
 
-            // 2. Update Local State
+            // 2. Update Local State for immediate feedback
             setAvatar(base64Avatar);
 
-            // 3. Update Firebase Profile (PhotoURL can hold Base64 strings!)
-            await updateProfile(auth.currentUser, { photoURL: base64Avatar });
+            // 3. Save to Firestore (Reliable Storage)
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                avatar: base64Avatar,
+                email: currentUser.email,
+                name: name || currentUser.displayName,
+                updatedAt: new Date()
+            }, { merge: true });
 
-            // 4. Sync with existing posts
-            // We need to re-import this function or move it if not available
-            // Note: updateProfile is enough for new posts, but for old posts we rely on the separate sync action.
+            // 4. Also try to update Auth Profile (might fail if string too long, but Firestore is our backup)
+            try {
+                await updateProfile(auth.currentUser, { photoURL: base64Avatar });
+            } catch (authErr) {
+                console.log("Auth profile update skipped (image likely too big for token), using Firestore only.");
+            }
 
-            setMessage(t('profile_updated') || 'Profile updated!');
+            // 5. Sync with existing posts
+            // Fire and forget - don't wait
+            updateUserPostsName(currentUser.uid, name, base64Avatar);
+
+            addToast(t('profile_updated') || 'Profile photo updated!', "success");
         } catch (err) {
             console.error(err);
-            setMessage('Error updating avatar: ' + err.message);
+            addToast('Error updating avatar: ' + err.message, "error");
         } finally {
             setLoading(false);
         }
@@ -75,12 +101,21 @@ export default function Profile() {
         if (!name.trim()) return;
 
         setLoading(true);
-        setMessage('');
         try {
             await updateProfile(auth.currentUser, { displayName: name });
-            setMessage(t('profile_updated') || 'Profile updated successfully!');
-        } catch {
-            setMessage('Failed to update profile.');
+
+            // Sync name to Firestore too
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                name: name,
+                updatedAt: new Date()
+            }, { merge: true });
+
+            // Sync posts
+            updateUserPostsName(currentUser.uid, name, avatar);
+
+            addToast(t('profile_updated') || 'Profile updated successfully!', "success");
+        } catch (err) {
+            addToast('Failed to update profile.', "error");
         } finally {
             setLoading(false);
         }
