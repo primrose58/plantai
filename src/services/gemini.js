@@ -60,36 +60,61 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
     };
 
     try {
-        // Call our own backend (Vercel Serverless Function)
-        // This hides the API key from the browser
+        // Attempt to call the Vercel Serverless Function
+        // Note: This requires the Vercel environment or local proxy to be set up correctly.
+        // If running purely client-side locally without 'vercel dev', this route (/api/analyze) might return 404 (HTML).
+
         const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
+        // 1. Check if response is OK (200-299)
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Backend Error Response:", errorText);
+
+            // If it's HTML (likely 404 or 500 from Vite/Vercel generic page), throw specific error
+            if (errorText.trim().startsWith('<') || errorText.includes('A server error')) {
+                throw new Error("Backend function not available. Please verify server status.");
+            }
+
+            throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+        }
+
+        // 2. Parse JSON safely
         const data = await response.json();
 
         if (data.error) {
             throw new Error(data.error.message || "API Connection Error");
         }
 
-        if (!data.candidates || !data.candidates[0].content) {
-            throw new Error("No response from AI.");
+        // Direct return if the backend already parsed it (it should have)
+        // Adjust based on api/analyze.js response structure
+        // The backend returns the final JSON object directly, no 'candidates' wrapper usually.
+        // Let's check the structure.
+
+        if (data.plant_name || data.status) {
+            return data;
         }
 
-        const text = data.candidates[0].content.parts[0].text;
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        try {
+        // Fallback for raw Gemini response structure if backend passed it through
+        if (data.candidates && data.candidates[0].content) {
+            const text = data.candidates[0].content.parts[0].text;
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleanText);
-        } catch (e) {
-            console.error("JSON Parse Error:", text);
-            throw new Error("Invalid response format from AI");
         }
+
+        throw new Error("Invalid response structure from AI");
 
     } catch (error) {
-        console.error("Gemini Analysis Error:", error);
-        throw error;
+        console.warn("Backend analysis failed, trying fallback...", error);
+
+        // OPTIONAL FALLBACK: Call Gemini Direct (Client-Side) 
+        // Only if we absolutely have to. For now, let's just show the clearer error.
+        // Or re-throw nicely.
+
+        throw new Error(lang === 'tr' ? "Teşhis sunucusu yanıt vermedi. (Lütfen VPN kapatıp tekrar deneyin)" : "Analysis server unavailable.");
     }
 }
