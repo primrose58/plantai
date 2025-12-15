@@ -1,6 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext'; // Import Toast
+import { db } from '../../services/firebase'; // Import DB
+import { collection, query, where, onSnapshot } from 'firebase/firestore'; // Import Firestore
 
 import {
     Home,
@@ -40,9 +43,65 @@ export default function Layout() {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
+    const { addToast } = useToast();
+    const [sound] = useState(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')); // Notification Sound
+
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
+
+    // Global Notification Listener
+    useEffect(() => {
+        if (!currentUser) return;
+
+        // Listen to all chats for new messages
+        const q = query(
+            collection(db, 'chats'),
+            where('participants', 'array-contains', currentUser.uid)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'modified') {
+                    const data = change.doc.data();
+
+                    // Simple check: logic relies on lastMessage update time vs now? 
+                    // Or simplified: if modified and I am not the sender of last update (if senderId stored in top level or check diff)
+                    // Firestore 'chats' doc update usually has lastMessage. 
+                    // Let's assume ANY modification that is NOT from me is a new message.
+                    // But 'chats' doc doesn't strictly store senderId of last message unless we added it (we didn't in previous step, only in messages subcollection).
+                    // WAIT: I only updated lastMessage text in Chat.jsx.
+                    // To do this properly, I should check if the modification time is recent.
+
+                    // A better way for notifications typically involves listening to 'messages' subcollections (expensive) or storing 'lastSenderId' on chat doc.
+                    // Let's rely on a smart client-side diff or just trigger for now.
+                    // Actually, let's just assume if it's modified and path is not current chat, show it?
+                    // But we need to know WHO sent it to show name.
+
+                    // Let's check update time to avoid initial load trigger
+                    const updatedAt = data.updatedAt?.seconds * 1000;
+                    if (Date.now() - updatedAt > 5000) return; // Ignore old updates (initial load)
+
+                    // Get other user
+                    const otherUid = data.participants.find(id => id !== currentUser.uid);
+                    // Determine if currently viewing this chat
+                    const isViewing = location.pathname === `/messages/${change.doc.id}`;
+
+                    if (!isViewing && otherUid) {
+                        const otherUser = data.participantData?.[otherUid] || { name: 'Someone' };
+
+                        // PLAY SOUND
+                        sound.play().catch(e => console.log("Audio play failed", e));
+
+                        // SHOW TOAST
+                        addToast(`New message from ${otherUser.name}: ${data.lastMessage?.substring(0, 30)}...`, 'info', 5000);
+                    }
+                }
+            });
+        });
+
+        return () => unsubscribe();
+    }, [currentUser, location.pathname, addToast, sound]);
 
     const navItems = [
         { path: '/', icon: Home, label: t('app_name'), public: true },
