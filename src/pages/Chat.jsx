@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase';
-import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { Send, ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -23,16 +23,30 @@ export default function Chat() {
     useEffect(() => {
         if (!chatId || !currentUser) return;
 
-        // 1. Fetch Chat Metadata to get Other User
-        const unsubChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
+        // 1. Fetch Chat Metadata & LIVE Other User Data
+        const unsubChat = onSnapshot(doc(db, 'chats', chatId), async (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const otherUid = data.participants.find(p => p !== currentUser.uid);
-                if (otherUid && data.participantData) {
-                    setOtherUser(data.participantData[otherUid]);
+
+                if (otherUid) {
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', otherUid));
+                        if (userDoc.exists()) {
+                            setOtherUser(userDoc.data());
+                        } else {
+                            // Fallback to chat cached data
+                            if (data.participantData?.[otherUid]) {
+                                setOtherUser(data.participantData[otherUid]);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Err fetching user header", e);
+                        // Fallback
+                        if (data.participantData?.otherUid) setOtherUser(data.participantData[otherUid]);
+                    }
                 }
             } else {
-                // Chat might be deleted
                 navigate('/messages');
             }
         });
@@ -107,12 +121,12 @@ export default function Chat() {
                 {otherUser ? (
                     <div className="flex items-center gap-3">
                         <img
-                            src={otherUser.avatar || `https://ui-avatars.com/api/?name=${otherUser.name}`}
+                            src={otherUser.photoURL || otherUser.avatar || `https://ui-avatars.com/api/?name=${otherUser.name || 'User'}`}
                             alt={otherUser.name}
                             className="w-10 h-10 rounded-full object-cover border border-gray-100"
                         />
                         <div>
-                            <h2 className="font-bold text-gray-900 dark:text-gray-100 leading-tight">{otherUser.name}</h2>
+                            <h2 className="font-bold text-gray-900 dark:text-gray-100 leading-tight">{otherUser.name || otherUser.displayName || 'User'}</h2>
                             <span className="text-xs text-green-600 dark:text-green-400 font-medium">Online</span>
                         </div>
                     </div>
