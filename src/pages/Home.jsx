@@ -213,11 +213,7 @@ export default function Home() {
                     {isMacro ? "Close-up Photo" : "Take Photo"}
                 </h2>
 
-                {error && (
-                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">
-                        {error}
-                    </div>
-                )}
+
 
                 <button
                     onClick={triggerFileInput}
