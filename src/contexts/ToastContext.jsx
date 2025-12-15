@@ -26,28 +26,28 @@ export function ToastProvider({ children }) {
     return (
         <ToastContext.Provider value={{ addToast, removeToast }}>
             {children}
-            <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+            <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
                 {toasts.map(toast => (
                     <div
                         key={toast.id}
                         className={`
                             pointer-events-auto
-                            flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md transform transition-all duration-300 animate-slide-in
-                            ${toast.type === 'success' ? 'bg-green-500/90 text-white' : ''}
-                            ${toast.type === 'error' ? 'bg-red-500/90 text-white' : ''}
-                            ${toast.type === 'info' ? 'bg-blue-500/90 text-white' : ''}
-                            dark:bg-opacity-90 min-w-[300px] max-w-sm
+                            flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-sm backdrop-blur-xl border
+                            transform transition-all duration-500 animate-slide-in hover:scale-102
+                            ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-800 dark:text-green-300' : ''}
+                            ${toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-800 dark:text-red-300' : ''}
+                            ${toast.type === 'info' ? 'bg-white/80 border-white/40 dark:bg-gray-800/80 dark:border-gray-700 text-gray-800 dark:text-gray-200' : ''}
+                            min-w-[200px] max-w-xs
                         `}
                     >
-                        {toast.type === 'success' && <CheckCircle className="w-5 h-5 shrink-0" />}
-                        {toast.type === 'error' && <AlertCircle className="w-5 h-5 shrink-0" />}
-                        {toast.type === 'info' && <Info className="w-5 h-5 shrink-0" />}
+                        {/* Minimalist: No icon for chat messages (info), subtle dot for status */}
+                        {toast.type === 'success' && <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></div>}
+                        {toast.type === 'error' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>}
+                        {toast.type === 'info' && <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center shrink-0 text-xs font-bold text-green-600">AI</div>}
 
-                        <p className="text-sm font-medium flex-1">{toast.message}</p>
-
-                        <button onClick={() => removeToast(toast.id)} className="opacity-70 hover:opacity-100">
-                            <X className="w-4 h-4" />
-                        </button>
+                        <p className="text-sm font-medium leading-tight flex-1 tracking-tight font-sans">
+                            {toast.message}
+                        </p>
                     </div>
                 ))}
             </div>
