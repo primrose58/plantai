@@ -112,9 +112,10 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                 try {
                     console.log("Compressing for Base64 storage...");
                     const options = {
-                        maxSizeMB: 0.3, // Very small to fit in document
+                        maxSizeMB: 0.15, // Aggressive compression: <150KB to safely fit in 1MB doc with overhead
                         maxWidthOrHeight: 800,
-                        useWebWorker: true
+                        useWebWorker: true,
+                        initialQuality: 0.7
                     };
                     const compressedFile = await imageCompression(image, options);
 

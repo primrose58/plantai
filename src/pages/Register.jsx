@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sprout, UserPlus } from 'lucide-react';
+import VerifyEmailModal from '../components/Auth/VerifyEmailModal';
 
 export default function Register() {
     const [email, setEmail] = useState('');
@@ -11,8 +12,12 @@ export default function Register() {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // State for Verification Modal
+    const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [registeredUser, setRegisteredUser] = useState(null);
+
     const navigate = useNavigate();
-    const location = useLocation();
     const { t } = useTranslation();
 
     const handleSubmit = async (e) => {
@@ -21,15 +26,25 @@ export default function Register() {
         setLoading(true);
 
         try {
+            // 1. Create User
             const result = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(result.user, { displayName: name });
-            await sendEmailVerification(result.user);
-            await auth.signOut(); // Sign out immediately
 
-            // Show success state instead of navigating
+            // 2. Update Name
+            await updateProfile(result.user, { displayName: name });
+
+            // 3. Send Email
+            await sendEmailVerification(result.user);
+
+            // NO SignOut yet. We keep them logged in but unverified to poll status.
+            // Or we can sign out and make them re-login. 
+            // Better UX: Keep them "half-logged-in" or hold the user object to check.
+            // But Firebase auto-signs in on create. 
+            // We'll keep them signed in to query `user.reload()`.
+
+            setRegisteredUser(result.user);
+            setShowVerifyModal(true);
             setLoading(false);
-            alert(t('verification_email_sent') || "Verification email sent! Please check your inbox AND SPAM folder. You must verify to login.");
-            navigate('/login');
+
         } catch (err) {
             setError(err.message);
             console.error(err);
@@ -37,9 +52,27 @@ export default function Register() {
         }
     };
 
+    const handleVerified = async () => {
+        // User confirmed they verified.
+        // We can double check or just let them in (AuthGuard will check emailVerified)
+        // Ideally we reload one last time
+        if (auth.currentUser) await auth.currentUser.reload();
+        setShowVerifyModal(false);
+        navigate('/'); // Go to home/dashboard
+    };
+
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 animate-fade-in">
+            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden relative">
+
+                {showVerifyModal && registeredUser && (
+                    <VerifyEmailModal
+                        user={registeredUser}
+                        onClose={() => setShowVerifyModal(false)}
+                        onVerified={handleVerified}
+                    />
+                )}
+
                 <div className="p-8">
                     <div className="flex justify-center mb-6">
                         <div className="bg-green-600 w-full mb-8 p-6 rounded-2xl flex items-center justify-center shadow-lg">
@@ -51,7 +84,7 @@ export default function Register() {
                         {t('register')}
                     </h2>
                     <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
-                        Create an account to join the community
+                        {t('create_account_desc') || t('join_community') || 'Create an account to join the community'}
                     </p>
 
                     {error && (
@@ -63,7 +96,7 @@ export default function Register() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Full Name
+                                {t('full_name') || 'Full Name'}
                             </label>
                             <input
                                 type="text"
@@ -76,7 +109,7 @@ export default function Register() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Email
+                                {t('email')}
                             </label>
                             <input
                                 type="email"
@@ -89,7 +122,7 @@ export default function Register() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Password
+                                {t('password')}
                             </label>
                             <input
                                 type="password"
@@ -102,16 +135,16 @@ export default function Register() {
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || showVerifyModal}
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Creating Account...' : t('register')}
+                            {loading ? (t('creating_account') || 'Creating Account...') : t('register')}
                             {!loading && <UserPlus className="w-4 h-4" />}
                         </button>
                     </form>
 
                     <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                        Already have an account?{' '}
+                        {t('already_have_account') || 'Already have an account?'} {' '}
                         <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold hover:underline">
                             {t('login')}
                         </Link>
