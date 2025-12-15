@@ -206,7 +206,12 @@ export default function Chat() {
             setAttachment(null);
         } catch (err) {
             console.error("Send failed", err);
-            addToast("Failed to send message", "error");
+            let msg = "Failed to send message";
+            if (err.code === 'storage/unauthorized') msg = "Permission denied. Check Firebase Storage rules.";
+            if (err.code === 'storage/unknown') msg = "Storage configuration error.";
+            if (err.message.includes('undefined')) msg = "Storage service not initialized.";
+
+            addToast(`${msg} (${err.code || 'Error'})`, "error");
         } finally {
             setUploading(false);
         }
@@ -441,8 +446,8 @@ export default function Chat() {
                     <button
                         onClick={toggleRecording}
                         className={`p-3 rounded-xl transition-all transform active:scale-95 shadow-lg ${isRecording
-                                ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                     >
                         {isRecording ? <Send className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
