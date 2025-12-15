@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../services/firebase';
-import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { db, storage } from '../services/firebase';
+import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
-import { Send, ArrowLeft, Trash2 } from 'lucide-react';
+import { Send, ArrowLeft, Trash2, Edit2, Mic, Paperclip, X, Image as ImageIcon, FileText, Play, Pause } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -14,7 +15,8 @@ export default function Chat() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const bottomRef = useRef(null);
-    const { addToast } = useToast(); // Needs import from context
+    const fileInputRef = useRef(null);
+    const { addToast } = useToast();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -22,27 +24,27 @@ export default function Chat() {
     const [otherUser, setOtherUser] = useState(null);
     const [otherUserId, setOtherUserId] = useState(null);
 
+    // Advanced Features State
+    const [editingId, setEditingId] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [attachment, setAttachment] = useState(null); // { file, type: 'image' | 'file', previewUrl }
+    const [uploading, setUploading] = useState(false);
+    const [playingAudio, setPlayingAudio] = useState(null); // URL of currently playing audio
+
     useEffect(() => {
         if (!chatId || !currentUser) return;
 
-        // 1. Fetch Chat Metadata & LIVE Other User Data
         const unsubChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const otherUid = data.participants.find(p => p !== currentUser.uid);
-
                 if (otherUid) {
-                    // 1. Immediate Fallback from Cache (fixes "Chat" showing instead of name)
                     if (data.participantData?.[otherUid]) {
-                        // Only set if we don't have a live user yet or to ensure initial state
                         const cached = data.participantData[otherUid];
                         setOtherUser(prev => prev?.id === otherUid ? prev : { ...cached, id: otherUid });
                     }
-                    // Note: This creates a nested listener which is tricky to clean up in a simple useEffect.
-                    // Ideally we set state for 'otherUserId' and have a separate useEffect for it.
-                    // But for now, we can attach it to a ref or just let it exist for the lifecycle of this hook (re-running this hook cleans up unsubChat, but not unsubUser if defined inside).
-
-                    // Better approach: Set otherUserId state, let another useEffect handle the user listener.
                     setOtherUserId(otherUid);
                 }
             } else {
@@ -50,23 +52,23 @@ export default function Chat() {
             }
         });
 
-        // 2. Fetch Messages
         const unsubscribe = onSnapshot(collection(db, 'chats', chatId, 'messages'), (snapshot) => {
             const msgs = snapshot.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
             setMessages(msgs);
             setLoading(false);
-            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+            if (!editingId) {
+                setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+            }
         });
 
         return () => {
             unsubscribe();
             unsubChat();
         };
-    }, [chatId, currentUser]);
+    }, [chatId, currentUser, editingId]);
 
-    // Separate effect for User Presence
     useEffect(() => {
         if (!otherUserId) return;
         const unsub = onSnapshot(doc(db, 'users', otherUserId), (doc) => {
@@ -75,11 +77,22 @@ export default function Chat() {
         return () => unsub();
     }, [otherUserId]);
 
+    // Timer for voice recording
+    useEffect(() => {
+        let interval;
+        if (isRecording) {
+            interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+        } else {
+            setRecordingTime(0);
+        }
+        return () => clearInterval(interval);
+    }, [isRecording]);
+
     const getStatusText = (user) => {
         if (!user?.lastSeen) return 'Offline';
         const lastSeen = user.lastSeen.seconds * 1000;
         const diff = Date.now() - lastSeen;
-        if (diff < 3 * 60 * 1000) return 'Online'; // < 3 mins
+        if (diff < 3 * 60 * 1000) return 'Online';
         return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
     };
 
@@ -88,28 +101,121 @@ export default function Chat() {
         return (Date.now() - user.lastSeen.seconds * 1000) < 3 * 60 * 1000;
     };
 
+    // --- Message Editing ---
+    const startEdit = (msg) => {
+        setNewMessage(msg.text || '');
+        setEditingId(msg.id);
+        setAttachment(null); // Cannot modify attachments in simple edit mode yet
+        fileInputRef.current.value = '';
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setNewMessage('');
+        setAttachment(null);
+    };
+
+    // --- File Handling ---
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            addToast("File too large (Max 10MB)", "error");
+            return;
+        }
+
+        const type = file.type.startsWith('image/') ? 'image' : 'file';
+        const previewUrl = type === 'image' ? URL.createObjectURL(file) : null;
+        setAttachment({ file, type, previewUrl });
+    };
+
+    // --- Voice Recording (Click-to-Toggle) ---
+    const toggleRecording = async () => {
+        if (isRecording) {
+            // Stop and Send
+            mediaRecorder.stop();
+            setIsRecording(false);
+        } else {
+            // Start
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+
+                recorder.ondataavailable = (e) => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    // Immediately Send Audio
+                    await uploadAndSend(null, audioBlob, 'voice_message.webm', 'audio');
+
+                    stream.getTracks().forEach(track => track.stop()); // Clean up
+                };
+
+                recorder.start();
+                setMediaRecorder(recorder);
+                setIsRecording(true);
+            } catch (err) {
+                console.error("Mic error:", err);
+                addToast("Could not access microphone", "error");
+            }
+        }
+    };
+
+    const uploadAndSend = async (text, fileBlob = null, fileName = null, type = 'text') => {
+        setUploading(true);
+        try {
+            let fileUrl = null;
+            let finalType = type;
+
+            if (fileBlob) {
+                const storageRef = ref(storage, `chat-attachments/${chatId}/${Date.now()}_${fileName || 'file'}`);
+                await uploadBytes(storageRef, fileBlob);
+                fileUrl = await getDownloadURL(storageRef);
+            } else if (attachment) {
+                const storageRef = ref(storage, `chat-attachments/${chatId}/${Date.now()}_${attachment.file.name}`);
+                await uploadBytes(storageRef, attachment.file);
+                fileUrl = await getDownloadURL(storageRef);
+                finalType = attachment.type;
+                fileName = attachment.file.name;
+            }
+
+            if (editingId) {
+                await updateDoc(doc(db, 'chats', chatId, 'messages', editingId), {
+                    text: text,
+                    editedAt: serverTimestamp()
+                });
+                setEditingId(null);
+            } else {
+                await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                    text: text || '',
+                    type: finalType,
+                    fileUrl: fileUrl,
+                    fileName: fileName,
+                    senderId: currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+
+                await updateDoc(doc(db, 'chats', chatId), {
+                    lastMessage: finalType === 'audio' ? '🎤 Voice Message' : (finalType === 'image' ? '📷 Photo' : (text || '📎 File')),
+                    updatedAt: serverTimestamp()
+                });
+            }
+
+            setNewMessage('');
+            setAttachment(null);
+        } catch (err) {
+            console.error("Send failed", err);
+            addToast("Failed to send message", "error");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSend = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim()) return;
-
-        const text = newMessage;
-        setNewMessage('');
-
-        try {
-            await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                text,
-                senderId: currentUser.uid,
-                createdAt: serverTimestamp()
-            });
-
-            await updateDoc(doc(db, 'chats', chatId), {
-                lastMessage: text,
-                updatedAt: serverTimestamp()
-            });
-        } catch (err) {
-            console.error("Failed to send", err);
-            addToast("Failed to send message", "error");
-        }
+        if (!newMessage.trim() && !attachment) return;
+        await uploadAndSend(newMessage);
     };
 
     const handleDeleteMessage = async (msgId) => {
@@ -163,26 +269,82 @@ export default function Chat() {
             <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50 dark:bg-gray-900/50">
                 {messages.map(msg => {
                     const isMine = msg.senderId === currentUser.uid;
+                    const isAudio = msg.type === 'audio';
+                    const isImage = msg.type === 'image';
+                    const isFile = msg.type === 'file';
+
                     return (
                         <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} group`}>
-                            <div className={`flex items-end gap-2 max-w-[80%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                                 {/* Message Bubble */}
                                 <div className={`px-4 py-2.5 shadow-sm text-sm md:text-base relative group-hover:shadow-md transition-all ${isMine
                                     ? 'bg-green-600 text-white rounded-2xl rounded-br-none'
                                     : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700'
-                                    }`}>
-                                    {msg.text}
+                                    } ${isAudio ? 'min-w-[150px]' : ''}`}>
+
+                                    {/* --- Content Types --- */}
+
+                                    {/* Image */}
+                                    {isImage && (
+                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                                            <img src={msg.fileUrl} alt="attachment" className="max-w-full h-48 object-cover rounded-lg mb-2" />
+                                        </a>
+                                    )}
+
+                                    {/* Audio Player */}
+                                    {isAudio && (
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    const audio = new Audio(msg.fileUrl);
+                                                    audio.play();
+                                                }}
+                                                className={`p-2 rounded-full ${isMine ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}`}
+                                            >
+                                                <Play className="w-4 h-4" />
+                                            </button>
+                                            <div className="h-1 flex-1 bg-current opacity-20 rounded-full w-24"></div>
+                                            <span className="text-xs opacity-70">Voice</span>
+                                        </div>
+                                    )}
+
+                                    {/* File */}
+                                    {isFile && (
+                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 underline decoration-current">
+                                            <Paperclip className="w-4 h-4" />
+                                            <span className="truncate max-w-[150px]">{msg.fileName || 'File'}</span>
+                                        </a>
+                                    )}
+
+                                    {/* Text */}
+                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+
+                                    {/* Edited Tag */}
+                                    {msg.editedAt && (
+                                        <span className={`text-[10px] block text-right mt-1 opacity-60 ${isMine ? 'text-green-100' : 'text-gray-400'}`}>
+                                            (Edited {formatTime(msg.editedAt)})
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* Trash Icon (Only if mine) */}
+                                {/* Actions Menu (Edit/Delete) - Only if mine */}
                                 {isMine && (
-                                    <button
-                                        onClick={() => handleDeleteMessage(msg.id)}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all transform translate-y-2 group-hover:translate-y-0"
-                                        title="Delete message"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => startEdit(msg)}
+                                            className="p-1 text-gray-400 hover:text-blue-500"
+                                            title="Edit"
+                                        >
+                                            <Edit2 className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteMessage(msg.id)}
+                                            className="p-1 text-gray-400 hover:text-red-500"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
@@ -196,23 +358,97 @@ export default function Chat() {
                 <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSend} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-3 items-center">
+            {/* Editing Indicator */}
+            {editingId && (
+                <div className="px-4 py-2 bg-yellow-50 dark:bg-gray-700 flex items-center justify-between text-xs text-yellow-700 dark:text-yellow-300">
+                    <span>Editing message...</span>
+                    <button onClick={cancelEdit}><X className="w-4 h-4" /></button>
+                </div>
+            )}
+
+            {/* Attachment Preview */}
+            {attachment && (
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {attachment.type === 'image' ? (
+                            <img src={attachment.previewUrl} alt="preview" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                            <FileText className="w-8 h-8 text-gray-500" />
+                        )}
+                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[200px]">
+                            {attachment.file.name}
+                        </span>
+                    </div>
+                    <button onClick={() => setAttachment(null)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full">
+                        <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                </div>
+            )}
+
+            {/* Input Bar */}
+            <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2 items-end">
+                {/* File Upload Hidden Input */}
                 <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={t('type_msg')}
-                    className="flex-1 px-5 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.txt"
                 />
+
+                {/* Attachment Button */}
                 <button
-                    type="submit"
-                    disabled={!newMessage.trim()}
-                    className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 disabled:shadow-none transform active:scale-95"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
+                    disabled={isRecording || editingId}
                 >
-                    <Send className="w-5 h-5" />
+                    <Paperclip className="w-5 h-5" />
                 </button>
-            </form>
+
+                {/* Text Input */}
+                <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center min-h-[48px]">
+                    {isRecording ? (
+                        <div className="flex-1 px-4 flex items-center text-red-500 animate-pulse font-medium">
+                            <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
+                            Recording... {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                        </div>
+                    ) : (
+                        <textarea
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder={editingId ? "Edit your message..." : t('type_msg')}
+                            className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
+                            rows={1}
+                            style={{ height: 'auto', minHeight: '48px' }}
+                        />
+                    )}
+                </div>
+
+                {/* Mic / Send Button */}
+                {newMessage.trim() || attachment ? (
+                    <button
+                        onClick={handleSend}
+                        disabled={uploading}
+                        className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 transform active:scale-95"
+                    >
+                        {uploading ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Send className="w-5 h-5" />
+                        )}
+                    </button>
+                ) : (
+                    <button
+                        onClick={toggleRecording}
+                        className={`p-3 rounded-xl transition-all transform active:scale-95 shadow-lg ${isRecording
+                                ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                    >
+                        {isRecording ? <Send className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

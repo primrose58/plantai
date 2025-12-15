@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+export const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 // Enable offline persistence
