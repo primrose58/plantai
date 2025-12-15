@@ -1,50 +1,85 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-    // CORS configuration
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
-
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
-
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
+        const { image, language, promptType } = req.body;
 
-        if (!GEMINI_API_KEY) {
-            return res.status(500).json({ error: 'Server configuration error: Missing API Key' });
+        if (!process.env.VITE_GEMINI_API_KEY) {
+            console.error("Server API Key missing");
+            return res.status(500).json({ error: 'Server configuration error' });
         }
 
-        const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
+        const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use efficient model
 
-        // Forward the body from the frontend to Google
-        const response = await fetch(BASE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body)
-        });
+        // Prompts based on language
+        const prompts = {
+            en: `Analyze this plant image. 
+                1. Identify the plant name.
+                2. Identify if it has any disease or is healthy.
+                3. If diseased, provide the disease name.
+                4. Provide a description of the problem.
+                5. Provide treatment advice.
+                6. Estimate a confidence score (0-100).
+                
+                Return ONLY valid JSON in this format:
+                {
+                    "plant_name": "...",
+                    "is_healthy": true/false,
+                    "disease_name": "...", (or "None" if healthy)
+                    "description": "...",
+                    "treatment": "...",
+                    "confidence": 95,
+                    "status": "success" (or "needs_details" if unclear)
+                }`,
+            tr: `Bu bitki fotoğrafını analiz et.
+                1. Bitki adını tanımla.
+                2. Hastalıklı mı yoksa sağlıklı mı olduğunu belirle.
+                3. Hastalıklıysa, hastalık adını yaz.
+                4. Sorunun açıklamasını yaz.
+                5. Tedavi tavsiyesi ver.
+                6. Güven skoru tahmin et (0-100).
+                
+                SADECE şu formatta geçerli JSON döndür:
+                {
+                    "plant_name": "...",
+                    "is_healthy": true/false,
+                    "disease_name": "...", (veya sağlıklıysa "Yok")
+                    "description": "...",
+                    "treatment": "...",
+                    "confidence": 95,
+                    "status": "success" (veya belirsizse "needs_details")
+                }`
+        };
 
-        const data = await response.json();
+        const prompt = prompts[language] || prompts['en'];
+        const additionalPrompt = promptType === 'macro' ? (language === 'tr' ? " Bu yakından çekilmiş bir makro yaprak fotoğrafı, detaylara odaklan." : " This is a macro shot, focus on leaf details.") : "";
 
-        if (!response.ok) {
-            return res.status(response.status).json(data);
-        }
+        // Prepare Image Part
+        const imageParts = [
+            {
+                inlineData: {
+                    data: image.split(',')[1], // Remove 'data:image/jpeg;base64,' prefix
+                    mimeType: "image/jpeg",
+                },
+            },
+        ];
 
-        // Return the Google response back to frontend
+        const result = await model.generateContent([prompt + additionalPrompt, ...imageParts]);
+        const response = await result.response;
+        const text = response.text();
+
+        // Clean JSON
+        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(jsonStr);
+
         res.status(200).json(data);
-
     } catch (error) {
-        console.error("Proxy Error:", error);
-        res.status(500).json({ error: 'Internal Server Error', details: error.message });
+        console.error("API Error:", error);
+        res.status(500).json({ error: error.message || 'Analysis failed' });
     }
 }
