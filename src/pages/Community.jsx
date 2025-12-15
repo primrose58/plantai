@@ -123,7 +123,7 @@ export default function Community() {
                                         </div>
                                     ))}
                                     {filteredOptions.length === 0 && (
-                                        <div className="px-4 py-2 text-sm text-gray-400">No results</div>
+                                        <div className="px-4 py-2 text-sm text-gray-400">{t('no_results') || 'No results'}</div>
                                     )}
                                 </div>
                             </>
@@ -170,8 +170,8 @@ export default function Community() {
                 </div>
             ) : (
                 <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-                    <p className="text-lg mb-2">👋 No posts yet</p>
-                    <p className="text-sm">Be the first to share your garden!</p>
+                    <p className="text-lg mb-2">{t('no_posts_yet')}</p>
+                    <p className="text-sm">{t('be_the_first')}</p>
                 </div>
             )}
 

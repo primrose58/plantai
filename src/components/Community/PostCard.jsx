@@ -96,12 +96,12 @@ export default function PostCard({ post, onUserClick }) {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-4 animate-fade-in relative group">
-            {/* Delete Button (Owner Only) */}
+            {/* Edit Button (Owner Only) */}
             {isOwner && (
                 <button
                     onClick={handleDelete}
                     className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete Post"
+                    title={t('delete') || "Delete"}
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
@@ -120,7 +120,7 @@ export default function PostCard({ post, onUserClick }) {
                     />
                     <div>
                         <h4 className="font-semibold text-gray-900 dark:text-gray-100 leading-tight hover:underline">
-                            {post.authorName || 'Gardener'}
+                            {post.authorName || t('gardener') || 'Gardener'}
                         </h4>
                         <span className="text-xs text-gray-500">
                             {timeAgo}
@@ -137,7 +137,7 @@ export default function PostCard({ post, onUserClick }) {
                 </p>
                 {post.plantType && post.plantType !== 'Unknown' && (
                     <span className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-md mb-2">
-                        {post.plantType}
+                        {t(post.plantType.toLowerCase().replace(/ /g, '_')) !== post.plantType.toLowerCase().replace(/ /g, '_') ? t(post.plantType.toLowerCase().replace(/ /g, '_')) : post.plantType}
                     </span>
                 )}
             </div>
@@ -159,7 +159,7 @@ export default function PostCard({ post, onUserClick }) {
                             }`}
                     >
                         <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="text-sm font-medium">{likeCount || 'Like'}</span>
+                        <span className="text-sm font-medium">{likeCount || t('like')}</span>
                     </button>
 
                     {/* Comment Button */}
@@ -168,7 +168,7 @@ export default function PostCard({ post, onUserClick }) {
                         onClick={() => setShowComments(!showComments)}
                     >
                         <MessageCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">{commentCount || 'Comment'}</span>
+                        <span className="text-sm font-medium">{commentCount || t('comment')}</span>
                     </button>
 
                     {/* Edit Button (Owner Only) */}
@@ -178,7 +178,7 @@ export default function PostCard({ post, onUserClick }) {
                             onClick={() => setIsEditing(true)}
                         >
                             <Edit2 className="w-5 h-5" />
-                            <span className="text-sm font-medium hidden sm:inline">Edit</span>
+                            <span className="text-sm font-medium hidden sm:inline">{t('edit')}</span>
                         </button>
                     )}
                 </div>
@@ -192,7 +192,7 @@ export default function PostCard({ post, onUserClick }) {
             {isEditing && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg shadow-2xl">
-                        <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Edit Post</h3>
+                        <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">{t('edit_post')}</h3>
                         <textarea
                             className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-4"
                             value={editContent}
@@ -204,13 +204,13 @@ export default function PostCard({ post, onUserClick }) {
                                 onClick={() => setIsEditing(false)}
                                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-gray-700"
                             >
-                                Cancel
+                                {t('cancel')}
                             </button>
                             <button
                                 onClick={handleEditSubmit}
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                             >
-                                Save
+                                {t('save')}
                             </button>
                         </div>
                     </div>
@@ -228,7 +228,7 @@ export default function PostCard({ post, onUserClick }) {
                             </div>
                         ))}
                         {(!post.comments || post.comments.length === 0) && (
-                            <p className="text-gray-400 text-center text-sm italic">No comments yet. Be the first!</p>
+                            <p className="text-gray-400 text-center text-sm italic">{t('no_comments_yet')}</p>
                         )}
                     </div>
 
@@ -239,7 +239,7 @@ export default function PostCard({ post, onUserClick }) {
                                 type="text"
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
-                                placeholder="Add a comment..."
+                                placeholder={t('add_comment_placeholder')}
                                 className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 text-sm outline-none focus:border-green-500"
                             />
                             <button
@@ -251,7 +251,7 @@ export default function PostCard({ post, onUserClick }) {
                             </button>
                         </form>
                     ) : (
-                        <p className="text-center text-sm text-gray-500">Please login to comment.</p>
+                        <p className="text-center text-sm text-gray-500">{t('login_to_comment')}</p>
                     )}
                 </div>
             )}

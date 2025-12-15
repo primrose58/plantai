@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { startChat } from '../../services/analysisService';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const { t } = useTranslation();
 
     if (!user) return null;
 
@@ -61,14 +63,14 @@ export default function UserPreviewModal({ user, onClose }) {
                     </div>
 
                     <h3 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{user.name}</h3>
-                    <p className="text-gray-500 text-sm">Community Member</p>
+                    <p className="text-gray-500 text-sm">{t('community_member') || 'Community Member'}</p>
 
                     <button
                         onClick={handleSendMessage}
                         disabled={loading}
                         className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
                     >
-                        {loading ? 'Starting...' : <> <MessageCircle className="w-5 h-5" /> Send Message </>}
+                        {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
                     </button>
                 </div>
             </div>
