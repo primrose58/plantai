@@ -277,81 +277,85 @@ export async function addComment(postId, userId, userName, text) {
         return true;
     } catch (error) {
         console.error("Error adding comment:", error);
-        /**
-         * Update an existing post (content, title, plantType).
-         */
-        export async function updatePost(postId, updates) {
-            try {
-                const docRef = doc(db, 'posts', postId);
-                await updateDoc(docRef, {
-                    ...updates,
-                    updatedAt: serverTimestamp() // Mark as edited
-                });
-                return true;
-            } catch (error) {
-                console.error("Error updating post:", error);
-                throw error;
-            }
+        throw error;
+    }
+}
+
+/**
+ * Update an existing post (content, title, plantType).
+ */
+export async function updatePost(postId, updates) {
+    try {
+        const docRef = doc(db, 'posts', postId);
+        await updateDoc(docRef, {
+            ...updates,
+            updatedAt: serverTimestamp() // Mark as edited
+        });
+        return true;
+    } catch (error) {
+        console.error("Error updating post:", error);
+        throw error;
+    }
+}
+
+/**
+ * Update author name in all posts for a user.
+ * Note: This is a heavy operation. Ideally done via Cloud Functions.
+ * For this scale, client-side batching is acceptable.
+ */
+export async function updateUserPostsName(userId, newName, newAvatar) {
+    try {
+        // Find all posts by this user
+        const q = query(collection(db, 'posts'), where('userId', '==', userId));
+        const snapshot = await getDocs(q);
+
+        const updatePromises = snapshot.docs.map(doc => {
+            return updateDoc(doc.ref, {
+                authorName: newName,
+                userAvatar: newAvatar
+            });
+        });
+
+        await Promise.all(updatePromises);
+        return true;
+    } catch (error) {
+        console.error("Error syncing user profile to posts:", error);
+        // Don't throw, just log. It's a background consistency task.
+        return false;
+    }
+}
+
+/**
+ * Start or Retrieve a Chat Session.
+ */
+export async function startChat(currentUserId, otherUserId, otherUserData) {
+    try {
+        // Query for existing chat
+        // Note: Firestore doesn't support array-contains=[a,b], so we usually query for one and filter in client (or use a composite ID).
+        // Best approach for 1:1 chats: deterministic ID.
+        // ID: min(uid1, uid2) + "_" + max(uid1, uid2)
+        const sortedIds = [currentUserId, otherUserId].sort();
+        const chatId = `${sortedIds[0]}_${sortedIds[1]}`;
+
+        const chatRef = doc(db, 'chats', chatId);
+        const chatSnap = await getDoc(chatRef);
+
+        if (!chatSnap.exists()) {
+            // Create new chat
+            await setDoc(chatRef, {
+                participants: [currentUserId, otherUserId],
+                participantData: {
+                    [otherUserId]: otherUserData // Cache basic info
+                },
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastMessage: ''
+            });
         }
 
-        /**
-         * Update author name in all posts for a user.
-         * Note: This is a heavy operation. Ideally done via Cloud Functions.
-         * For this scale, client-side batching is acceptable.
-         */
-        export async function updateUserPostsName(userId, newName, newAvatar) {
-            try {
-                // Find all posts by this user
-                const q = query(collection(db, 'posts'), where('userId', '==', userId));
-                const snapshot = await getDocs(q);
-
-                const updatePromises = snapshot.docs.map(doc => {
-                    return updateDoc(doc.ref, {
-                        authorName: newName,
-                        userAvatar: newAvatar
-                    });
-                });
-
-                await Promise.all(updatePromises);
-                return true;
-            } catch (error) {
-                console.error("Error syncing user profile to posts:", error);
-                // Don't throw, just log. It's a background consistency task.
-                return false;
-            }
-        }
-
-        /**
-         * Start or Retrieve a Chat Session.
-         */
-        export async function startChat(currentUserId, otherUserId, otherUserData) {
-            try {
-                // Query for existing chat
-                // Note: Firestore doesn't support array-contains=[a,b], so we usually query for one and filter in client (or use a composite ID).
-                // Best approach for 1:1 chats: deterministic ID.
-                // ID: min(uid1, uid2) + "_" + max(uid1, uid2)
-                const sortedIds = [currentUserId, otherUserId].sort();
-                const chatId = `${sortedIds[0]}_${sortedIds[1]}`;
-
-                const chatRef = doc(db, 'chats', chatId);
-                const chatSnap = await getDoc(chatRef);
-
-                if (!chatSnap.exists()) {
-                    // Create new chat
-                    await setDoc(chatRef, {
-                        participants: [currentUserId, otherUserId],
-                        participantData: {
-                            [otherUserId]: otherUserData // Cache basic info
-                        },
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                        lastMessage: ''
-                    });
-                }
-
-                return chatId;
-            } catch (error) {
-                console.error("Error starting chat:", error);
-                throw error;
-            }
-        }
+        return chatId;
+    } catch (error) {
+        console.error("Error starting chat:", error);
+        throw error;
+    }
+}
