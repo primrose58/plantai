@@ -91,7 +91,7 @@ export async function updateAnalysisStatus(analysisId, updates) {
 /**
  * Create a new community post (generic, not necessarily analysis-linked).
  */
-export async function createPost(userId, postData) {
+export async function createPost(userId, postData, onProgress) {
     try {
         let imageUrl = null;
         if (postData.image) {
@@ -112,6 +112,7 @@ export async function createPost(userId, postData) {
                         (snapshot) => {
                             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                             console.log('Upload is ' + progress + '% done');
+                            if (onProgress) onProgress(progress);
                         },
                         (error) => {
                             console.error("Upload failed internally:", error);

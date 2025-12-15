@@ -16,6 +16,8 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const [uploadProgress, setUploadProgress] = useState(0);
+
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -32,13 +34,16 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
 
         setLoading(true);
         setError('');
+        setUploadProgress(0);
 
         try {
             await createPost(currentUser.uid, {
                 authorName: currentUser.displayName || 'Gardener',
                 content,
                 plantType,
-                image: image // post service handles file upload
+                image: image
+            }, (progress) => {
+                setUploadProgress(progress);
             });
             onPostCreated();
             onClose();
@@ -94,9 +99,18 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                                     type="button"
                                     onClick={() => { setImage(null); setImagePreview(null); }}
                                     className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                                    disabled={loading}
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
+                            </div>
+                        )}
+
+                        {/* Progress Bar */}
+                        {loading && uploadProgress > 0 && (
+                            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div className="bg-green-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                                <p className="text-xs text-center mt-1 text-gray-500">{Math.round(uploadProgress)}%</p>
                             </div>
                         )}
 
@@ -104,7 +118,8 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 text-gray-500 hover:text-green-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                                disabled={loading}
+                                className="flex items-center gap-2 text-gray-500 hover:text-green-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
                             >
                                 <ImageIcon className="w-5 h-5" />
                                 <span className="text-sm font-medium">Add Photo</span>
@@ -123,7 +138,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                                 className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                Post
+                                {loading ? 'Posting...' : 'Post'}
                             </button>
                         </div>
                     </form>
