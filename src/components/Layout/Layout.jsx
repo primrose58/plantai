@@ -43,8 +43,8 @@ export default function Layout() {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const { addToast } = useToast();
-    const [sound] = useState(new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')); // Notification Sound
+    // Shorter Notification Sound (Pop)
+    const [sound] = useState(new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3'));
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');

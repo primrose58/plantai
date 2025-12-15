@@ -32,7 +32,12 @@ export default function Chat() {
                 const otherUid = data.participants.find(p => p !== currentUser.uid);
 
                 if (otherUid) {
-                    // LISTEN to User Doc for Real-time Presence
+                    // 1. Immediate Fallback from Cache (fixes "Chat" showing instead of name)
+                    if (data.participantData?.[otherUid]) {
+                        // Only set if we don't have a live user yet or to ensure initial state
+                        const cached = data.participantData[otherUid];
+                        setOtherUser(prev => prev?.id === otherUid ? prev : { ...cached, id: otherUid });
+                    }
                     // Note: This creates a nested listener which is tricky to clean up in a simple useEffect.
                     // Ideally we set state for 'otherUserId' and have a separate useEffect for it.
                     // But for now, we can attach it to a ref or just let it exist for the lifecycle of this hook (re-running this hook cleans up unsubChat, but not unsubUser if defined inside).

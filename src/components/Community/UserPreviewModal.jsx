@@ -20,12 +20,24 @@ export default function UserPreviewModal({ user, onClose }) {
     const [liveUser, setLiveUser] = useState(user);
 
     useEffect(() => {
-        if (!user?.uid) return;
-        const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-            if (doc.exists()) setLiveUser({ uid: doc.id, ...doc.data() });
+        const targetId = user?.uid || user?.id; // Handle both ID formats
+        if (!targetId) return;
+
+        const unsub = onSnapshot(doc(db, 'users', targetId), (doc) => {
+            if (doc.exists()) {
+                setLiveUser({ uid: doc.id, ...doc.data() });
+            }
+        }, (err) => {
+            console.error("User listener error", err);
         });
+
         return () => unsub();
     }, [user]);
+
+    if (!user) return null; // Safety check
+
+    // Ensure liveUser has an ID for messaging
+    const effectiveUser = { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id };
 
     const isOnline = (u) => {
         if (!u?.lastSeen) return false;
@@ -78,18 +90,18 @@ export default function UserPreviewModal({ user, onClose }) {
 
                 <div className="flex flex-col items-center relative">
                     <img
-                        src={liveUser.photoURL || liveUser.avatar || `https://ui-avatars.com/api/?name=${liveUser.name}`}
-                        alt={liveUser.name}
+                        src={effectiveUser.photoURL || effectiveUser.avatar || `https://ui-avatars.com/api/?name=${effectiveUser.name}`}
+                        alt={effectiveUser.name}
                         className="w-24 h-24 rounded-full object-cover mb-4 shadow-lg border-4 border-green-50 dark:border-green-900"
                     />
 
                     {/* Status Indicator */}
-                    <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(liveUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isOnline(liveUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                        {isOnline(liveUser) ? 'Online' : 'Offline'}
+                    <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(effectiveUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isOnline(effectiveUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                        {isOnline(effectiveUser) ? 'Online' : 'Offline'}
                     </div>
 
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{liveUser.name || 'User'}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{effectiveUser.name || 'User'}</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
                         <UserIcon className="w-3 h-3" /> {t('community_member') || 'Community Member'}
                     </p>
