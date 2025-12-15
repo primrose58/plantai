@@ -108,13 +108,53 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
 
         throw new Error("Invalid response structure from AI");
 
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        // ... (keep existing code) but we need to implement the fallback in the catch block
+
     } catch (error) {
-        console.warn("Backend analysis failed, trying fallback...", error);
+        console.warn("Backend analysis failed, attempting client-side fallback...", error);
 
-        // OPTIONAL FALLBACK: Call Gemini Direct (Client-Side) 
-        // Only if we absolutely have to. For now, let's just show the clearer error.
-        // Or re-throw nicely.
+        // FALLBACK: Client-Side Direct Call
+        // This is crucial for local development or if the serverless function is down.
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-        throw new Error(lang === 'tr' ? "Teşhis sunucusu yanıt vermedi. (Lütfen VPN kapatıp tekrar deneyin)" : "Analysis server unavailable.");
+        if (!apiKey) {
+            throw new Error("API Key missing. Please set VITE_GEMINI_API_KEY.");
+        }
+
+        try {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            // Use 'gemini-1.5-flash' for speed and cost efficiency
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+            // Prepare parts for SDK
+            const userPrompt = promptText;
+            const sdkParts = [userPrompt];
+
+            // Convert base64 images to SDK format
+            images.forEach(img => {
+                if (!img) return;
+                const base64Data = img.includes(',') ? img.split(',')[1] : img;
+                sdkParts.push({
+                    inlineData: {
+                        data: base64Data,
+                        mimeType: "image/jpeg"
+                    }
+                });
+            });
+
+            const result = await model.generateContent(sdkParts);
+            const response = await result.response;
+            const text = response.text();
+
+            // Clean json
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleanText);
+
+        } catch (fallbackError) {
+            console.error("Fallback also failed:", fallbackError);
+            throw new Error(fallbackError.message || "AI Diagnosis completely failed.");
+        }
     }
 }
