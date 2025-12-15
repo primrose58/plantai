@@ -302,7 +302,7 @@ export default function Home() {
     );
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-full max-w-5xl mx-auto w-full p-4">
+        <div className="flex flex-col items-center justify-center min-h-full w-full max-w-7xl mx-auto p-4 lg:p-8">
             <input
                 type="file"
                 accept="image/*"
