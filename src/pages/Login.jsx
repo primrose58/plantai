@@ -45,12 +45,9 @@ export default function Login() {
 
             if (!user.emailVerified) {
                 await auth.signOut();
-                setError(t('email_not_verified') || "Please verify your email address. Check your spam folder.");
+                setError(t('email_not_verified') || "Email not verified. Please check your inbox.");
                 return;
             }
-
-            // Perform login
-            await signInWithEmailAndPassword(auth, email, password);
 
             // Note: We do NOT navigate here manually anymore.
             // We wait for the AuthContext to update 'currentUser'.
@@ -59,14 +56,21 @@ export default function Login() {
 
         } catch (err) {
             console.error(err);
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                setError(t('invalid_credentials') || 'Invalid email or password.');
+            let msg = t('login_failed') || 'Failed to login.';
+
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                msg = t('invalid_credentials') || 'Invalid email or password.';
             } else if (err.code === 'auth/too-many-requests') {
-                setError(t('too_many_requests') || 'Too many attempts. Try again later.');
-            } else {
-                setError(t('login_failed') || 'Failed to login. Please try again.');
+                msg = t('too_many_requests') || 'Too many attempts. Try again later.';
+            } else if (err.code === 'auth/user-disabled') {
+                msg = 'Account disabled. Contact support.';
+            } else if (err.code === 'auth/network-request-failed') {
+                msg = 'Network error. Check your connection.';
             }
-            setLoading(false); // Only stop loading on error. On success, keep loading until redirect.
+
+            setError(msg);
+        } finally {
+            setLoading(false);
         }
     };
 
