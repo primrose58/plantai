@@ -33,11 +33,11 @@ export default function UserPreviewModal({ user, onClose }) {
                 user.id,
                 {
                     name: user.name,
-                    avatar: user.avatar
+                    avatar: user.avatar || null // Firestore hates undefined
                 },
                 {
                     name: currentUser.displayName || 'User',
-                    avatar: currentUser.photoURL // Note: might be null if only on firestore, but service handles cache update
+                    avatar: currentUser.photoURL || null
                 }
             );
             onClose();
