@@ -76,21 +76,33 @@ export default function UserPreviewModal({ user, onClose }) {
                     <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
 
-                        )}
+                <div className="flex flex-col items-center relative">
+                    <img
+                        src={liveUser.photoURL || liveUser.avatar || `https://ui-avatars.com/api/?name=${liveUser.name}`}
+                        alt={liveUser.name}
+                        className="w-24 h-24 rounded-full object-cover mb-4 shadow-lg border-4 border-green-50 dark:border-green-900"
+                    />
+
+                    {/* Status Indicator */}
+                    <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(liveUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isOnline(liveUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                        {isOnline(liveUser) ? 'Online' : 'Offline'}
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{liveUser.name || 'User'}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
+                        <UserIcon className="w-3 h-3" /> {t('community_member') || 'Community Member'}
+                    </p>
+
+                    <button
+                        onClick={handleSendMessage}
+                        disabled={loading}
+                        className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
+                    >
+                        {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
+                    </button>
+                </div>
             </div>
-
-            <h3 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{user.name}</h3>
-            <p className="text-gray-500 text-sm">{t('community_member') || 'Community Member'}</p>
-
-            <button
-                onClick={handleSendMessage}
-                disabled={loading}
-                className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
-            >
-                {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
-            </button>
         </div>
-            </div >
-        </div >
     );
 }
