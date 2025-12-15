@@ -1,40 +1,35 @@
-import { db, storage } from './firebase';
-import { collection, addDoc, query, where, orderBy, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
-import { ref } from 'firebase/storage'; // Kept ref just in case, but uploads are gone
+import { db } from './firebase'; // Removed storage import
+import { collection, addDoc, query, where, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
 
 const COLLECTION_NAME = 'analyses';
 
 /**
  * Saves a new diagnosis record.
- * Uploads image to Storage first, then saves metadata to Firestore.
+ * NOW SAVES BASE64 DIRECTLY TO FIRESTORE (No Storage Bucket).
  */
 export async function saveAnalysis(userId, plantType, images, result, isPublic = false) {
     try {
-        // 1. Upload Main Image
-        let mainImageUrl = null;
-        if (images.main) {
-            const storageRef = ref(storage, `analyses/${userId}/${Date.now()}_main.jpg`);
-            await uploadString(storageRef, images.main, 'data_url');
-            mainImageUrl = await getDownloadURL(storageRef);
+        // Images are expected to be Base64 strings already from the UI (Home.jsx)
+        // If they are not, we might need to convert them, but Home.jsx likely handles the capture as Data URL.
+
+        const mainImageUrl = images.main || null; // Direct Base64
+        const macroImageUrl = images.macro || null; // Direct Base64
+
+        // Check if image is too massive (sanity check)
+        if (mainImageUrl && mainImageUrl.length > 900000) {
+            console.warn("Main image is very large for Firestore!");
+            // In a real app we might re-compress here, but Home.jsx should have handled it.
         }
 
-        // 2. Upload Macro Image (if exists)
-        let macroImageUrl = null;
-        if (images.macro) {
-            const storageRef = ref(storage, `analyses/${userId}/${Date.now()}_macro.jpg`);
-            await uploadString(storageRef, images.macro, 'data_url');
-            macroImageUrl = await getDownloadURL(storageRef);
-        }
-
-        // 3. Save to Firestore
+        // Save to Firestore
         const docRef = await addDoc(collection(db, COLLECTION_NAME), {
             userId,
             plantType,
-            mainImage: mainImageUrl,
+            mainImage: mainImageUrl, // Saved as Base64 string
             macroImage: macroImageUrl,
             result,
-            isPublic, // For Community features later
-            status: 'active', // active, resolved, archived
+            isPublic,
+            status: 'active',
             createdAt: serverTimestamp(),
             nextCheckup: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
         });
@@ -51,19 +46,17 @@ export async function saveAnalysis(userId, plantType, images, result, isPublic =
  */
 export async function getUserAnalyses(userId) {
     try {
-        // Query WITHOUT orderBy to avoid index requirements
         const q = query(
             collection(db, COLLECTION_NAME),
             where("userId", "==", userId)
         );
         const snapshot = await getDocs(q);
 
-        // Sort in memory (Client-side sorting)
         const analyses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         return analyses.sort((a, b) => {
             const dateA = a.createdAt?.seconds || 0;
             const dateB = b.createdAt?.seconds || 0;
-            return dateB - dateA; // Descending order
+            return dateB - dateA;
         });
     } catch (error) {
         console.error("Error fetching analyses:", error);
@@ -72,7 +65,7 @@ export async function getUserAnalyses(userId) {
 }
 
 /**
- * Update analysis status or add feedback(progress).
+ * Update analysis status.
  */
 export async function updateAnalysisStatus(analysisId, updates) {
     try {
@@ -89,33 +82,23 @@ export async function updateAnalysisStatus(analysisId, updates) {
 }
 
 /**
- * Create a new community post (generic, not necessarily analysis-linked).
- */
-/**
- * Create a new community post (generic, not necessarily analysis-linked).
+ * Create a new community post.
  */
 export async function createPost(userId, postData, onProgress) {
     try {
         let imageUrl = null;
         if (postData.image) {
-            // Check if it's a Base64 string (direct database storage)
             if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
-                console.log("Saving image as Base64 string in Firestore (No Storage Bucket)...");
-                imageUrl = postData.image; // Use the Base64 string directly
+                imageUrl = postData.image;
             } else {
-                // If it's a File object, we can't upload it without Storage Plan. 
-                // CreatePostModal should have converted it to Base64 already.
                 console.warn("Received File object but Storage is disabled. Skipping image.");
             }
         }
 
-        console.log("Adding doc to Firestore...");
-
-        // Create the document promise
         const addDocPromise = addDoc(collection(db, 'posts'), {
             userId,
             authorName: postData.authorName || "Gardener",
-            title: postData.title || "", // No default title
+            title: postData.title || "",
             content: postData.content,
             image: imageUrl,
             plantType: postData.plantType || 'Unknown',
@@ -124,18 +107,8 @@ export async function createPost(userId, postData, onProgress) {
             createdAt: serverTimestamp(),
         });
 
-        // Race against a 5-second timeout to prevent UI hanging
-        // If Firestore is offline/slow, the local cache handles it (optimistic UI)
-        // We don't want to trap the user in "Posting..." forever.
         const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), 5000));
-
-        const result = await Promise.race([addDocPromise, timeoutPromise]);
-
-        if (result === 'timeout') {
-            console.log("Firestore write timed out (likely offline). Proceeding optimistically.");
-        } else {
-            console.log("Firestore write confirmed by server.");
-        }
+        await Promise.race([addDocPromise, timeoutPromise]);
 
         return true;
     } catch (error) {
@@ -145,17 +118,16 @@ export async function createPost(userId, postData, onProgress) {
 }
 
 /**
- * Share an existing analysis to the Community (creates a Post).
+ * Share an existing analysis to the Community.
  */
 export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType) {
     try {
-        // Create a new post document based on the analysis
         await addDoc(collection(db, 'posts'), {
             userId: analysisData.userId,
-            authorName: "Gardener", // Ideally fetch user name, but 'Gardener' or anonymous is fine for now
+            authorName: "Gardener",
             title: `Help with my ${plantType}`,
             content: `I diagnosed this ${plantType} with ${analysisData.result.disease_name}. ${analysisData.result.description.substring(0, 100)}...`,
-            image: analysisData.mainImage,
+            image: analysisData.mainImage, // Already Base64
             plantType: plantType,
             likes: [],
             comments: [],
@@ -163,7 +135,6 @@ export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantTy
             relatedAnalysisId: AnalysisId
         });
 
-        // Mark analysis as shared
         await updateAnalysisStatus(AnalysisId, { isPublic: true });
         return true;
     } catch (error) {
@@ -177,21 +148,9 @@ export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantTy
  */
 export async function addFeedbackUpdate(analysisId, imageBase64, note) {
     try {
-        let imageUrl = null;
-        if (imageBase64) {
-            const storageRef = ref(storage, `analyses/feedback/${analysisId}_${Date.now()}.jpg`);
-            await uploadString(storageRef, imageBase64, 'data_url');
-            imageUrl = await getDownloadURL(storageRef);
-        }
-
-        const docRef = doc(db, COLLECTION_NAME, analysisId);
-        // We use arrayUnion to append to a 'history' or 'updates' array
-        // But first we need to make sure the field exists or simple update logic
-        // For simplicity, let's assume we store them in a subcollection or just an array field
-        // Let's use a subcollection 'updates' for scalability
-
+        // Base64 is passed directly to Firestore
         await addDoc(collection(db, COLLECTION_NAME, analysisId, 'updates'), {
-            imageUrl,
+            imageUrl: imageBase64 || null,
             note,
             createdAt: serverTimestamp()
         });
@@ -204,7 +163,7 @@ export async function addFeedbackUpdate(analysisId, imageBase64, note) {
 }
 
 /**
- * Delete a post (Owner only).
+ * Delete a post.
  */
 export async function deletePost(postId) {
     try {
@@ -217,7 +176,7 @@ export async function deletePost(postId) {
 }
 
 /**
- * Toggle Like on a post.
+ * Toggle Like.
  */
 export async function toggleLike(postId, userId) {
     try {
@@ -239,7 +198,7 @@ export async function toggleLike(postId, userId) {
 }
 
 /**
- * Add a comment to a post.
+ * Add a comment.
  */
 export async function addComment(postId, userId, userName, text) {
     try {
@@ -248,7 +207,7 @@ export async function addComment(postId, userId, userName, text) {
             userId,
             userName,
             text,
-            createdAt: Date.now() // Timestamp for sorting
+            createdAt: Date.now()
         };
         await updateDoc(postRef, {
             comments: arrayUnion(comment)
@@ -261,14 +220,14 @@ export async function addComment(postId, userId, userName, text) {
 }
 
 /**
- * Update an existing post (content, title, plantType).
+ * Update post.
  */
 export async function updatePost(postId, updates) {
     try {
         const docRef = doc(db, 'posts', postId);
         await updateDoc(docRef, {
             ...updates,
-            updatedAt: serverTimestamp() // Mark as edited
+            updatedAt: serverTimestamp()
         });
         return true;
     } catch (error) {
@@ -278,13 +237,10 @@ export async function updatePost(postId, updates) {
 }
 
 /**
- * Update author name in all posts for a user.
- * Note: This is a heavy operation. Ideally done via Cloud Functions.
- * For this scale, client-side batching is acceptable.
+ * Update author name in all posts.
  */
 export async function updateUserPostsName(userId, newName, newAvatar) {
     try {
-        // Find all posts by this user
         const q = query(collection(db, 'posts'), where('userId', '==', userId));
         const snapshot = await getDocs(q);
 
@@ -299,13 +255,12 @@ export async function updateUserPostsName(userId, newName, newAvatar) {
         return true;
     } catch (error) {
         console.error("Error syncing user profile to posts:", error);
-        // Don't throw, just log. It's a background consistency task.
         return false;
     }
 }
 
 /**
- * Start or Retrieve a Chat Session.
+ * Start or Retrieve a Chat.
  */
 export async function startChat(currentUserId, otherUserId, otherUserData, currentUserData) {
     try {
@@ -313,7 +268,6 @@ export async function startChat(currentUserId, otherUserId, otherUserData, curre
             throw new Error("Cannot start chat with yourself.");
         }
 
-        // Deterministic ID: min_max
         const sortedIds = [currentUserId, otherUserId].sort();
         const chatId = `${sortedIds[0]}_${sortedIds[1]}`;
 
@@ -321,23 +275,19 @@ export async function startChat(currentUserId, otherUserId, otherUserData, curre
         const chatSnap = await getDoc(chatRef);
 
         if (!chatSnap.exists()) {
-            // Create new chat with BOTH users' cache
             await setDoc(chatRef, {
                 participants: [currentUserId, otherUserId],
                 participantData: {
-                    [otherUserId]: otherUserData, // Info about them (for me to see)
-                    [currentUserId]: currentUserData // Info about me (for them to see)
+                    [otherUserId]: otherUserData,
+                    [currentUserId]: currentUserData
                 },
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: ''
             });
         } else {
-            // Optional: Update cached data even if chat exists (in case avatar changed)
-            // This keeps profiles fresh in the chat list
             await updateDoc(chatRef, {
                 [`participantData.${currentUserId}`]: currentUserData,
-                // We could also update the other user if we have fresh data, but we mainly know about ourselves
             });
         }
 
