@@ -49,25 +49,24 @@ export default function Login() {
                 return;
             }
 
-            // Redirect logic with persistence
-            if (location.state?.returnUrl && location.state?.pendingResult) {
-                console.log("Restoring pending state...", location.state);
-                navigate(location.state.returnUrl, {
-                    replace: true,
-                    state: {
-                        restoredResult: location.state.pendingResult,
-                        restoredImages: location.state.pendingImages,
-                        restoredPlantType: location.state.pendingPlantType
-                    }
-                });
-            } else {
-                navigate('/');
-            }
+            // Perform login
+            await signInWithEmailAndPassword(auth, email, password);
+
+            // Note: We do NOT navigate here manually anymore.
+            // We wait for the AuthContext to update 'currentUser'.
+            // The 'if (currentUser)' check at the top of this component
+            // will handle the redirect automatically once the state syncs.
+
         } catch (err) {
-            setError('Failed to login. Please check your credentials.');
             console.error(err);
-        } finally {
-            setLoading(false);
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                setError(t('invalid_credentials') || 'Invalid email or password.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setError(t('too_many_requests') || 'Too many attempts. Try again later.');
+            } else {
+                setError(t('login_failed') || 'Failed to login. Please try again.');
+            }
+            setLoading(false); // Only stop loading on error. On success, keep loading until redirect.
         }
     };
 
