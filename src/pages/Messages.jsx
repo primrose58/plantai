@@ -19,10 +19,10 @@ export default function Messages() {
             return;
         }
 
+        // Remove orderBy to avoid needing a composite index immediately
         const q = query(
             collection(db, 'chats'),
-            where('participants', 'array-contains', currentUser.uid),
-            orderBy('updatedAt', 'desc')
+            where('participants', 'array-contains', currentUser.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -36,7 +36,14 @@ export default function Messages() {
                     ...data,
                     otherUser
                 };
-            });
+            })
+                .sort((a, b) => {
+                    // Client-side sort by updatedAt
+                    const timeA = a.updatedAt?.seconds || 0;
+                    const timeB = b.updatedAt?.seconds || 0;
+                    return timeB - timeA;
+                });
+
             setChats(chatsData);
             setLoading(false);
         }, err => {

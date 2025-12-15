@@ -2,41 +2,38 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine, Save, CheckCircle } from 'lucide-react';
 import { analyzePlantImage } from '../services/gemini';
-import { saveAnalysis } from '../services/analysisService'; // Import Service
+import { saveAnalysis } from '../services/analysisService';
 import DiagnosisResult from '../components/Plant/DiagnosisResult';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Home() {
     const { t, i18n } = useTranslation();
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const { addToast } = useToast();
 
     const fileInputRef = useRef(null);
 
-    // Wizard State: 'landing' | 'input_type' | 'capture_main' | 'analyzing' | 'result' | 'capture_macro'
+    // Wizard State
     const [step, setStep] = useState('landing');
     const [plantType, setPlantType] = useState('');
     const [images, setImages] = useState({ main: null, macro: null });
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
-    const [error, setError] = useState('');
-    const [isSaved, setIsSaved] = useState(false); // New state for manual save
+    const [isSaved, setIsSaved] = useState(false);
 
-    // Restore state from navigation (e.g. after login)
+    // Restore state
     useEffect(() => {
         if (location.state?.restoredResult) {
             setResult(location.state.restoredResult);
-            // If we have a result, assume we are at the result step
             setStep('result');
-
-            // Restore images and plant type if available
             if (location.state?.restoredImages) {
                 setImages(location.state.restoredImages);
                 setPlantType(location.state.restoredPlantType || '');
             }
-            // NO AUTO SAVE HERE ANYMORE
         }
     }, [location.state]);
 
@@ -69,7 +66,6 @@ export default function Home() {
                 await performDiagnosis(base64String, false);
             } else if (step === 'capture_macro') {
                 setImages(prev => ({ ...prev, macro: base64String }));
-                // Analyze with BOTH images
                 await performDiagnosis([images.main, base64String], true);
             }
         };
@@ -78,29 +74,25 @@ export default function Home() {
 
     const performDiagnosis = async (imageData, isMacroRetry) => {
         setLoading(true);
-        setError('');
         setStep('analyzing');
-        setIsSaved(false); // Reset save state on new diagnosis
+        setIsSaved(false);
 
         try {
             const analysis = await analyzePlantImage(imageData, i18n.language, plantType);
 
             if (analysis.status === 'needs_details') {
-                setError(t('need_macro_photo')); // Show as info/warning, not hard error
+                addToast(t('need_macro_photo'), 'info');
                 setStep('capture_macro');
             } else if (analysis.status === 'error') {
                 throw new Error(analysis.error);
             } else {
                 setResult(analysis);
                 setStep('result');
-                // NO AUTO SAVE HERE ANYMORE
             }
         } catch (err) {
             console.error(err);
-            // Use specific error message if available, otherwise generic
             const msg = err.message || t('error_diagnosis_failed') || 'Diagnosis failed.';
-            setError(msg);
-            // Go back to main capture if it failed completely
+            addToast(msg, 'error'); // REAL ERROR SHOWN HERE
             setStep('capture_main');
         } finally {
             setLoading(false);
@@ -108,16 +100,16 @@ export default function Home() {
     };
 
     const handleSaveResult = async () => {
-        if (!currentUser) return; // Should be handled by UI state, but safety check
+        if (!currentUser) return;
         if (isSaved) return;
 
         try {
             await saveAnalysis(currentUser.uid, plantType, images, result);
             setIsSaved(true);
-            alert(t('save_success') || "Analysis saved successfully!");
+            addToast(t('save_success') || "Analysis saved successfully!", "success");
         } catch (error) {
             console.error("Manual save failed:", error);
-            alert("Failed to save analysis.");
+            addToast("Failed to save analysis: " + error.message, "error");
         }
     };
 
@@ -125,8 +117,8 @@ export default function Home() {
         navigate('/login', {
             state: {
                 pendingResult: result,
-                pendingImages: images, // Pass images
-                pendingPlantType: plantType, // Pass plant type
+                pendingImages: images,
+                pendingPlantType: plantType,
                 returnUrl: '/'
             }
         });
@@ -136,7 +128,6 @@ export default function Home() {
         setImages({ main: null, macro: null });
         setPlantType('');
         setResult(null);
-        setError('');
         setIsSaved(false);
         setStep('input_type');
         if (fileInputRef.current) fileInputRef.current.value = '';
