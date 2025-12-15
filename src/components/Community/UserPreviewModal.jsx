@@ -4,23 +4,25 @@ import { useAuth } from '../../contexts/AuthContext';
 import { startChat } from '../../services/analysisService';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const { t } = useTranslation();
+    const { addToast } = useToast();
 
     if (!user) return null;
 
     const handleSendMessage = async () => {
         if (!currentUser) {
-            alert("Please login to message users.");
+            addToast(t('login_to_message') || "Please login to message users.", "error");
             return;
         }
 
         if (currentUser.uid === user.id) {
-            alert("You cannot message yourself.");
+            addToast(t('cannot_message_self') || "You cannot message yourself.", "info");
             return;
         }
 
@@ -35,14 +37,14 @@ export default function UserPreviewModal({ user, onClose }) {
                 },
                 {
                     name: currentUser.displayName || 'User',
-                    avatar: currentUser.photoURL
+                    avatar: currentUser.photoURL // Note: might be null if only on firestore, but service handles cache update
                 }
             );
             onClose();
             navigate(`/messages/${chatId}`);
         } catch (error) {
             console.error("Failed to start chat:", error);
-            alert("Failed to start chat. Please try again.");
+            addToast(t('failed_start_chat') + ": " + error.message, "error");
         } finally {
             setLoading(false);
         }
