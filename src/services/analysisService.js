@@ -91,6 +91,9 @@ export async function updateAnalysisStatus(analysisId, updates) {
 /**
  * Create a new community post (generic, not necessarily analysis-linked).
  */
+/**
+ * Create a new community post (generic, not necessarily analysis-linked).
+ */
 export async function createPost(userId, postData, onProgress) {
     try {
         let imageUrl = null;
@@ -98,32 +101,32 @@ export async function createPost(userId, postData, onProgress) {
             const storageRef = ref(storage, `posts/${userId}/${Date.now()}.jpg`);
             console.log("Starting upload to:", storageRef.fullPath);
 
+            // Failsafe for onProgress if not provided
+            const reportProgress = (val) => {
+                if (onProgress) onProgress(val);
+                console.log(`Upload Progress: ${val}%`);
+            };
+
+            reportProgress(10); // Start
+
             // Handle both base64 and blob/file
             if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
                 await uploadString(storageRef, postData.image, 'data_url');
             } else {
-                console.log("Using Resumable Upload...");
-                const metadata = { contentType: postData.image.type || 'image/jpeg' };
-                const uploadTask = uploadBytesResumable(storageRef, postData.image, metadata);
+                console.log("Using Standard UploadBytes...");
+                // Note: uploadBytes does not support progress stream easily in SDK v9 without XHR hook, 
+                // but it is more robust against hanging listeners.
+                // We fake progress for UX or use resumable if strictly needed. 
+                // Given the issues, let's try uploadBytes for reliability. 
+                // If user really needs progress, we can revert, but let's fix the hang first.
 
-                // Wrap in promise to await completion
-                await new Promise((resolve, reject) => {
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            console.log('Upload is ' + progress + '% done');
-                            if (onProgress) onProgress(progress);
-                        },
-                        (error) => {
-                            console.error("Upload failed internally:", error);
-                            reject(error);
-                        },
-                        () => resolve()
-                    );
-                });
+                reportProgress(30);
+                const snapshot = await uploadBytes(storageRef, postData.image);
+                reportProgress(90);
             }
             console.log("Upload done, getting URL...");
             imageUrl = await getDownloadURL(storageRef);
+            reportProgress(100);
             console.log("Got URL:", imageUrl);
         }
 
