@@ -6,7 +6,7 @@ import { MessageCircle, Heart, Share2, Trash2, Send, Edit2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { toggleLike, addComment, deletePost, updatePost } from '../../services/analysisService';
 
-export default function PostCard({ post, onUserClick }) {
+export default function PostCard({ post, onUserClick, onViewAnalysis }) {
     const { t, i18n } = useTranslation();
     const { currentUser } = useAuth();
     const dateLocale = i18n.language === 'tr' ? tr : enUS;
@@ -140,6 +140,19 @@ export default function PostCard({ post, onUserClick }) {
                         {t(post.plantType.toLowerCase().replace(/ /g, '_')) !== post.plantType.toLowerCase().replace(/ /g, '_') ? t(post.plantType.toLowerCase().replace(/ /g, '_')) : post.plantType}
                     </span>
                 )}
+                {/* View Analysis Button (If Shared) */}
+                {post.relatedAnalysisId && (
+                    <div className="px-4 pb-2">
+                        <button
+                            onClick={() => onViewAnalysis && onViewAnalysis(post.relatedAnalysisId)}
+                            className="w-full py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                        >
+                            <span className="bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">AI</span>
+                            {t('view_full_analysis') || "View Full Diagnosis Report"}
+                        </button>
+                    </div>
+                )}
+
             </div>
 
             {/* Image */}
