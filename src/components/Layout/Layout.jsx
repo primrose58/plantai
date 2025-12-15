@@ -117,7 +117,7 @@ export default function Layout() {
                             <button
                                 onClick={async () => {
                                     await logout();
-                                    navigate('/login');
+                                    navigate('/');
                                 }}
                                 className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
                             >
