@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,26 @@ export default function PostCard({ post, onUserClick }) {
     const isLiked = post.likes && currentUser && post.likes.includes(currentUser.uid);
     const likeCount = post.likes ? post.likes.length : 0;
     const commentCount = post.comments ? post.comments.length : 0;
+    const [timeAgo, setTimeAgo] = useState('');
+
+    useEffect(() => {
+        const updateTime = () => {
+            if (!post.createdAt?.seconds) return;
+            const date = new Date(post.createdAt.seconds * 1000);
+            setTimeAgo(formatDistanceToNow(date, {
+                addSuffix: true,
+                locale: dateLocale,
+                includeSeconds: true
+            }));
+        };
+
+        updateTime(); // Initial run
+        const interval = setInterval(updateTime, 30000); // Update every 30s
+        return () => clearInterval(interval);
+    }, [post.createdAt, dateLocale]);
+
     const createdAt = post.createdAt?.seconds ? new Date(post.createdAt.seconds * 1000) : new Date();
+    // derived variables...
 
     const handleLike = async () => {
         if (!currentUser || likeLoading) return;
@@ -88,7 +107,7 @@ export default function PostCard({ post, onUserClick }) {
                             {post.authorName || 'Gardener'}
                         </h4>
                         <span className="text-xs text-gray-500">
-                            {formatDistanceToNow(createdAt, { addSuffix: true, locale: dateLocale })}
+                            {timeAgo}
                         </span>
                     </div>
                 </div>
