@@ -31,8 +31,11 @@ export default function Login() {
             await signInWithEmailAndPassword(auth, email, password);
 
             // Redirect logic with persistence
+            // Redirect logic with persistence
             if (location.state?.returnUrl && location.state?.pendingResult) {
+                console.log("Restoring pending state...", location.state);
                 navigate(location.state.returnUrl, {
+                    replace: true,
                     state: {
                         restoredResult: location.state.pendingResult,
                         restoredImages: location.state.pendingImages,

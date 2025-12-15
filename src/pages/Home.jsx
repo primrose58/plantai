@@ -31,7 +31,8 @@ export default function Home() {
             setStep('result');
 
             // Auto-save logic after login redirect (now with images!)
-            if (currentUser && location.state.restoredImages) {
+            // Auto-save logic after login redirect (now with images!)
+            if (currentUser && location.state?.restoredImages) {
                 const imagesData = location.state.restoredImages;
                 const pType = location.state.restoredPlantType;
                 // Restore local state for viewing
@@ -45,7 +46,7 @@ export default function Home() {
             }
 
             // Clean up state to prevent loops
-            window.history.replaceState({}, document.title);
+            // window.history.replaceState({}, document.title); // Commented out to prevent aggressive clearing if re-renders happen
         }
     }, [location.state, currentUser]);
 
@@ -280,16 +281,16 @@ export default function Home() {
                 </div>
 
                 {!currentUser && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 h-full min-h-[400px]">
-                        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl text-center max-w-sm border border-white/20">
-                            <div className="bg-green-100 dark:bg-green-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="absolute inset-0 flex items-center justify-center z-20 backdrop-blur-[2px] rounded-2xl">
+                        <div className="bg-white/90 dark:bg-gray-900/90 p-8 rounded-3xl shadow-2xl text-center max-w-sm border border-white/20 mx-4 transform transition-all hover:scale-105">
+                            <div className="bg-green-100 dark:bg-green-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
                                 <ScanLine className="w-8 h-8 text-green-600" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('login_to_view')}</h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-6">{t('login_blur_text')}</p>
+                            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">{t('login_blur_text')}</p>
                             <button
                                 onClick={handleLoginRedirect}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/25"
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/25 active:scale-95"
                             >
                                 {t('login')}
                             </button>
