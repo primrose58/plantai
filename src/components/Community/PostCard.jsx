@@ -39,7 +39,10 @@ export default function PostCard({ post, onUserClick }) {
 
     useEffect(() => {
         const updateTime = () => {
-            if (!post.createdAt?.seconds) return;
+            if (!post.createdAt?.seconds) {
+                setTimeAgo(t('just_now') || 'Just now');
+                return;
+            }
             const date = new Date(post.createdAt.seconds * 1000);
             setTimeAgo(formatDistanceToNow(date, {
                 addSuffix: true,
@@ -51,7 +54,7 @@ export default function PostCard({ post, onUserClick }) {
         updateTime(); // Initial run
         const interval = setInterval(updateTime, 30000); // Update every 30s
         return () => clearInterval(interval);
-    }, [post.createdAt, dateLocale]);
+    }, [post.createdAt, dateLocale, t]);
 
     const createdAt = post.createdAt?.seconds ? new Date(post.createdAt.seconds * 1000) : new Date();
     // derived variables...
