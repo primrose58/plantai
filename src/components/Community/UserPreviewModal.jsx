@@ -15,12 +15,12 @@ export default function UserPreviewModal({ user, onClose }) {
     const { t } = useTranslation();
     const { addToast } = useToast();
 
-    if (!user) return null;
-
     const [liveUser, setLiveUser] = useState(user);
 
     useEffect(() => {
-        const targetId = user?.uid || user?.id; // Handle both ID formats
+        // Safe guard inside effect
+        if (!user) return;
+        const targetId = user.uid || user.id; // Handle both ID formats
         if (!targetId) return;
 
         const unsub = onSnapshot(doc(db, 'users', targetId), (doc) => {
@@ -34,15 +34,16 @@ export default function UserPreviewModal({ user, onClose }) {
         return () => unsub();
     }, [user]);
 
-    if (!user) return null; // Safety check
-
-    // Ensure liveUser has an ID for messaging
-    const effectiveUser = { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id };
+    // Derived state or helpers
+    const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
 
     const isOnline = (u) => {
         if (!u?.lastSeen) return false;
         return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
     };
+
+    // NOW checking for null user
+    if (!user || !effectiveUser) return null;
 
     const handleSendMessage = async () => {
         if (!currentUser) {
