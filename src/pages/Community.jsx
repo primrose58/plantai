@@ -1,43 +1,25 @@
-
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '../services/firebase';
 import PostCard from '../components/Community/PostCard';
-import { Loader2 } from 'lucide-react';
+import CreatePostModal from '../components/Community/CreatePostModal';
+import { Loader2, Plus } from 'lucide-react';
 
 export default function Community() {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
-    const navigate = useNavigate();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
-    // Hardcoded for now, ideal: select distinct plantType from posts
     const plantTypes = ['All', 'Tomato', 'Rose', 'Pepper', 'Cucumber', 'Unknown'];
 
     useEffect(() => {
-        // Query last 50 posts
-        // Query logic based on filter
-        let q;
-        if (filterType === 'All') {
-            q = query(
-                collection(db, "posts"),
-                orderBy("createdAt", "desc"),
-                limit(50)
-            );
-        } else {
-            q = query(
-                collection(db, "posts"),
-                // where("plantType", "==", filterType), // Requires composite index
-                // Fallback: Client side filter for now to avoid index creation delay
-                orderBy("createdAt", "desc"),
-                limit(50)
-            );
-        }
+        setLoading(true);
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const postsData = snapshot.docs.map(doc => ({
@@ -45,7 +27,7 @@ export default function Community() {
                 ...doc.data()
             }));
 
-            // Client-side filtering if DB index not ready
+            // Client-side filtering
             const filtered = filterType === 'All'
                 ? postsData
                 : postsData.filter(p => p.plantType?.toLowerCase() === filterType.toLowerCase());
@@ -60,57 +42,45 @@ export default function Community() {
         return () => unsubscribe();
     }, [filterType]);
 
-    const handleUserClick = (userId) => {
-        // Navigate to user profile (public) - user profile route not fully defined yet, can be /profile/:id
-        console.log("Go to user:", userId);
-    };
-
-    const handleMessageClick = async (targetUserId) => {
-        if (!currentUser) {
-            alert("Please login to message users");
-            return;
-        }
-        // Logic from legacy app: sort UIDs to get unique chat ID
-        const chatId = [currentUser.uid, targetUserId].sort().join('_');
-
-        // Ensure chat doc exists (basic check)
-        // In a real app, we might check existence, but valid write logic handles it
-        // For now, simple navigation, the Chat page could handle initialization if empty, 
-        // or we do it here.
-        // Let's just navigate. The Chat component might need to know the OTHER user details if it's a new chat.
-        // Since Chat component just reads messages, we need to ensure the Chat Doc exists with participants.
-
-        // We can just navigate, and the Chat Page can handle "First Message" creation logic if we pass state,
-        // or we assume the legacy logic where we setDoc first.
-        // I'll assume we navigate and handle it there or lazily.
-        // Actually, let's replicate the legacy 'set' logic here for safety.
-
-        try {
-            // Using existing db instance
-            const { doc, setDoc, getDoc, serverTimestamp } = await import('firebase/firestore'); // keep or use top level
-            // actually, we can just use the top level imports if we add them, but for now let's fix the navigate syntax first
-            // and improper spaces
-
-            // ... (keeping dynamic import for safety if top level is partial, but better to use top level)
-            // Let's just fix the navigate line which is definitely broken
-            const chatRef = doc(db, 'chats', chatId);
-            // ... existing logic ...
-
-            // FIX: Add backticks
-            navigate(`/messages/${chatId}`);
-        } catch (e) {
-            console.error("Error starting chat", e);
-        }
-    };
-
     return (
-        <div className="max-w-2xl mx-auto w-full">
-            <div className="flex items-center justify-between mb-6 px-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('community')}</h1>
+        <div className="max-w-3xl mx-auto space-y-6 pb-20 p-4">
+            {/* Header with Float/Action Button */}
+            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 sticky top-0 z-20">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('community')}</h1>
+                    <select
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                        className="bg-gray-50 dark:bg-gray-700 border-none rounded-lg px-3 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-green-500 hidden sm:block"
+                    >
+                        {plantTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <button
+                    onClick={() => {
+                        if (!currentUser) {
+                            alert(t('login_to_post') || "Please login to post.");
+                            return; // Keep modal closed if not logged in
+                        }
+                        setIsModalOpen(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all active:scale-95"
+                >
+                    <Plus className="w-5 h-5" />
+                    <span className="hidden sm:inline">Ask Question</span>
+                    <span className="sm:hidden">Ask</span>
+                </button>
+            </div>
+
+            {/* Mobile Filter */}
+            <div className="sm:hidden">
                 <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm font-medium outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm font-medium outline-none"
                 >
                     {plantTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
@@ -119,26 +89,30 @@ export default function Community() {
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+                <div className="flex justify-center py-10">
+                    <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                </div>
+            ) : posts.length > 0 ? (
+                <div className="space-y-6">
+                    {posts.map(post => (
+                        <PostCard key={post.id} post={post} />
+                    ))}
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {posts.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
-                            <p>No posts yet. Be the first to share your plants!</p>
-                        </div>
-                    ) : (
-                        posts.map(post => (
-                            <PostCard
-                                key={post.id}
-                                post={post}
-                                onUserClick={handleUserClick}
-                                onMessageClick={handleMessageClick}
-                            />
-                        ))
-                    )}
+                <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                    <p className="text-lg mb-2">👋 No posts yet</p>
+                    <p className="text-sm">Be the first to share your garden!</p>
                 </div>
+            )}
+
+            {/* Modal */}
+            {isModalOpen && (
+                <CreatePostModal
+                    onClose={() => setIsModalOpen(false)}
+                    onPostCreated={() => {
+                        // Snapshot listener handles refresh
+                    }}
+                />
             )}
         </div>
     );
