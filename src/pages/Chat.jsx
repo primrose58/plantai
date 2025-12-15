@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, delete
 import { useTranslation } from 'react-i18next';
 import { Send, ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function Chat() {
     const { chatId } = useParams();
@@ -19,32 +20,25 @@ export default function Chat() {
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [otherUser, setOtherUser] = useState(null);
+    const [otherUserId, setOtherUserId] = useState(null);
 
     useEffect(() => {
         if (!chatId || !currentUser) return;
 
         // 1. Fetch Chat Metadata & LIVE Other User Data
-        const unsubChat = onSnapshot(doc(db, 'chats', chatId), async (docSnap) => {
+        const unsubChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const otherUid = data.participants.find(p => p !== currentUser.uid);
 
                 if (otherUid) {
-                    try {
-                        const userDoc = await getDoc(doc(db, 'users', otherUid));
-                        if (userDoc.exists()) {
-                            setOtherUser(userDoc.data());
-                        } else {
-                            // Fallback to chat cached data
-                            if (data.participantData?.[otherUid]) {
-                                setOtherUser(data.participantData[otherUid]);
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Err fetching user header", e);
-                        // Fallback
-                        if (data.participantData?.otherUid) setOtherUser(data.participantData[otherUid]);
-                    }
+                    // LISTEN to User Doc for Real-time Presence
+                    // Note: This creates a nested listener which is tricky to clean up in a simple useEffect.
+                    // Ideally we set state for 'otherUserId' and have a separate useEffect for it.
+                    // But for now, we can attach it to a ref or just let it exist for the lifecycle of this hook (re-running this hook cleans up unsubChat, but not unsubUser if defined inside).
+
+                    // Better approach: Set otherUserId state, let another useEffect handle the user listener.
+                    setOtherUserId(otherUid);
                 }
             } else {
                 navigate('/messages');
@@ -66,6 +60,28 @@ export default function Chat() {
             unsubChat();
         };
     }, [chatId, currentUser]);
+
+    // Separate effect for User Presence
+    useEffect(() => {
+        if (!otherUserId) return;
+        const unsub = onSnapshot(doc(db, 'users', otherUserId), (doc) => {
+            if (doc.exists()) setOtherUser(doc.data());
+        });
+        return () => unsub();
+    }, [otherUserId]);
+
+    const getStatusText = (user) => {
+        if (!user?.lastSeen) return 'Offline';
+        const lastSeen = user.lastSeen.seconds * 1000;
+        const diff = Date.now() - lastSeen;
+        if (diff < 3 * 60 * 1000) return 'Online'; // < 3 mins
+        return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
+    };
+
+    const isOnline = (user) => {
+        if (!user?.lastSeen) return false;
+        return (Date.now() - user.lastSeen.seconds * 1000) < 3 * 60 * 1000;
+    };
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -127,7 +143,10 @@ export default function Chat() {
                         />
                         <div>
                             <h2 className="font-bold text-gray-900 dark:text-gray-100 leading-tight">{otherUser.name || otherUser.displayName || 'User'}</h2>
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium">Online</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${isOnline(otherUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{getStatusText(otherUser)}</span>
+                            </div>
                         </div>
                     </div>
                 ) : (
