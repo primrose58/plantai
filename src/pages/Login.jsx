@@ -16,8 +16,8 @@ export default function Login() {
     const { t } = useTranslation();
     const { currentUser } = useAuth(); // Access currentUser
 
-    // Auto-redirect if already logged in
-    if (currentUser) {
+    // Auto-redirect if already logged in AND verified
+    if (currentUser?.emailVerified) {
         // CRITICAL: Ensure we pass back the pending state if it exists, otherwise data is lost!
         if (location.state?.returnUrl && location.state?.pendingResult) {
             navigate(location.state.returnUrl, {
