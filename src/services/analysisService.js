@@ -1,6 +1,6 @@
 import { db, storage } from './firebase';
 import { collection, addDoc, query, where, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'analyses';
 
@@ -86,6 +86,43 @@ export async function updateAnalysisStatus(analysisId, updates) {
         throw error;
     }
 
+}
+
+/**
+ * Create a new community post (generic, not necessarily analysis-linked).
+ */
+export async function createPost(userId, postData) {
+    try {
+        let imageUrl = null;
+        if (postData.image) {
+            const storageRef = ref(storage, `posts/${userId}/${Date.now()}.jpg`);
+            // Handle both base64 and blob/file
+            if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
+                await uploadString(storageRef, postData.image, 'data_url');
+            } else {
+                await uploadBytes(storageRef, postData.image);
+            }
+            imageUrl = await getDownloadURL(storageRef);
+        }
+
+        await addDoc(collection(db, 'posts'), {
+            userId,
+            authorName: postData.authorName || "Gardener",
+            title: postData.title || "Community Question",
+            content: postData.content,
+            image: imageUrl,
+            plantType: postData.plantType || 'Unknown',
+            likes: [],
+            comments: [],
+            createdAt: serverTimestamp(),
+            // No relatedAnalysisId for generic posts usually
+        });
+
+        return true;
+    } catch (error) {
+        console.error("Error creating post:", error);
+        throw error;
+    }
 }
 
 /**
