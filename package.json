@@ -11,6 +11,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.1.18",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
