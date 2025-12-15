@@ -206,3 +206,60 @@ export async function addFeedbackUpdate(analysisId, imageBase64, note) {
         throw error;
     }
 }
+
+/**
+ * Delete a post (Owner only).
+ */
+export async function deletePost(postId) {
+    try {
+        await deleteDoc(doc(db, 'posts', postId));
+        return true;
+    } catch (error) {
+        console.error("Error deleting post:", error);
+        throw error;
+    }
+}
+
+/**
+ * Toggle Like on a post.
+ */
+export async function toggleLike(postId, userId) {
+    try {
+        const postRef = doc(db, 'posts', postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) return;
+
+        const likes = postSnap.data().likes || [];
+        if (likes.includes(userId)) {
+            await updateDoc(postRef, { likes: arrayRemove(userId) });
+        } else {
+            await updateDoc(postRef, { likes: arrayUnion(userId) });
+        }
+    } catch (error) {
+        console.error("Error toggling like:", error);
+        throw error;
+    }
+}
+
+/**
+ * Add a comment to a post.
+ */
+export async function addComment(postId, userId, userName, text) {
+    try {
+        const postRef = doc(db, 'posts', postId);
+        const comment = {
+            userId,
+            userName,
+            text,
+            createdAt: Date.now() // Timestamp for sorting
+        };
+        await updateDoc(postRef, {
+            comments: arrayUnion(comment)
+        });
+        return true;
+    } catch (error) {
+        console.error("Error adding comment:", error);
+        throw error;
+    }
+}
