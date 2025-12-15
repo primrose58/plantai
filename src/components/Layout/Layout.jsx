@@ -144,13 +144,13 @@ export default function Layout() {
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
-                <div className="p-6 flex items-center gap-2">
+                <Link to="/" className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <Sprout className="w-8 h-8 text-green-600" />
                     <h1 className="text-2xl font-bold tracking-tight">
                         <span className="text-green-700 dark:text-green-500">Plant</span>
                         <span className="text-blue-500 dark:text-blue-400">AI</span>
                     </h1>
-                </div>
+                </Link>
 
                 <nav className="flex-1 px-4 space-y-2">
                     {visibleNavItems.map((item) => {
@@ -229,13 +229,13 @@ export default function Layout() {
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Mobile Header for Lang Switch & Logo */}
                 <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
-                    <div className="flex items-center gap-2">
+                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg">
                             <span className="text-green-700 dark:text-green-500">Plant</span>
                             <span className="text-blue-500 dark:text-blue-400">AI</span>
                         </span>
-                    </div>
+                    </Link>
                     <button onClick={toggleLang} className="text-sm font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                         {i18n.language.toUpperCase()}
                     </button>
