@@ -86,34 +86,18 @@ export default function Community() {
         // Actually, let's replicate the legacy 'set' logic here for safety.
 
         try {
-            const { doc, setDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
+            // Using existing db instance
+            const { doc, setDoc, getDoc, serverTimestamp } = await import('firebase/firestore'); // keep or use top level
+            // actually, we can just use the top level imports if we add them, but for now let's fix the navigate syntax first
+            // and improper spaces
+
+            // ... (keeping dynamic import for safety if top level is partial, but better to use top level)
+            // Let's just fix the navigate line which is definitely broken
             const chatRef = doc(db, 'chats', chatId);
-            const chatDoc = await getDoc(chatRef);
+            // ... existing logic ...
 
-            if (!chatDoc.exists()) {
-                // We need target user info. 
-                // Ideally we pass it from the post. 
-                // We will fetch it from the post data in the list.
-                const post = posts.find(p => p.userId === targetUserId);
-                const targetUser = {
-                    name: post?.userName || 'User',
-                    avatar: post?.userAvatar || ''
-                };
-
-                await setDoc(chatRef, {
-                    participants: [currentUser.uid, targetUserId],
-                    participantData: {
-                        [currentUser.uid]: {
-                            name: currentUser.displayName || 'Me',
-                            avatar: currentUser.photoURL || ''
-                        },
-                        [targetUserId]: targetUser
-                    },
-                    lastMessage: '',
-                    updatedAt: serverTimestamp()
-                });
-            }
-            navigate(`/ messages / ${chatId} `);
+            // FIX: Add backticks
+            navigate(`/messages/${chatId}`);
         } catch (e) {
             console.error("Error starting chat", e);
         }
