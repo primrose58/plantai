@@ -40,9 +40,15 @@ export default function Login() {
         setLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-            // Redirect logic with persistence
+            if (!user.emailVerified) {
+                await auth.signOut();
+                setError(t('email_not_verified') || "Please verify your email address before logging in.");
+                return;
+            }
+
             // Redirect logic with persistence
             if (location.state?.returnUrl && location.state?.pendingResult) {
                 console.log("Restoring pending state...", location.state);

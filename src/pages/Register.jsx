@@ -23,20 +23,16 @@ export default function Register() {
         try {
             const result = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(result.user, { displayName: name });
-            // await sendEmailVerification(result.user); // Optional: Re-enable for production
+            await sendEmailVerification(result.user);
+            await auth.signOut(); // Sign out immediately
 
-            // Redirect logic with persistence
-            if (location.state?.returnUrl && location.state?.pendingResult) {
-                navigate(location.state.returnUrl, {
-                    state: { restoredResult: location.state.pendingResult }
-                });
-            } else {
-                navigate('/');
-            }
+            // Show success state instead of navigating
+            setLoading(false);
+            alert(t('verification_email_sent') || "Verification email sent. Please check your inbox before logging in.");
+            navigate('/login');
         } catch (err) {
             setError(err.message);
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };

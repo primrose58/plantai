@@ -79,61 +79,63 @@ export async function updateAnalysisStatus(analysisId, updates) {
         throw error;
     }
 
-    /**
-     * Share an existing analysis to the Community (creates a Post).
-     */
-    export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType) {
-        try {
-            // Create a new post document based on the analysis
-            await addDoc(collection(db, 'posts'), {
-                userId: analysisData.userId,
-                authorName: "Gardener", // Ideally fetch user name, but 'Gardener' or anonymous is fine for now
-                title: `Help with my ${plantType}`,
-                content: `I diagnosed this ${plantType} with ${analysisData.result.disease_name}. ${analysisData.result.description.substring(0, 100)}...`,
-                image: analysisData.mainImage,
-                plantType: plantType,
-                likes: [],
-                comments: [],
-                createdAt: serverTimestamp(),
-                relatedAnalysisId: AnalysisId
-            });
+}
 
-            // Mark analysis as shared
-            await updateAnalysisStatus(AnalysisId, { isPublic: true });
-            return true;
-        } catch (error) {
-            console.error("Error sharing to community:", error);
-            throw error;
-        }
+/**
+ * Share an existing analysis to the Community (creates a Post).
+ */
+export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType) {
+    try {
+        // Create a new post document based on the analysis
+        await addDoc(collection(db, 'posts'), {
+            userId: analysisData.userId,
+            authorName: "Gardener", // Ideally fetch user name, but 'Gardener' or anonymous is fine for now
+            title: `Help with my ${plantType}`,
+            content: `I diagnosed this ${plantType} with ${analysisData.result.disease_name}. ${analysisData.result.description.substring(0, 100)}...`,
+            image: analysisData.mainImage,
+            plantType: plantType,
+            likes: [],
+            comments: [],
+            createdAt: serverTimestamp(),
+            relatedAnalysisId: AnalysisId
+        });
+
+        // Mark analysis as shared
+        await updateAnalysisStatus(AnalysisId, { isPublic: true });
+        return true;
+    } catch (error) {
+        console.error("Error sharing to community:", error);
+        throw error;
     }
+}
 
-    /**
-     * Add a follow-up photo/note to an analysis (Feedback loop).
-     */
-    export async function addFeedbackUpdate(analysisId, imageBase64, note) {
-        try {
-            let imageUrl = null;
-            if (imageBase64) {
-                const storageRef = ref(storage, `analyses/feedback/${analysisId}_${Date.now()}.jpg`);
-                await uploadString(storageRef, imageBase64, 'data_url');
-                imageUrl = await getDownloadURL(storageRef);
-            }
-
-            const docRef = doc(db, COLLECTION_NAME, analysisId);
-            // We use arrayUnion to append to a 'history' or 'updates' array
-            // But first we need to make sure the field exists or simple update logic
-            // For simplicity, let's assume we store them in a subcollection or just an array field
-            // Let's use a subcollection 'updates' for scalability
-
-            await addDoc(collection(db, COLLECTION_NAME, analysisId, 'updates'), {
-                imageUrl,
-                note,
-                createdAt: serverTimestamp()
-            });
-
-            return true;
-        } catch (error) {
-            console.error("Error adding feedback:", error);
-            throw error;
+/**
+ * Add a follow-up photo/note to an analysis (Feedback loop).
+ */
+export async function addFeedbackUpdate(analysisId, imageBase64, note) {
+    try {
+        let imageUrl = null;
+        if (imageBase64) {
+            const storageRef = ref(storage, `analyses/feedback/${analysisId}_${Date.now()}.jpg`);
+            await uploadString(storageRef, imageBase64, 'data_url');
+            imageUrl = await getDownloadURL(storageRef);
         }
+
+        const docRef = doc(db, COLLECTION_NAME, analysisId);
+        // We use arrayUnion to append to a 'history' or 'updates' array
+        // But first we need to make sure the field exists or simple update logic
+        // For simplicity, let's assume we store them in a subcollection or just an array field
+        // Let's use a subcollection 'updates' for scalability
+
+        await addDoc(collection(db, COLLECTION_NAME, analysisId, 'updates'), {
+            imageUrl,
+            note,
+            createdAt: serverTimestamp()
+        });
+
+        return true;
+    } catch (error) {
+        console.error("Error adding feedback:", error);
+        throw error;
     }
+}
