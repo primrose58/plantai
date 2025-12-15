@@ -28,7 +28,7 @@ export default function Register() {
 
             // Show success state instead of navigating
             setLoading(false);
-            alert(t('verification_email_sent') || "Verification email sent. Please check your inbox before logging in.");
+            alert(t('verification_email_sent') || "Verification email sent! Please check your inbox AND SPAM folder. You must verify to login.");
             navigate('/login');
         } catch (err) {
             setError(err.message);

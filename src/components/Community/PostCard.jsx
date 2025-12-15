@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { MessageCircle, Heart, Share2, Trash2, Send } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Trash2, Send, Edit2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { toggleLike, addComment, deletePost } from '../../services/analysisService';
+import { toggleLike, addComment, deletePost, updatePost } from '../../services/analysisService';
 
 export default function PostCard({ post, onUserClick }) {
     const { t, i18n } = useTranslation();
@@ -14,6 +14,19 @@ export default function PostCard({ post, onUserClick }) {
     const [commentText, setCommentText] = useState('');
     const [showComments, setShowComments] = useState(false);
     const [likeLoading, setLikeLoading] = useState(false);
+
+    // Edit State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(post?.content || '');
+
+    const handleEditSubmit = async () => {
+        try {
+            await updatePost(post.id, { content: editContent });
+            setIsEditing(false);
+        } catch (error) {
+            alert("Failed to update post");
+        }
+    };
 
     // Safety checks
     if (!post) return null;
@@ -154,12 +167,52 @@ export default function PostCard({ post, onUserClick }) {
                         <MessageCircle className="w-5 h-5" />
                         <span className="text-sm font-medium">{commentCount || 'Comment'}</span>
                     </button>
+
+                    {/* Edit Button (Owner Only) */}
+                    {isOwner && (
+                        <button
+                            className="flex items-center gap-1.5 text-gray-500 hover:text-green-500 transition-colors"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            <Edit2 className="w-5 h-5" />
+                            <span className="text-sm font-medium hidden sm:inline">Edit</span>
+                        </button>
+                    )}
                 </div>
 
                 <button className="text-gray-500 hover:text-green-600 transition-colors">
                     <Share2 className="w-5 h-5" />
                 </button>
             </div>
+
+            {/* Edit Modal / Inline Edit */}
+            {isEditing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+                        <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Edit Post</h3>
+                        <textarea
+                            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-4"
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={4}
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleEditSubmit}
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Comments Section */}
             {showComments && (

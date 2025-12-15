@@ -45,7 +45,7 @@ export default function Login() {
 
             if (!user.emailVerified) {
                 await auth.signOut();
-                setError(t('email_not_verified') || "Please verify your email address before logging in.");
+                setError(t('email_not_verified') || "Please verify your email address. Check your spam folder.");
                 return;
             }
 
