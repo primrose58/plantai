@@ -52,7 +52,21 @@ export async function getUserAnalyses(userId) {
         );
         const snapshot = await getDocs(q);
 
-        const analyses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch updates subcollection for each analysis
+        const analysesPromises = snapshot.docs.map(async (docSnapshot) => {
+            const data = docSnapshot.data();
+            let updates = [];
+            try {
+                const updatesSnapshot = await getDocs(collection(db, COLLECTION_NAME, docSnapshot.id, 'updates'));
+                updates = updatesSnapshot.docs.map(u => u.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            } catch (e) {
+                console.log("No updates found or error", e);
+            }
+            return { id: docSnapshot.id, ...data, updates };
+        });
+
+        const analyses = await Promise.all(analysesPromises);
+
         return analyses.sort((a, b) => {
             const dateA = a.createdAt?.seconds || 0;
             const dateB = b.createdAt?.seconds || 0;
@@ -61,6 +75,19 @@ export async function getUserAnalyses(userId) {
     } catch (error) {
         console.error("Error fetching analyses:", error);
         return [];
+    }
+}
+
+/**
+ * Delete an analysis.
+ */
+export async function deleteAnalysis(analysisId) {
+    try {
+        await deleteDoc(doc(db, COLLECTION_NAME, analysisId));
+        return true;
+    } catch (error) {
+        console.error("Error deleting analysis:", error);
+        throw error;
     }
 }
 

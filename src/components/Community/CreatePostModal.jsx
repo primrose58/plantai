@@ -97,9 +97,17 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         }
     };
 
+    import { isTextSafe } from '../../services/safetyService'; // Safety Check
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!content.trim()) return;
+
+        // Safety Check
+        if (!isTextSafe(content)) {
+            setError(t('unsafe_content_warning') || "Your post contains inappropriate language.");
+            return;
+        }
 
         setLoading(true);
         setError('');

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserAnalyses, shareAnalysisToCommunity, addFeedbackUpdate } from '../services/analysisService';
-import { Sprout, Clock, ArrowRight, Share2, Camera, Loader2, Send, Stethoscope, Activity, CalendarCheck, CheckCircle2, ChevronDown, Check } from 'lucide-react';
+import { getUserAnalyses, shareAnalysisToCommunity, addFeedbackUpdate, deleteAnalysis } from '../services/analysisService';
+import { Sprout, Clock, ArrowRight, Share2, Camera, Loader2, Send, Stethoscope, Activity, CalendarCheck, CheckCircle2, ChevronDown, Check, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Analyses() {
@@ -21,6 +21,21 @@ export default function Analyses() {
     const [feedbackNote, setFeedbackNote] = useState('');
     const [feedbackLoading, setFeedbackLoading] = useState(false);
     const feedbackFileRef = useRef(null);
+
+    // ... initial load ...
+
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm(t('confirm_delete') || "Are you sure you want to delete this analysis?")) return;
+
+        try {
+            await deleteAnalysis(id);
+            setAnalyses(prev => prev.filter(item => item.id !== id));
+        } catch (error) {
+            console.error("Delete failed", error);
+            alert("Failed to delete analysis.");
+        }
+    };
 
     // --- INITIAL LOAD & ONBOARDING ---
     useEffect(() => {
@@ -148,7 +163,16 @@ export default function Analyses() {
             {/* List */}
             <div className="grid gap-6">
                 {analyses.map((item) => (
-                    <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-3xl shadow-sm border transition-all duration-300 overflow-hidden ${expandedId === item.id ? 'border-green-500 ring-4 ring-green-500/10 shadow-lg' : 'border-gray-100 dark:border-gray-700 hover:shadow-md'}`}>
+                    <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-3xl shadow-sm border transition-all duration-300 overflow-hidden ${expandedId === item.id ? 'border-green-500 ring-4 ring-green-500/10 shadow-lg' : 'border-gray-100 dark:border-gray-700 hover:shadow-md'} relative group`}>
+
+                        {/* Delete Button (Absolute Top Right) */}
+                        <button
+                            onClick={(e) => handleDelete(e, item.id)}
+                            className="absolute top-4 right-4 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-gray-100 dark:border-gray-700"
+                            title={t('delete')}
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
 
                         {/* Summary Card Area (Always Visible) */}
                         <div

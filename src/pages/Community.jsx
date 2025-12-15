@@ -18,7 +18,20 @@ function AnalysisDetailModal({ analysisId, onClose }) {
         async function load() {
             try {
                 const snap = await getDoc(doc(db, 'analyses', analysisId));
-                if (snap.exists()) setData(snap.data());
+                if (snap.exists()) {
+                    const analysisData = snap.data();
+
+                    // Fetch updates
+                    let updates = [];
+                    try {
+                        const updatesSnaps = await getDocs(collection(db, 'analyses', analysisId, 'updates'));
+                        updates = updatesSnaps.docs.map(d => d.data()).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                    } catch (e) {
+                        console.warn("Could not fetch updates for modal", e);
+                    }
+
+                    setData({ ...analysisData, updates });
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -92,6 +105,22 @@ function AnalysisDetailModal({ analysisId, onClose }) {
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+
+                    {/* Updates Section */}
+                    {data.updates && data.updates.length > 0 && (
+                        <div className="mb-6">
+                            <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wider opacity-70">Progress Updates</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                {data.updates.map((update, uIdx) => (
+                                    <div key={uIdx} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                                        {update.imageUrl && <img src={update.imageUrl} className="w-full h-32 object-cover rounded-lg mb-2" />}
+                                        <p className="text-xs text-gray-500 mb-1">{update.createdAt?.seconds ? new Date(update.createdAt.seconds * 1000).toLocaleDateString() : ''}</p>
+                                        <p className="text-sm text-gray-800 dark:text-gray-200">{update.note}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

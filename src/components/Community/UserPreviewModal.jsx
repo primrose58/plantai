@@ -37,6 +37,37 @@ export default function UserPreviewModal({ user, onClose }) {
     // Derived state or helpers
     const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
 
+    import { blockUser, unblockUser, isUserBlocked } from '../../services/safetyService';
+
+    // ... inside component ...
+    const [isBlocked, setIsBlocked] = useState(false);
+
+    useEffect(() => {
+        if (currentUser && effectiveUser) {
+            isUserBlocked(currentUser.uid, effectiveUser.uid).then(setIsBlocked);
+        }
+    }, [currentUser, effectiveUser]);
+
+    const handleToggleBlock = async () => {
+        if (!currentUser || !effectiveUser) return;
+        try {
+            if (isBlocked) {
+                await unblockUser(currentUser.uid, effectiveUser.uid);
+                setIsBlocked(false);
+                addToast(t('user_unblocked') || "User unblocked", 'success');
+            } else {
+                if (window.confirm(t('confirm_block') || "Block this user? They won't be able to message you.")) {
+                    await blockUser(currentUser.uid, effectiveUser.uid);
+                    setIsBlocked(true);
+                    addToast(t('user_blocked') || "User blocked", 'success');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            addToast("Action failed", 'error');
+        }
+    };
+
     const isOnline = (u) => {
         if (!u?.lastSeen || !u.lastSeen.seconds) return false;
         return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
@@ -107,13 +138,24 @@ export default function UserPreviewModal({ user, onClose }) {
                         <UserIcon className="w-3 h-3" /> {t('community_member') || 'Community Member'}
                     </p>
 
-                    <button
-                        onClick={handleSendMessage}
-                        disabled={loading}
-                        className="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
-                    >
-                        {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
-                    </button>
+                    <div className="flex flex-col gap-3 w-full mt-6">
+                        <button
+                            onClick={handleSendMessage}
+                            disabled={loading || isBlocked} // Disable if blocked
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
+                        >
+                            {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
+                        </button>
+
+                        {currentUser.uid !== effectiveUser.uid && (
+                            <button
+                                onClick={handleToggleBlock}
+                                className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isBlocked ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'text-red-500 hover:bg-red-50 border border-red-100'}`}
+                            >
+                                {isBlocked ? (t('unblock_user') || 'Unblock User') : (t('block_user') || 'Block User')}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
