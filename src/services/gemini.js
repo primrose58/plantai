@@ -33,8 +33,10 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
         "confidence": 90,
         "urgency": 50,
         "spread_risk": 40,
+        "is_treatable": true, // false if plant is dead, rotten beyond saving, or abiotic stress that cannot be reversed
         "description": "Short description (max 2 sentences).",
-        "treatment_steps": ["Step 1", "Step 2", "Step 3"]
+        "treatment_steps": ["Step 1", "Step 2", "Step 3"], // Only if is_treatable is true
+        "preventive_measures": ["Tip 1", "Tip 2"] // If not treatable or general advice
     }
     
     Return ONLY valid raw JSON (no markdown, no backticks).

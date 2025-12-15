@@ -120,13 +120,23 @@ export async function createPost(userId, postData, onProgress) {
 /**
  * Share an existing analysis to the Community.
  */
-export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType) {
+export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType, authorName = "Gardener", authorAvatar = null) {
     try {
+        // Localized Title/Content based on Plant Type and Disease
+        // In a real app we might pass the 't' function or language code, 
+        // Here we default to a smart template assuming Turkish context if widely used, or generic English
+
+        const title = `${plantType} - ${analysisData.result.disease_name}`;
+
+        // Use the description from AI directly as it provides the best context
+        const content = `Analiz Sonucu: ${analysisData.result.disease_name}\n\n${analysisData.result.description}`;
+
         await addDoc(collection(db, 'posts'), {
             userId: analysisData.userId,
-            authorName: "Gardener",
-            title: `Help with my ${plantType}`,
-            content: `I diagnosed this ${plantType} with ${analysisData.result.disease_name}. ${analysisData.result.description.substring(0, 100)}...`,
+            authorName: authorName, // Real Name
+            userAvatar: authorAvatar, // Real Avatar
+            title: title,
+            content: content,
             image: analysisData.mainImage, // Already Base64
             plantType: plantType,
             likes: [],

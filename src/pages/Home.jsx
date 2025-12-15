@@ -284,7 +284,9 @@ export default function Home() {
                             ) : (
                                 <>
                                     <div className="bg-white/20 p-1 rounded-full"><Save className="w-5 h-5" /></div>
-                                    <span className="text-lg">{t('start_treatment') || 'Tedaviye Başla'}</span>
+                                    <span className="text-lg">
+                                        {result?.is_treatable === false ? (t('save_info') || 'Bilgiyi Kaydet') : (t('start_treatment') || 'Tedaviye Başla')}
+                                    </span>
                                 </>
                             )}
                         </button>

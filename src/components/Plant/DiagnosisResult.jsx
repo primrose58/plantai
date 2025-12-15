@@ -73,13 +73,25 @@ export default function DiagnosisResult({ result, onReset }) {
                     </p>
                 </div>
 
-                {/* Treatment Steps */}
+                {/* Treatment or Prevention */}
                 <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">{t('treatment')}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                        {result.is_treatable === false ? (t('prevention_tips') || "Koruyucu Önlemler & Tavsiyeler") : t('treatment')}
+                    </h3>
+
+                    {result.is_treatable === false && (
+                        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-xl text-sm border border-red-100 dark:border-red-900/30 flex gap-3">
+                            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                            <p>
+                                {t('plant_not_recoverable') || "Bu bitki için tedavi uygulanamayabilir veya kurtarılması zor olabilir. Aşağıdaki önlemler ile diğer bitkilerinizi koruyabilirsiniz."}
+                            </p>
+                        </div>
+                    )}
+
                     <ul className="space-y-3">
-                        {result.treatment_steps?.map((step, index) => (
+                        {(result.is_treatable === false ? result.preventive_measures : result.treatment_steps)?.map((step, index) => (
                             <li key={index} className="flex gap-3">
-                                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-500 flex-shrink-0" />
+                                <CheckCircle className={`w-6 h-6 flex-shrink-0 ${result.is_treatable === false ? 'text-orange-500' : 'text-green-600'}`} />
                                 <span className="text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex-1">
                                     {step}
                                 </span>

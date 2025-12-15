@@ -65,7 +65,13 @@ export default function Analyses() {
         if (!window.confirm(t('confirm_share') || "Share this diagnosis with the community?")) return;
 
         try {
-            await shareAnalysisToCommunity(item.id, item, item.plantType || 'plant');
+            await shareAnalysisToCommunity(
+                item.id,
+                item,
+                item.plantType || 'plant',
+                currentUser.displayName || t('gardener') || "Bahçıvan",
+                currentUser.photoURL
+            );
             // Optimistic update
             setAnalyses(prev => prev.map(a => a.id === item.id ? { ...a, isPublic: true } : a));
         } catch (error) {
@@ -202,12 +208,19 @@ export default function Analyses() {
                                 <div className="mb-6">
                                     <h4 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                         <Stethoscope className="w-5 h-5 text-green-600" />
-                                        Tedavi Adımları
+                                        {item.result.is_treatable === false ? (t('preventive_measures') || "Koruyucu Önlemler") : (t('treatment_steps') || "Tedavi Adımları")}
                                     </h4>
+
+                                    {item.result.is_treatable === false && (
+                                        <div className="mb-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900/30">
+                                            Bu bitki ne yazık ki kurtarılamayabilir.
+                                        </div>
+                                    )}
+
                                     <div className="space-y-3">
-                                        {item.result.treatment_steps && item.result.treatment_steps.map((step, idx) => (
+                                        {(item.result.is_treatable === false ? item.result.preventive_measures : item.result.treatment_steps)?.map((step, idx) => (
                                             <div key={idx} className="flex gap-4 p-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
-                                                <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 flex items-center justify-center font-bold text-sm shrink-0">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${item.result.is_treatable === false ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
                                                     {idx + 1}
                                                 </div>
                                                 <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed pt-1">
@@ -236,13 +249,15 @@ export default function Analyses() {
 
                                 {/* Action Bar */}
                                 <div className="flex flex-wrap gap-3">
-                                    <button
-                                        onClick={() => setFeedbackOpenId(feedbackOpenId === item.id ? null : item.id)}
-                                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
-                                    >
-                                        <Camera className="w-5 h-5" />
-                                        Gelişme Ekle
-                                    </button>
+                                    {item.result.is_treatable && (
+                                        <button
+                                            onClick={() => setFeedbackOpenId(feedbackOpenId === item.id ? null : item.id)}
+                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
+                                        >
+                                            <Camera className="w-5 h-5" />
+                                            {t('add_update') || "Gelişme Ekle"}
+                                        </button>
+                                    )}
 
                                     <button
                                         onClick={(e) => handleShare(e, item)}
@@ -250,7 +265,7 @@ export default function Analyses() {
                                         className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${item.isPublic ? 'bg-blue-50 text-blue-400 cursor-default' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         <Share2 className="w-5 h-5" />
-                                        {item.isPublic ? 'Toplulukta Yayında' : 'Paylaş'}
+                                        {item.isPublic ? (t('shared') || 'Paylaşıldı') : (t('share') || 'Paylaş')}
                                     </button>
                                 </div>
 
