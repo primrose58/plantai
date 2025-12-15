@@ -1,13 +1,23 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { db, storage } from '../services/firebase';
+import { db } from '../services/firebase'; // Removed storage
 import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslation } from 'react-i18next';
 import { Send, ArrowLeft, Trash2, Edit2, Mic, Paperclip, X, Image as ImageIcon, FileText, Play, Pause } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { formatDistanceToNow } from 'date-fns';
+import imageCompression from 'browser-image-compression'; // Import compression
+
+// Helper: Convert Blob/File to Base64
+const blobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
 
 export default function Chat() {
     const { chatId } = useParams();
@@ -167,20 +177,44 @@ export default function Chat() {
         try {
             let fileUrl = null;
             let finalType = type;
+            let finalFileName = fileName;
 
-            if (fileBlob) {
-                const storageRef = ref(storage, `chat-attachments/${chatId}/${Date.now()}_${fileName || 'file'}`);
-                await uploadBytes(storageRef, fileBlob);
-                fileUrl = await getDownloadURL(storageRef);
-            } else if (attachment) {
-                const storageRef = ref(storage, `chat-attachments/${chatId}/${Date.now()}_${attachment.file.name}`);
-                await uploadBytes(storageRef, attachment.file);
-                fileUrl = await getDownloadURL(storageRef);
-                finalType = attachment.type;
-                fileName = attachment.file.name;
+            // Handle File Conversions (Base64)
+            if (fileBlob || attachment) {
+                let fileToProcess = fileBlob || attachment.file;
+
+                // If it's an image, compress it first! (Firestore 1MB limit)
+                if (finalType === 'image' || attachment?.type === 'image') {
+                    finalType = 'image';
+                    finalFileName = finalFileName || attachment?.file.name;
+
+                    const options = {
+                        maxSizeMB: 0.5, // Aggressive compression for Base64 storage
+                        maxWidthOrHeight: 1024,
+                        useWebWorker: true
+                    };
+
+                    try {
+                        fileToProcess = await imageCompression(fileToProcess, options);
+                    } catch (e) {
+                        console.warn("Compression failed, using original", e);
+                    }
+                } else if (attachment) {
+                    finalType = attachment.type;
+                    finalFileName = attachment.file.name;
+                }
+
+                // Convert to Base64
+                fileUrl = await blobToBase64(fileToProcess);
+
+                // Check size safety (approx < 900KB to be safe)
+                if (fileUrl.length > 950000) {
+                    throw new Error("File is too large for database storage even after compression.");
+                }
             }
 
             if (editingId) {
+                // ... editing logic remains same ...
                 await updateDoc(doc(db, 'chats', chatId, 'messages', editingId), {
                     text: text,
                     editedAt: serverTimestamp()
@@ -190,8 +224,8 @@ export default function Chat() {
                 await addDoc(collection(db, 'chats', chatId, 'messages'), {
                     text: text || '',
                     type: finalType,
-                    fileUrl: fileUrl,
-                    fileName: fileName,
+                    fileUrl: fileUrl, // Now a Base64 string
+                    fileName: finalFileName,
                     senderId: currentUser.uid,
                     createdAt: serverTimestamp()
                 });
@@ -206,12 +240,7 @@ export default function Chat() {
             setAttachment(null);
         } catch (err) {
             console.error("Send failed", err);
-            let msg = "Failed to send message";
-            if (err.code === 'storage/unauthorized') msg = "Permission denied. Check Firebase Storage rules.";
-            if (err.code === 'storage/unknown') msg = "Storage configuration error.";
-            if (err.message.includes('undefined')) msg = "Storage service not initialized.";
-
-            addToast(`${msg} (${err.code || 'Error'})`, "error");
+            addToast(err.message || "Failed to send message", "error");
         } finally {
             setUploading(false);
         }
