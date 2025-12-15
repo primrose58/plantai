@@ -1,6 +1,6 @@
 import { db, storage } from './firebase';
 import { collection, addDoc, query, where, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const COLLECTION_NAME = 'analyses';
 
@@ -102,9 +102,24 @@ export async function createPost(userId, postData) {
             if (typeof postData.image === 'string' && postData.image.startsWith('data:')) {
                 await uploadString(storageRef, postData.image, 'data_url');
             } else {
-                // Add metadata to ensure content type is set (helps with some storage issues)
+                console.log("Using Resumable Upload...");
                 const metadata = { contentType: postData.image.type || 'image/jpeg' };
-                await uploadBytes(storageRef, postData.image, metadata);
+                const uploadTask = uploadBytesResumable(storageRef, postData.image, metadata);
+
+                // Wrap in promise to await completion
+                await new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            console.log('Upload is ' + progress + '% done');
+                        },
+                        (error) => {
+                            console.error("Upload failed internally:", error);
+                            reject(error);
+                        },
+                        () => resolve()
+                    );
+                });
             }
             console.log("Upload done, getting URL...");
             imageUrl = await getDownloadURL(storageRef);

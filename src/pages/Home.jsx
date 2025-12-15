@@ -50,7 +50,10 @@ export default function Home() {
     };
 
     const triggerFileInput = () => {
-        fileInputRef.current?.click();
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+            fileInputRef.current.click();
+        }
     };
 
     const handleFileChange = async (event) => {
@@ -272,8 +275,8 @@ export default function Home() {
                             onClick={handleSaveResult}
                             disabled={isSaved}
                             className={`mt-4 w-full font-bold py-3 px-6 rounded-xl border shadow-sm transition-all flex items-center justify-center gap-2 ${isSaved
-                                    ? 'bg-green-100 text-green-700 border-green-200 cursor-default'
-                                    : 'bg-green-600 hover:bg-green-700 text-white border-transparent'
+                                ? 'bg-green-100 text-green-700 border-green-200 cursor-default'
+                                : 'bg-green-600 hover:bg-green-700 text-white border-transparent'
                                 }`}
                         >
                             {isSaved ? <CheckCircle className="w-5 h-5" /> : <Save className="w-5 h-5" />}

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
 import { Camera, Save, User as UserIcon, Loader2 } from 'lucide-react';
@@ -35,8 +35,16 @@ export default function Profile() {
             const timestamp = Date.now();
             const storageRef = ref(storage, `avatars/${currentUser.uid}_${timestamp}`);
 
-            // 2. Upload file
-            await uploadBytes(storageRef, file);
+            // 2. Upload file (Resumable)
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            await new Promise((resolve, reject) => {
+                uploadTask.on('state_changed',
+                    null,
+                    (error) => reject(error),
+                    () => resolve()
+                );
+            });
 
             // 3. Get URL
             const url = await getDownloadURL(storageRef);
