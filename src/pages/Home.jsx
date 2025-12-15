@@ -206,34 +206,47 @@ export default function Home() {
         </div>
     );
 
-    const renderCapture = (isMacro) => (
-        <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
-            <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-6 text-blue-600 dark:text-blue-400">
-                {isMacro ? <ScanLine className="w-12 h-12" /> : <Camera className="w-12 h-12" />}
-            </div>
-            <h2 className="text-2xl font-bold mb-2 text-center">
-                {isMacro ? t('take_macro_photo') : t('scan_step_2')}
-            </h2>
-            {/* Show error context if we are in macro mode or had an error */}
-            {error && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                    <p>{error}</p>
-                </div>
-            )}
-            {!error && isMacro && (
-                <p className="text-gray-500 mb-6 text-center">{t('need_macro_photo')}</p>
-            )}
+    const renderCapture = (isMacro) => {
+        // Safe guard against render errors
+        try {
+            return (
+                <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-6 text-blue-600 dark:text-blue-400">
+                        {isMacro ? <ScanLine className="w-12 h-12" /> : <Camera className="w-12 h-12" />}
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2 text-center">
+                        {isMacro ? (t('take_macro_photo') || "Take Close-up Photo") : (t('scan_step_2') || "Take Photo")}
+                    </h2>
+                    {/* Show error context if we are in macro mode or had an error */}
+                    {error && (
+                        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 text-sm flex items-start gap-2">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <p>{error}</p>
+                        </div>
+                    )}
+                    {!error && isMacro && (
+                        <p className="text-gray-500 mb-6 text-center">{t('need_macro_photo') || "Please take a closer photo."}</p>
+                    )}
 
-            <button
-                onClick={triggerFileInput}
-                className="group bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-10 rounded-2xl shadow-xl flex items-center justify-center gap-4 text-xl transition-all w-full"
-            >
-                <Camera className="w-8 h-8" />
-                {isMacro ? t('take_macro_photo') : t('take_photo')}
-            </button>
-        </div>
-    );
+                    <button
+                        onClick={triggerFileInput}
+                        className="group bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-10 rounded-2xl shadow-xl flex items-center justify-center gap-4 text-xl transition-all w-full"
+                    >
+                        <Camera className="w-8 h-8" />
+                        {isMacro ? (t('take_macro_photo') || "Take Macro") : (t('take_photo') || "Take Photo")}
+                    </button>
+
+                    {/* Fallback back button if stuck */}
+                    <button onClick={() => setStep('input_type')} className="mt-4 text-gray-500 underline">
+                        {t('back') || "Back"}
+                    </button>
+                </div>
+            );
+        } catch (e) {
+            console.error("Render Capture Error", e);
+            return <div>Error loading camera interface. please refresh.</div>;
+        }
+    };
 
     const renderAnalyzing = () => (
         <div className="flex flex-col items-center justify-center py-20 animate-pulse">
@@ -244,7 +257,7 @@ export default function Home() {
                 </div>
             </div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white animate-bounce">
-                {t('analyzing')}
+                {t('analyzing') || "Analyzing..."}
             </h2>
             <p className="text-gray-500 mt-2">AI Botanist is thinking...</p>
         </div>
