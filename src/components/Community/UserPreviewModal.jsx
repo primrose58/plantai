@@ -38,7 +38,7 @@ export default function UserPreviewModal({ user, onClose }) {
     const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
 
     const isOnline = (u) => {
-        if (!u?.lastSeen) return false;
+        if (!u?.lastSeen || !u.lastSeen.seconds) return false;
         return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
     };
 

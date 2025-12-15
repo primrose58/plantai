@@ -44,7 +44,8 @@ export default function Layout() {
     }, [theme]);
 
     // Shorter Notification Sound (Pop)
-    const [sound] = useState(new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3'));
+    // Shorter Notification Sound (Pop)
+    const [sound] = useState(() => new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3'));
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
