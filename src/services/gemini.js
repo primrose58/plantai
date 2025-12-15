@@ -1,5 +1,6 @@
 // API Key and Base URL are now handled in the backend (api/analyze.js)
 // to prevent exposing the key in the browser.
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /**
  * Analyzes plant images with optional user context.
@@ -108,10 +109,6 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
 
         throw new Error("Invalid response structure from AI");
 
-        import { GoogleGenerativeAI } from "@google/generative-ai";
-
-        // ... (keep existing code) but we need to implement the fallback in the catch block
-
     } catch (error) {
         console.warn("Backend analysis failed, attempting client-side fallback...", error);
 
@@ -120,7 +117,7 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
         if (!apiKey) {
-            throw new Error("API Key missing. Please set VITE_GEMINI_API_KEY.");
+            throw new Error("AI Service Unavailable (API Key Missing).");
         }
 
         try {
