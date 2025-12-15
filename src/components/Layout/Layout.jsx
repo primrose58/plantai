@@ -53,6 +53,29 @@ export default function Layout() {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
 
+    // User Presence Heartbeat
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const updatePresence = async () => {
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    lastSeen: serverTimestamp()
+                });
+            } catch (err) {
+                console.error("Presence update failed", err);
+            }
+        };
+
+        // Update immediately on mount
+        updatePresence();
+
+        // Update every 60 seconds
+        const interval = setInterval(updatePresence, 60 * 1000);
+
+        return () => clearInterval(interval);
+    }, [currentUser]);
+
     // Global Notification Listener
     useEffect(() => {
         if (!currentUser) return;
