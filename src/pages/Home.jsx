@@ -104,9 +104,20 @@ export default function Home() {
         if (isSaved) return;
 
         try {
-            await saveAnalysis(currentUser.uid, plantType, images, result);
+            const docId = await saveAnalysis(currentUser.uid, plantType, images, result);
             setIsSaved(true);
-            addToast(t('save_success') || "Analysis saved successfully!", "success");
+            addToast(t('treatment_started') || "Tedavi süreci başlatıldı!", "success");
+
+            // Redirect to Analyses with onboarding flag
+            setTimeout(() => {
+                navigate('/analyses', {
+                    state: {
+                        showTreatmentGuide: true,
+                        newAnalysisId: docId
+                    }
+                });
+            }, 500); // Small delay for effect
+
         } catch (error) {
             console.error("Manual save failed:", error);
             addToast("Failed to save analysis: " + error.message, "error");
@@ -255,18 +266,27 @@ export default function Home() {
                         <img src={images.macro} alt="Macro Detail" className="w-24 h-24 rounded-lg shadow border border-white absolute bottom-4 right-4" />
                     )}
 
-                    {/* Manual Save Button - Only show if logged in, otherwise logic handles hiding/login prompt */}
+                    {/* Manual Save Button - Only show if logged in */}
                     {currentUser && (
                         <button
                             onClick={handleSaveResult}
                             disabled={isSaved}
-                            className={`mt-4 w-full font-bold py-3 px-6 rounded-xl border shadow-sm transition-all flex items-center justify-center gap-2 ${isSaved
-                                ? 'bg-green-100 text-green-700 border-green-200 cursor-default'
-                                : 'bg-green-600 hover:bg-green-700 text-white border-transparent'
+                            className={`mt-4 w-full font-bold py-4 px-6 rounded-xl border shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-3 ${isSaved
+                                ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-default'
+                                : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white border-transparent'
                                 }`}
                         >
-                            {isSaved ? <CheckCircle className="w-5 h-5" /> : <Save className="w-5 h-5" />}
-                            {isSaved ? (t('saved') || 'Saved') : (t('save_analysis') || 'Save Analysis')}
+                            {isSaved ? (
+                                <>
+                                    <CheckCircle className="w-6 h-6" />
+                                    <span>{t('saved') || 'Kaydedildi'}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="bg-white/20 p-1 rounded-full"><Save className="w-5 h-5" /></div>
+                                    <span className="text-lg">{t('start_treatment') || 'Tedaviye Başla'}</span>
+                                </>
+                            )}
                         </button>
                     )}
 
