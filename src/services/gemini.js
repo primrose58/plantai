@@ -122,8 +122,8 @@ export async function analyzePlantImage(imageData, lang = 'tr', plantType = null
 
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            // Use specific version to avoid alias 404s
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+            // Updated to Gemini 2.5 as per user request (2025 API)
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             // Prepare parts for SDK
             const userPrompt = promptText;
