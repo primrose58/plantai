@@ -4,7 +4,7 @@
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 
-@config "./tailwind.config.js";
+@config "../tailwind.config.js";
 
 /* Always enforce base styles */
 html,
