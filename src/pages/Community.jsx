@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, getDocs, onSnapshot, limit, startAfter } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, getDocs, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import PostCard from '../components/Community/PostCard';
 import CreatePostModal from '../components/Community/CreatePostModal';
+import UserPreviewModal from '../components/Community/UserPreviewModal';
 import { Loader2, Plus, Search, ChevronDown, X } from 'lucide-react';
 import { PLANT_TYPES } from '../constants/plantData';
 
@@ -14,24 +15,25 @@ export default function Community() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
 
     // Filter State
     const [filterType, setFilterType] = useState('All');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [filterSearch, setFilterSearch] = useState('');
 
-    const [lastVisible, setLastVisible] = useState(null);
-    const [hasMore, setHasMore] = useState(true);
+    // Pagination (Simple limit for now)
     const POSTS_PER_PAGE = 10;
+    const [hasMore, setHasMore] = useState(true);
 
     // Prepare filter options (All + Plant Types)
     const filterOptions = [
-        { value: 'All', labelKey: 'community' }, // reused 'community' ~ All for now or add specific key
+        { value: 'All', labelKey: 'community' },
         ...PLANT_TYPES
     ];
 
     const filteredOptions = filterOptions.filter(p => {
-        const label = p.value === 'All' ? t('community') + ' (All)' : t(p.labelKey); // Quick hack for "All" label
+        const label = p.value === 'All' ? t('community') + ' (All)' : t(p.labelKey);
         return label.toLowerCase().includes(filterSearch.toLowerCase());
     });
 
@@ -47,19 +49,11 @@ export default function Community() {
             }));
 
             // Client-side filtering logic
-            // Note: Since we are paging, client-side filtering only filters the *fetched* page.
-            // For true filtered pagination, we need backend queries.
-            // Given the constraints and existing code structure, we stick to client filtering 
-            // but we apply it to the fetched results. 
-            // If the user selects a filter, we might show empty results if the first 10 posts don't match.
-            // To fix this properly requires a different query structure (where('plantType', '==', filter)).
-
             let displayPosts = postsData;
             if (filterType !== 'All') {
                 displayPosts = postsData.filter(p => p.plantType === filterType);
             }
 
-            setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
             setPosts(displayPosts);
             setLoading(false);
             setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
@@ -71,7 +65,7 @@ export default function Community() {
 
         // Cleanup
         return () => unsubscribe();
-    }, [filterType]); // Re-run if filter changes (though currenlty filter is client side, re-fetching identical data is wasteful but safe)
+    }, [filterType]);
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-20 p-4">
@@ -160,7 +154,18 @@ export default function Community() {
             ) : posts.length > 0 ? (
                 <div className="space-y-6">
                     {posts.map(post => (
-                        <PostCard key={post.id} post={post} />
+                        <PostCard
+                            key={post.id}
+                            post={post}
+                            onUserClick={(userId) => {
+                                // Create minimal user object for preview
+                                setSelectedUser({
+                                    id: userId,
+                                    name: post.authorName || 'Gardener',
+                                    avatar: post.userAvatar
+                                });
+                            }}
+                        />
                     ))}
                 </div>
             ) : (
@@ -170,67 +175,22 @@ export default function Community() {
                 </div>
             )}
 
-            import UserPreviewModal from '../components/Community/UserPreviewModal';
+            {/* Modals */}
+            {isModalOpen && (
+                <CreatePostModal
+                    onClose={() => setIsModalOpen(false)}
+                    onPostCreated={() => {
+                        // Snapshot listener handles refresh
+                    }}
+                />
+            )}
 
-            // ... inside Community component ...
-
-            const [selectedUser, setSelectedUser] = useState(null);
-
-            // ...
-
-            return (
-            <div className="max-w-3xl mx-auto space-y-6 pb-20 p-4">
-
-                {/* ... Header & Filter ... */}
-
-                {loading ? (
-                    <div className="flex justify-center py-10">
-                        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                    </div>
-                ) : posts.length > 0 ? (
-                    <div className="space-y-6">
-                        {posts.map(post => (
-                            <PostCard
-                                key={post.id}
-                                post={post}
-                                onUserClick={(userId) => {
-                                    // Create minimal user object for preview
-                                    setSelectedUser({
-                                        id: userId,
-                                        name: post.authorName || 'Gardener',
-                                        avatar: post.userAvatar
-                                    });
-                                }}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    // ... No posts ...
-                    null
-                )}
-
-                {/* Same layout for No Posts */}
-                {posts.length === 0 && !loading && (
-                    <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-                        <p className="text-lg mb-2">👋 No posts yet</p>
-                        <p className="text-sm">Be the first to share your garden!</p>
-                    </div>
-                )}
-
-                {/* Modals */}
-                {isModalOpen && (
-                    <CreatePostModal
-                        onClose={() => setIsModalOpen(false)}
-                        onPostCreated={() => { }}
-                    />
-                )}
-
-                {selectedUser && (
-                    <UserPreviewModal
-                        user={selectedUser}
-                        onClose={() => setSelectedUser(null)}
-                    />
-                )}
-            </div>
-            );
+            {selectedUser && (
+                <UserPreviewModal
+                    user={selectedUser}
+                    onClose={() => setSelectedUser(null)}
+                />
+            )}
+        </div>
+    );
 }
