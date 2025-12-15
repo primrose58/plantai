@@ -26,10 +26,18 @@ export default function UserPreviewModal({ user, onClose }) {
 
         setLoading(true);
         try {
-            const chatId = await startChat(currentUser.uid, user.id, {
-                name: user.name,
-                avatar: user.avatar
-            });
+            const chatId = await startChat(
+                currentUser.uid,
+                user.id,
+                {
+                    name: user.name,
+                    avatar: user.avatar
+                },
+                {
+                    name: currentUser.displayName || 'User',
+                    avatar: currentUser.photoURL
+                }
+            );
             onClose();
             navigate(`/messages/${chatId}`);
         } catch (error) {

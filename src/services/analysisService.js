@@ -328,12 +328,13 @@ export async function updateUserPostsName(userId, newName, newAvatar) {
 /**
  * Start or Retrieve a Chat Session.
  */
-export async function startChat(currentUserId, otherUserId, otherUserData) {
+export async function startChat(currentUserId, otherUserId, otherUserData, currentUserData) {
     try {
-        // Query for existing chat
-        // Note: Firestore doesn't support array-contains=[a,b], so we usually query for one and filter in client (or use a composite ID).
-        // Best approach for 1:1 chats: deterministic ID.
-        // ID: min(uid1, uid2) + "_" + max(uid1, uid2)
+        if (currentUserId === otherUserId) {
+            throw new Error("Cannot start chat with yourself.");
+        }
+
+        // Deterministic ID: min_max
         const sortedIds = [currentUserId, otherUserId].sort();
         const chatId = `${sortedIds[0]}_${sortedIds[1]}`;
 
@@ -341,15 +342,23 @@ export async function startChat(currentUserId, otherUserId, otherUserData) {
         const chatSnap = await getDoc(chatRef);
 
         if (!chatSnap.exists()) {
-            // Create new chat
+            // Create new chat with BOTH users' cache
             await setDoc(chatRef, {
                 participants: [currentUserId, otherUserId],
                 participantData: {
-                    [otherUserId]: otherUserData // Cache basic info
+                    [otherUserId]: otherUserData, // Info about them (for me to see)
+                    [currentUserId]: currentUserData // Info about me (for them to see)
                 },
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: ''
+            });
+        } else {
+            // Optional: Update cached data even if chat exists (in case avatar changed)
+            // This keeps profiles fresh in the chat list
+            await updateDoc(chatRef, {
+                [`participantData.${currentUserId}`]: currentUserData,
+                // We could also update the other user if we have fresh data, but we mainly know about ourselves
             });
         }
 
