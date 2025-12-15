@@ -50,7 +50,7 @@ export default function UserPreviewModal({ user, onClose }) {
             navigate('/login');
             return;
         }
-        if (currentUser.uid === liveUser.uid) {
+        if (currentUser.uid === effectiveUser.uid) {
             addToast(t('cannot_message_self'), 'warning');
             return;
         }
@@ -61,10 +61,10 @@ export default function UserPreviewModal({ user, onClose }) {
             // Ensure avatar values are explicitly null if undefined to prevent Firestore errors
             const chatId = await startChat(
                 currentUser.uid,
-                liveUser.uid,
+                effectiveUser.uid, // Use effectiveUser to guarantee an ID exists
                 {
-                    name: liveUser.name || liveUser.displayName || 'User',
-                    avatar: liveUser.photoURL || liveUser.avatar || null
+                    name: effectiveUser.name || effectiveUser.displayName || 'User',
+                    avatar: effectiveUser.photoURL || effectiveUser.avatar || null
                 },
                 {
                     name: currentUser.displayName || 'User',

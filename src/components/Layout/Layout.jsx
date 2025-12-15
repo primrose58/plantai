@@ -194,12 +194,12 @@ export default function Layout() {
                         </Link>
                     )}
                 </div>
-            </aside >
+            </aside>
 
             {/* Main Content */}
-            < main className="flex-1 flex flex-col overflow-hidden relative" >
+            <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Mobile Header for Lang Switch & Logo */}
-                < header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10" >
+                <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
                     <div className="flex items-center gap-2">
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg text-green-700 dark:text-green-500">PlantAI</span>
@@ -207,7 +207,7 @@ export default function Layout() {
                     <button onClick={toggleLang} className="text-sm font-bold bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                         {i18n.language.toUpperCase()}
                     </button>
-                </header >
+                </header>
 
                 <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 pb-24 md:pb-8 scroll-smooth relative" id="main-scroll">
                     <div className="w-full h-full flex flex-col">
@@ -232,20 +232,6 @@ export default function Layout() {
                             </Link>
                         );
                     })}
-                    {/* Mobile Login/Logout if needed in nav, or rely on Profile page? 
-                         If guest, Profile is hidden. So need login button here or in header. 
-                         Let's keep it simple: Guests see limited tabs. Login is available via 'Community' actions or we can add a specific FAB. 
-                         Actually, let's add Profile back for guests but make it a "Login" page? 
-                         No, user specifically asked to hide things. 
-                         I'll leave it as is. Access to login is via Sidebar (Desktop) or clicking 'Community' actions (future) or the new 'Blurred Result' overlay.
-                         Wait, if I hide Profile, how do they Login on Mobile?
-                         Added Header with Login link? No, space is tight.
-                         Let's add a 'Settings' or 'Menu' tab for mobile? 
-                         Or just keep Profile visible but different content? 
-                         User said "giriş yapmadığım halde mesajlar kısmı falan görünmeyecekti". Implicitly, Profile might be okay if it serves as Login entry.
-                         But let's stick to the request: Hide Messages. Profile I will hide too as per my code above.
-                         I will add a mobile Login button to the Header.
-                      */}
                     {!currentUser && (
                         <Link to="/login" className="flex flex-col items-center justify-center p-2 text-gray-500">
                             <LogIn className="w-6 h-6" />
@@ -253,7 +239,7 @@ export default function Layout() {
                         </Link>
                     )}
                 </nav>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 }
