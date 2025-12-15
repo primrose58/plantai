@@ -21,20 +21,36 @@ export default function Profile() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Upload immediately
-        const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+        // Validations
+        if (file.size > 5 * 1024 * 1024) {
+            setMessage('File is too large (max 5MB)');
+            return;
+        }
+
         setLoading(true);
+        setMessage('Uploading...');
+
         try {
+            // 1. Create unique reference
+            const timestamp = Date.now();
+            const storageRef = ref(storage, `avatars/${currentUser.uid}_${timestamp}`);
+
+            // 2. Upload file
             await uploadBytes(storageRef, file);
+
+            // 3. Get URL
             const url = await getDownloadURL(storageRef);
+
+            // 4. Update local state
             setAvatar(url);
-            // Note: We don't save permenantly until "Save Changes" is clicked? 
-            // Or we update profile immediately? Better to update immediately for avatar usually.
+
+            // 5. Update Firebase Profile
             await updateProfile(auth.currentUser, { photoURL: url });
-            setMessage('Avatar updated!');
+
+            setMessage(t('profile_updated') || 'Profile updated!');
         } catch (err) {
             console.error(err);
-            setMessage('Error uploading avatar.');
+            setMessage('Error uploading avatar: ' + err.message);
         } finally {
             setLoading(false);
         }

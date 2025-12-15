@@ -51,13 +51,20 @@ export async function saveAnalysis(userId, plantType, images, result, isPublic =
  */
 export async function getUserAnalyses(userId) {
     try {
+        // Query WITHOUT orderBy to avoid index requirements
         const q = query(
             collection(db, COLLECTION_NAME),
-            where("userId", "==", userId),
-            orderBy("createdAt", "desc")
+            where("userId", "==", userId)
         );
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Sort in memory (Client-side sorting)
+        const analyses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return analyses.sort((a, b) => {
+            const dateA = a.createdAt?.seconds || 0;
+            const dateB = b.createdAt?.seconds || 0;
+            return dateB - dateA; // Descending order
+        });
     } catch (error) {
         console.error("Error fetching analyses:", error);
         return [];
