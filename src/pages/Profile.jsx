@@ -259,7 +259,7 @@ export default function Profile() {
                             {userPosts.map(post => (
                                 <div key={post.id} className="break-inside-avoid">
                                     <PostCard
-                                        post={post}
+                                        post={{ ...post, hideAuthor: isOwnProfile }}
                                         onViewAnalysis={() => { }}
                                     />
                                 </div>

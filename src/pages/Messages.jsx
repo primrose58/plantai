@@ -79,7 +79,7 @@ function ChatListItem({ chat, currentUser }) {
                         )}
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {chat.lastMessage || 'Sent an image'}
+                        {chat.lastMessage || t('new_conversation') || 'Yeni Sohbet'}
                     </p>
                 </div>
             </Link>

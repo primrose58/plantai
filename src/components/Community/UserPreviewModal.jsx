@@ -134,7 +134,12 @@ export default function UserPreviewModal({ user, onClose }) {
 
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{effectiveUser.name || 'User'}</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
-                        <UserIcon className="w-3 h-3" /> {t('community_member') || 'Community Member'}
+                        <UserIcon className="w-3 h-3" />
+                        <span>
+                            {t('joined') || 'Katılma Tarihi'}: {effectiveUser.createdAt?.seconds
+                                ? new Date(effectiveUser.createdAt.seconds * 1000).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' })
+                                : t('unknown_date')}
+                        </span>
                     </p>
 
                     <div className="flex flex-col gap-3 w-full mt-6">
@@ -146,7 +151,7 @@ export default function UserPreviewModal({ user, onClose }) {
                             className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-300 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
                         >
                             <UserIcon className="w-5 h-5" />
-                            {t('view_profile') || "View Profile"}
+                            {t('view_profile') || "Profili Gör"}
                         </button>
 
                         <button
@@ -154,7 +159,7 @@ export default function UserPreviewModal({ user, onClose }) {
                             disabled={loading || isBlocked} // Disable if blocked
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
                         >
-                            {loading ? (t('starting_chat') || 'Starting...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Send Message'} </>}
+                            {loading ? (t('starting_chat') || 'Başlatılıyor...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Mesaj Gönder'} </>}
                         </button>
 
                         {currentUser.uid !== effectiveUser.uid && (
@@ -162,7 +167,7 @@ export default function UserPreviewModal({ user, onClose }) {
                                 onClick={handleToggleBlock}
                                 className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isBlocked ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'text-red-500 hover:bg-red-50 border border-red-100'}`}
                             >
-                                {isBlocked ? (t('unblock_user') || 'Unblock User') : (t('block_user') || 'Block User')}
+                                {isBlocked ? (t('unblock_user') || 'Engeli Kaldır') : (t('block_user') || 'Kullanıcıyı Engelle')}
                             </button>
                         )}
                     </div>
