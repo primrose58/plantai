@@ -14,7 +14,7 @@ import PostCard from '../components/Community/PostCard';
 import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { addToast } = useToast();
@@ -162,8 +162,8 @@ export default function Profile() {
     };
 
     const getLastSeenText = (u) => {
-        if (!u?.lastSeen) return t('unknown_date') || 'Bilinmiyor';
-        return formatDistanceToNow(new Date(u.lastSeen.seconds * 1000), { addSuffix: true, locale: t('language') === 'tr' ? tr : enUS });
+        if (!u?.lastSeen) return 'Offline';
+        return formatDistanceToNow(new Date(u.lastSeen.seconds * 1000), { addSuffix: true, locale: i18n.language === 'tr' ? tr : enUS });
     };
 
     return (
