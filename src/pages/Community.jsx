@@ -162,8 +162,18 @@ export default function Community() {
 
     useEffect(() => {
         setLoading(true);
-        // Initial Query with Limit
-        let q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(POSTS_PER_PAGE));
+        let q;
+
+        // Dynamic Query Construction
+        // Note: For 'All', we rely on 'orderBy' which needs a default index (usually present).
+        // For specific types, we use 'where' and sort client-side to avoid needing composite indexes for every type.
+        if (filterType === 'All') {
+            q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(POSTS_PER_PAGE));
+        } else {
+            // Fetch all posts of this type (up to a reasonable safety limit) and sort in memory
+            // This ensures we don't miss recent posts due to pre-fetch limiting
+            q = query(collection(db, 'posts'), where('plantType', '==', filterType), limit(50));
+        }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const postsData = snapshot.docs.map(doc => ({
@@ -171,15 +181,19 @@ export default function Community() {
                 ...doc.data()
             }));
 
-            // Client-side filtering logic
-            let displayPosts = postsData;
-            if (filterType !== 'All') {
-                displayPosts = postsData.filter(p => p.plantType === filterType);
-            }
+            // Client-side Sort (Robustness)
+            // Even though 'All' comes sorted, sorting again is cheap and ensures consistency
+            postsData.sort((a, b) => {
+                const timeA = a.createdAt?.seconds || 0;
+                const timeB = b.createdAt?.seconds || 0;
+                return timeB - timeA;
+            });
 
-            setPosts(displayPosts);
+            setPosts(postsData);
             setLoading(false);
-            setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+
+            // Only show 'Load More' if we hit the limit (approximate)
+            setHasMore(snapshot.docs.length >= POSTS_PER_PAGE);
 
         }, (error) => {
             console.error("Error fetching posts:", error);

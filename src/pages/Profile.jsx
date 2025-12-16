@@ -69,11 +69,18 @@ export default function Profile() {
                 // Ensure we query exactly by the string ID
                 const q = query(
                     collection(db, 'posts'),
-                    where('userId', '==', String(profileId)),
-                    orderBy('createdAt', 'desc')
+                    where('userId', '==', String(profileId))
                 );
                 const querySnapshot = await getDocs(q);
-                const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Sort by date desc (client-side to avoid index requirement)
+                posts.sort((a, b) => {
+                    const timeA = a.createdAt?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || 0;
+                    return timeB - timeA;
+                });
+
                 setUserPosts(posts);
 
             } catch (err) {
