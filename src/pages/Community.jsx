@@ -81,9 +81,9 @@ function AnalysisDetailModal({ analysisId, onClose }) {
                         <div className="mb-4">
                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Confidence</span>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${(data.result.confidence || 0.8) * 100}%` }}></div>
+                                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${Math.min((data.result.confidence > 1 ? data.result.confidence : data.result.confidence * 100) || 80, 100)}%` }}></div>
                             </div>
-                            <span className="text-xs text-gray-500 mt-1 block text-right">{Math.round((data.result.confidence || 0.8) * 100)}% Match</span>
+                            <span className="text-xs text-gray-500 mt-1 block text-right">{Math.round((data.result.confidence > 1 ? data.result.confidence : data.result.confidence * 100) || 80)}% Match</span>
                         </div>
                     </div>
                 </div>
