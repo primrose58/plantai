@@ -4,7 +4,7 @@ import { updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
-import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart } from 'lucide-react';
+import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
@@ -229,11 +229,27 @@ export default function Profile() {
                             </form>
                         ) : (
                             <div className="text-center">
-                                <p className="text-sm text-gray-500 italic">
+                                <p className="text-sm text-gray-500 italic mb-4">
                                     {t('joined') || "Katılma Tarihi"}: {targetUser?.createdAt?.seconds
                                         ? new Date(targetUser.createdAt.seconds * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
                                         : t('unknown_date')}
                                 </p>
+
+                                <button
+                                    onClick={() => {
+                                        // Pass robust user object
+                                        const safeUser = {
+                                            uid: targetUser.uid || profileId,
+                                            name: targetUser.name || targetUser.displayName || (userPosts.length > 0 && userPosts[0].authorName) || 'Gardener',
+                                            photoURL: targetUser.photoURL || targetUser.avatar || null
+                                        };
+                                        navigate('/messages/new', { state: { targetUser: safeUser } });
+                                    }}
+                                    className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    <span>{t('send_message')}</span>
+                                </button>
                             </div>
                         )}
 
