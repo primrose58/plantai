@@ -86,29 +86,33 @@ export default function UserPreviewModal({ user, onClose }) {
             return;
         }
 
-        setLoading(true); // Set loading true when starting chat
-        addToast(t('starting_chat'), 'info');
+        setLoading(true);
         try {
-            // Ensure avatar values are explicitly null if undefined to prevent Firestore errors
-            const chatId = await startChat(
-                currentUser.uid,
-                effectiveUser.uid, // Use effectiveUser to guarantee an ID exists
-                {
-                    name: effectiveUser.name || effectiveUser.displayName || 'User',
-                    avatar: effectiveUser.photoURL || effectiveUser.avatar || null
-                },
-                {
-                    name: currentUser.displayName || 'User',
-                    avatar: currentUser.photoURL || null
-                }
-            );
+            // Check if chat already exists
+            // We can check this by querying 'chats' where participants contains both IDs
+            // But simpler to just navigate to a "new" route and let the Chat component handle the check/creation
+            // This avoids double filtering logic here. 
+            // We'll navigate to /messages/new?userId=... or use state
+
+            // However, to be nice, let's try to find it first so we don't show "New Chat" if real one exists
+            // BUT simpler: let Chat.jsx do the smart work.
+
+            // Navigate to special route. The Chat component at /messages/:chatId will handle "new" if chatId is "new"
+            // and we pass target user in state.
             onClose();
-            navigate(`/messages/${chatId}`);
+            // Pass non-null fallback to avoid errors
+            const safeUser = {
+                uid: effectiveUser.uid,
+                name: effectiveUser.name || effectiveUser.displayName || 'User',
+                photoURL: effectiveUser.photoURL || effectiveUser.avatar || null
+            };
+            navigate('/messages/new', { state: { targetUser: safeUser } });
+
         } catch (error) {
             console.error(error);
-            addToast(t('error_starting_chat') || "Failed to start chat", 'error');
+            addToast("Error", 'error');
         } finally {
-            setLoading(false); // Reset loading state
+            setLoading(false);
         }
     };
 

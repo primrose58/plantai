@@ -190,7 +190,7 @@ export default function Profile() {
                             {isOwnProfile && <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />}
 
                             <h2 className="text-xl font-bold mt-4 text-gray-900 dark:text-white capitalize text-center">
-                                {isOwnProfile ? (name || t('gardener')) : (targetUser?.name || targetUser?.displayName || t('gardener'))}
+                                {isOwnProfile ? (name || t('gardener') || 'Bahçıvan') : (targetUser?.name || targetUser?.displayName || t('gardener') || 'Bahçıvan')}
                             </h2>
                             {isOwnProfile && <p className="text-sm text-gray-500">{currentUser.email}</p>}
                         </div>
@@ -218,7 +218,9 @@ export default function Profile() {
                         ) : (
                             <div className="text-center">
                                 <p className="text-sm text-gray-500 italic">
-                                    {t('community_member_since') || "Community Member since"} {targetUser?.createdAt?.seconds ? new Date(targetUser.createdAt.seconds * 1000).getFullYear() : (new Date().getFullYear())}
+                                    {t('joined') || "Katılma Tarihi"}: {targetUser?.createdAt?.seconds
+                                        ? new Date(targetUser.createdAt.seconds * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+                                        : t('unknown_date')}
                                 </p>
                             </div>
                         )}
@@ -227,13 +229,13 @@ export default function Profile() {
                             <div className="flex justify-between text-center">
                                 <div>
                                     <div className="text-2xl font-bold text-green-600">{userPosts.length}</div>
-                                    <div className="text-xs text-gray-400 font-medium">Posts</div>
+                                    <div className="text-xs text-gray-400 font-medium">{t('posts') || 'Gönderi'}</div>
                                 </div>
                                 <div>
                                     <div className="text-2xl font-bold text-blue-600">
                                         {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
                                     </div>
-                                    <div className="text-xs text-gray-400 font-medium">Likes</div>
+                                    <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
                                 </div>
                             </div>
                         </div>
@@ -246,8 +248,8 @@ export default function Profile() {
                         <Grid className="w-5 h-5 text-gray-400" />
                         <span>
                             {isOwnProfile
-                                ? (t('my_posts') || "My Community Posts")
-                                : t('user_posts', { name: targetUser?.name || 'User' }) || `${targetUser?.name || 'User'}'s Posts`
+                                ? (t('my_posts') || "Gönderilerim")
+                                : (t('user_posts_title', { name: targetUser?.name || 'Kullanıcı' }) || `${targetUser?.name || 'Kullanıcı'} Gönderileri`)
                             }
                         </span>
                     </h3>

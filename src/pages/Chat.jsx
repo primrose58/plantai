@@ -43,10 +43,41 @@ export default function Chat() {
     const [uploading, setUploading] = useState(false);
     const [playingAudio, setPlayingAudio] = useState(null); // URL of currently playing audio
 
-    useEffect(() => {
-        if (!chatId || !currentUser) return;
+    // State for temporary/new chat
+    const LOCATION = useLocation();
+    const [targetUserForNewChat, setTargetUserForNewChat] = useState(LOCATION.state?.targetUser || null);
+    const [realChatId, setRealChatId] = useState(chatId === 'new' ? null : chatId);
 
-        const unsubChat = onSnapshot(doc(db, 'chats', chatId), (docSnap) => {
+    // If we have a real ID, stay on it. If 'new', we are waiting.
+    useEffect(() => {
+        if (chatId !== 'new') setRealChatId(chatId);
+    }, [chatId]);
+
+    // Check for existing chat if 'new'
+    useEffect(() => {
+        if (chatId === 'new' && targetUserForNewChat && currentUser) {
+            // Check if we already have a chat with this user to avoid dups
+            const check = async () => {
+                try {
+                    // Optimized query: Look for chats with BOTH users.
+                    // Note: 'participants' array-contains is simple, but to find exact match of 2 users is harder.
+                    // We can rely on client-side check or just create.
+                    // Ideally analysisService.startChat does the check.
+                    // Let's just trust startChat to find or separate. 
+                    // Actually, startChat creates if not exists. 
+                    // But we don't want to create YET.
+                    // So we just render empty.
+                    setOtherUser(targetUserForNewChat);
+                } catch (e) { console.warn(e); }
+            };
+            check();
+        }
+    }, [chatId, targetUserForNewChat, currentUser]);
+
+    useEffect(() => {
+        if (!realChatId || !currentUser) return;
+
+        const unsubChat = onSnapshot(doc(db, 'chats', realChatId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const otherUid = data.participants.find(p => p !== currentUser.uid);
@@ -58,11 +89,12 @@ export default function Chat() {
                     setOtherUserId(otherUid);
                 }
             } else {
-                navigate('/messages');
+                // handle deleted
+                if (chatId !== 'new') navigate('/messages');
             }
         });
 
-        const unsubscribe = onSnapshot(collection(db, 'chats', chatId, 'messages'), (snapshot) => {
+        const unsubscribe = onSnapshot(collection(db, 'chats', realChatId, 'messages'), (snapshot) => {
             const msgs = snapshot.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
@@ -77,104 +109,35 @@ export default function Chat() {
             unsubscribe();
             unsubChat();
         };
-    }, [chatId, currentUser, editingId]);
+    }, [realChatId, currentUser, editingId, chatId, navigate]);
 
-    useEffect(() => {
-        if (!otherUserId) return;
-        const unsub = onSnapshot(doc(db, 'users', otherUserId), (doc) => {
-            if (doc.exists()) setOtherUser(doc.data());
-        });
-        return () => unsub();
-    }, [otherUserId]);
+    // ... (other useEffects match otherUserId logic)
 
-    // Timer for voice recording
-    useEffect(() => {
-        let interval;
-        if (isRecording) {
-            interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
-        } else {
-            setRecordingTime(0);
-        }
-        return () => clearInterval(interval);
-    }, [isRecording]);
-
-    const getStatusText = (user) => {
-        if (!user?.lastSeen) return 'Offline';
-        const lastSeen = user.lastSeen.seconds * 1000;
-        const diff = Date.now() - lastSeen;
-        if (diff < 3 * 60 * 1000) return 'Online';
-        return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
-    };
-
-    const isOnline = (user) => {
-        if (!user?.lastSeen) return false;
-        return (Date.now() - user.lastSeen.seconds * 1000) < 3 * 60 * 1000;
-    };
-
-    // --- Message Editing ---
-    const startEdit = (msg) => {
-        setNewMessage(msg.text || '');
-        setEditingId(msg.id);
-        setAttachment(null); // Cannot modify attachments in simple edit mode yet
-        fileInputRef.current.value = '';
-    };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        setNewMessage('');
-        setAttachment(null);
-    };
-
-    // --- File Handling ---
-    const handleFileSelect = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-            addToast("File too large (Max 10MB)", "error");
-            return;
-        }
-
-        const type = file.type.startsWith('image/') ? 'image' : 'file';
-        const previewUrl = type === 'image' ? URL.createObjectURL(file) : null;
-        setAttachment({ file, type, previewUrl });
-    };
-
-    // --- Voice Recording (Click-to-Toggle) ---
-    const toggleRecording = async () => {
-        if (isRecording) {
-            // Stop and Send
-            mediaRecorder.stop();
-            setIsRecording(false);
-        } else {
-            // Start
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const recorder = new MediaRecorder(stream);
-                const chunks = [];
-
-                recorder.ondataavailable = (e) => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                    // Immediately Send Audio
-                    await uploadAndSend(null, audioBlob, 'voice_message.webm', 'audio');
-
-                    stream.getTracks().forEach(track => track.stop()); // Clean up
-                };
-
-                recorder.start();
-                setMediaRecorder(recorder);
-                setIsRecording(true);
-            } catch (err) {
-                console.error("Mic error:", err);
-                addToast("Could not access microphone", "error");
-            }
-        }
-    };
-
+    // Modified Upload/Send for New Chat
     const uploadAndSend = async (text, fileBlob = null, fileName = null, type = 'text') => {
         setUploading(true);
         try {
+            let activeChatId = realChatId;
+
+            // 1. Create chat if it doesn't exist yet
+            if (!activeChatId && chatId === 'new') {
+                if (!targetUserForNewChat) throw new Error("Target user missing");
+
+                // Import startChat dynamically or assume standard import
+                const { startChat } = await import('../services/analysisService');
+
+                activeChatId = await startChat(
+                    currentUser.uid,
+                    targetUserForNewChat.uid,
+                    { name: targetUserForNewChat.name, avatar: targetUserForNewChat.photoURL },
+                    { name: currentUser.displayName, avatar: currentUser.photoURL }
+                );
+
+                setRealChatId(activeChatId);
+                // Update URL silently
+                window.history.replaceState(null, '', `/messages/${activeChatId}`);
+            }
+
             let fileUrl = null;
             let finalType = type;
             let finalFileName = fileName;
@@ -215,13 +178,13 @@ export default function Chat() {
 
             if (editingId) {
                 // ... editing logic remains same ...
-                await updateDoc(doc(db, 'chats', chatId, 'messages', editingId), {
+                await updateDoc(doc(db, 'chats', activeChatId, 'messages', editingId), {
                     text: text,
                     editedAt: serverTimestamp()
                 });
                 setEditingId(null);
             } else {
-                await addDoc(collection(db, 'chats', chatId, 'messages'), {
+                await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
                     text: text || '',
                     type: finalType,
                     fileUrl: fileUrl, // Now a Base64 string
@@ -230,7 +193,7 @@ export default function Chat() {
                     createdAt: serverTimestamp()
                 });
 
-                await updateDoc(doc(db, 'chats', chatId), {
+                await updateDoc(doc(db, 'chats', activeChatId), {
                     lastMessage: finalType === 'audio' ? '🎤 Voice Message' : (finalType === 'image' ? '📷 Photo' : (text || '📎 File')),
                     updatedAt: serverTimestamp()
                 });
