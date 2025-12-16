@@ -232,6 +232,20 @@ export default function Chat() {
         return new Date(timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            addToast("File too large (Max 10MB)", "error");
+            return;
+        }
+
+        const type = file.type.startsWith('image/') ? 'image' : 'file';
+        const previewUrl = type === 'image' ? URL.createObjectURL(file) : null;
+        setAttachment({ file, type, previewUrl });
+    };
+
     return (
         <div className="flex flex-col h-[calc(100vh-theme(spacing.32))] md:h-[calc(100vh-theme(spacing.16))] max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
             {/* Header */}

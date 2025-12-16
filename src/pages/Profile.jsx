@@ -181,7 +181,12 @@ export default function Profile() {
                                         <img src={isOwnProfile ? avatar : (targetUser?.avatar || targetUser?.photoURL)} className="w-full h-full object-cover" />
                                         :
                                         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                            <span className="text-4xl">{(name || targetUser?.name || 'G').charAt(0).toUpperCase()}</span>
+                                            {/* Use the same robust name logic for the avatar initials */}
+                                            <img
+                                                src={`https://ui-avatars.com/api/?name=${(isOwnProfile ? (name || 'Gardener') : (targetUser?.name || targetUser?.displayName || (userPosts.length > 0 && userPosts[0].authorName) || 'Gardener'))}&background=random&size=128`}
+                                                alt="Avatar"
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                     }
                                 </div>
