@@ -246,6 +246,54 @@ export default function Chat() {
         setAttachment({ file, type, previewUrl });
     };
 
+    // --- Message Editing ---
+    const startEdit = (msg) => {
+        setNewMessage(msg.text || '');
+        setEditingId(msg.id);
+        setAttachment(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setNewMessage('');
+        setAttachment(null);
+    };
+
+    // --- Voice Recording (Click-to-Toggle) ---
+    const toggleRecording = async () => {
+        if (isRecording) {
+            // Stop and Send
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            setIsRecording(false);
+        } else {
+            // Start
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+
+                recorder.ondataavailable = (e) => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    // Immediately Send Audio
+                    await uploadAndSend(null, audioBlob, 'voice_message.webm', 'audio');
+
+                    stream.getTracks().forEach(track => track.stop()); // Clean up
+                };
+
+                recorder.start();
+                setMediaRecorder(recorder);
+                setIsRecording(true);
+            } catch (err) {
+                console.error("Mic error:", err);
+                addToast("Could not access microphone", "error");
+            }
+        }
+    };
+
     return (
         <div className="flex flex-col h-[calc(100vh-theme(spacing.32))] md:h-[calc(100vh-theme(spacing.16))] max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
             {/* Header */}
