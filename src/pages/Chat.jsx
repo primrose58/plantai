@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase'; // Removed storage
-import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, serverTimestamp, updateDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { Send, ArrowLeft, Trash2, Edit2, Mic, Paperclip, X, Image as ImageIcon, FileText, Play, Pause } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -57,18 +57,30 @@ export default function Chat() {
     useEffect(() => {
         if (chatId === 'new' && targetUserForNewChat && currentUser) {
             // Check if we already have a chat with this user to avoid dups
+            // Check if we already have a chat with this user to avoid dups
             const check = async () => {
                 try {
-                    // Optimized query: Look for chats with BOTH users.
-                    // Note: 'participants' array-contains is simple, but to find exact match of 2 users is harder.
-                    // We can rely on client-side check or just create.
-                    // Ideally analysisService.startChat does the check.
-                    // Let's just trust startChat to find or separate. 
-                    // Actually, startChat creates if not exists. 
-                    // But we don't want to create YET.
-                    // So we just render empty.
-                    setOtherUser(targetUserForNewChat);
-                } catch (e) { console.warn(e); }
+                    setOtherUser(targetUserForNewChat); // Show user immediately while checking
+
+                    const q = query(
+                        collection(db, 'chats'),
+                        where('participants', 'array-contains', currentUser.uid)
+                    );
+                    const querySnapshot = await getDocs(q);
+
+                    const existingChat = querySnapshot.docs.find(doc => {
+                        const data = doc.data();
+                        return data.participants.includes(targetUserForNewChat.uid);
+                    });
+
+                    if (existingChat) {
+                        setRealChatId(existingChat.id);
+                        navigate(`/messages/${existingChat.id}`, { replace: true });
+                    } else {
+                        // No chat exists, stay in 'new' mode (waiting for first message)
+                        setLoading(false);
+                    }
+                } catch (e) { console.warn("Error checking existing chats:", e); }
             };
             check();
         }
@@ -116,7 +128,19 @@ export default function Chat() {
         };
     }, [realChatId, currentUser, editingId, chatId, navigate]);
 
-    // ... (other useEffects match otherUserId logic)
+    // Live sync for Other User Profile (Avatar/Name updates)
+    useEffect(() => {
+        if (!otherUserId) return;
+
+        const unsubUser = onSnapshot(doc(db, 'users', otherUserId), (docSnap) => {
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                setOtherUser(prev => ({ ...prev, ...userData }));
+            }
+        });
+
+        return () => unsubUser();
+    }, [otherUserId]);
 
     // Modified Upload/Send for New Chat
     const uploadAndSend = async (text, fileBlob = null, fileName = null, type = 'text') => {
