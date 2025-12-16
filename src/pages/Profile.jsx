@@ -195,7 +195,9 @@ export default function Profile() {
                             {isOwnProfile && <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />}
 
                             <h2 className="text-xl font-bold mt-4 text-gray-900 dark:text-white capitalize text-center">
-                                {isOwnProfile ? (name || t('gardener') || 'Bahçıvan') : (targetUser?.name || targetUser?.displayName || t('gardener') || 'Bahçıvan')}
+                                {isOwnProfile
+                                    ? (name || t('gardener') || 'Bahçıvan')
+                                    : (targetUser?.name || targetUser?.displayName || (userPosts.length > 0 && userPosts[0].authorName) || t('gardener') || 'Bahçıvan')}
                             </h2>
                             {isOwnProfile && <p className="text-sm text-gray-500">{currentUser.email}</p>}
                         </div>
