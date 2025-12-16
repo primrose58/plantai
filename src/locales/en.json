@@ -96,5 +96,16 @@
   "like": "Like",
   "comment": "Comment",
   "edit": "Edit",
-  "delete": "Delete"
+  "delete": "Delete",
+  "joined": "Joined",
+  "unknown_date": "Unknown Date",
+  "view_profile": "View Profile",
+  "block_user": "Block User",
+  "unblock_user": "Unblock User",
+  "posts": "Posts",
+  "likes": "Likes",
+  "my_posts": "My Posts",
+  "user_posts_title": "{{name}}'s Posts",
+  "new_conversation": "New Chat",
+  "view_analysis_report": "View Analysis Report"
 }

@@ -140,5 +140,16 @@
     "verify_email_desc": "Doğrulama bağlantısını gönderdik. Devam etmek için lütfen e-postanızı kontrol edin.",
     "open_email_app": "E-posta Uygulamasını Aç",
     "i_verified_it": "Doğruladım, Giriş Yap",
-    "already_have_account": "Zaten hesabınız var mı?"
+    "already_have_account": "Zaten hesabınız var mı?",
+    "joined": "Katılma Tarihi",
+    "unknown_date": "Bilinmiyor",
+    "view_profile": "Profili Gör",
+    "block_user": "Kullanıcıyı Engelle",
+    "unblock_user": "Engeli Kaldır",
+    "posts": "Gönderi",
+    "likes": "Beğeni",
+    "my_posts": "Gönderilerim",
+    "user_posts_title": "{{name}} Gönderileri",
+    "new_conversation": "Yeni Sohbet",
+    "view_analysis_report": "Analiz Raporunu Gör"
 }
