@@ -50,9 +50,12 @@ export default function Profile() {
 
                 if (docSnap.exists()) {
                     userData = { uid: docSnap.id, ...docSnap.data() };
-                } else if (isOwnProfile && currentUser) {
-                    // Fallback for own profile if not in DB yet
-                    userData = { ...currentUser, uid: currentUser.uid };
+                } else {
+                    // Fallback for both own and other profiles if doc missing
+                    userData = { uid: profileId };
+                    if (isOwnProfile && currentUser) {
+                        userData = { ...userData, ...currentUser };
+                    }
                 }
 
                 if (userData) {
@@ -155,6 +158,15 @@ export default function Profile() {
     };
 
     if (!profileId) return <div className="p-10 text-center">{t('login_required')}</div>;
+
+    // Prevent flickering: Show loader until we have the user data
+    if (postsLoading && !targetUser) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            </div>
+        );
+    }
 
     const isOnline = (u) => {
         if (!u?.lastSeen || !u.lastSeen.seconds) return false;
