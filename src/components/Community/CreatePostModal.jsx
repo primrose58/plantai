@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { PLANT_TYPES, DISEASE_TYPES } from '../../constants/plantData';
 import imageCompression from 'browser-image-compression';
 import { analyzePlantImage } from '../../services/gemini';
+import { isTextSafe } from '../../services/safetyService';
 
 export default function CreatePostModal({ onClose, onPostCreated }) {
     const { t } = useTranslation();
@@ -96,8 +97,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             setDetecting(false);
         }
     };
-
-    import { isTextSafe } from '../../services/safetyService'; // Safety Check
 
     const handleSubmit = async (e) => {
         e.preventDefault();
