@@ -12,6 +12,8 @@ import Analyses from './pages/Analyses';
 import { useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 
+import { Analytics } from "@vercel/analytics/react";
+
 function App() {
   return (
     <ToastProvider>
@@ -29,6 +31,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>
+      <Analytics />
     </ToastProvider>
   );
 }

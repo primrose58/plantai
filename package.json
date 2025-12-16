@@ -13,6 +13,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.1.18",
+    "@vercel/analytics": "^1.6.1",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
