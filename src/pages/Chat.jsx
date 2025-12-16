@@ -226,6 +226,19 @@ export default function Chat() {
         }
     };
 
+    const getStatusText = (user) => {
+        if (!user?.lastSeen) return 'Offline';
+        const lastSeen = user.lastSeen.seconds * 1000;
+        const diff = Date.now() - lastSeen;
+        if (diff < 3 * 60 * 1000) return 'Online';
+        return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
+    };
+
+    const isOnline = (user) => {
+        if (!user?.lastSeen) return false;
+        return (Date.now() - user.lastSeen.seconds * 1000) < 3 * 60 * 1000;
+    };
+
     // Helper for timestamp
     const formatTime = (timestamp) => {
         if (!timestamp) return '...';
