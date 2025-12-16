@@ -75,7 +75,12 @@ export default function Chat() {
     }, [chatId, targetUserForNewChat, currentUser]);
 
     useEffect(() => {
+        if (chatId === 'new') {
+            setLoading(false);
+            return;
+        }
         if (!realChatId || !currentUser) return;
+        setLoading(true);
 
         const unsubChat = onSnapshot(doc(db, 'chats', realChatId), (docSnap) => {
             if (docSnap.exists()) {
@@ -488,7 +493,7 @@ export default function Chat() {
                         <textarea
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder={editingId ? "Edit your message..." : t('type_msg')}
+                            placeholder={editingId ? "Edit your message..." : (t('type_message') || "Mesaj yazın...")}
                             className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
                             rows={1}
                             style={{ height: 'auto', minHeight: '48px' }}

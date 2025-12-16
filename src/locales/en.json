@@ -107,5 +107,6 @@
   "my_posts": "My Posts",
   "user_posts_title": "{{name}}'s Posts",
   "new_conversation": "New Chat",
-  "view_analysis_report": "View Analysis Report"
+  "view_analysis_report": "View Analysis Report",
+  "type_message": "Type a message..."
 }
