@@ -44,17 +44,26 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                 return;
             }
             const date = new Date(post.createdAt.seconds * 1000);
-            setTimeAgo(formatDistanceToNow(date, {
-                addSuffix: true,
-                locale: dateLocale,
-                includeSeconds: true
-            }));
+            const now = new Date();
+            const diffInHours = (now - date) / (1000 * 60 * 60);
+
+            if (diffInHours > 24) {
+                setTimeAgo(date.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                }));
+            } else {
+                setTimeAgo(formatDistanceToNow(date, {
+                    addSuffix: true,
+                    locale: dateLocale,
+                    includeSeconds: false
+                }));
+            }
         };
 
         updateTime(); // Initial run
-        const interval = setInterval(updateTime, 30000); // Update every 30s
+        const interval = setInterval(updateTime, 60000); // 1 min update is enough
         return () => clearInterval(interval);
-    }, [post.createdAt, dateLocale, t]);
+    }, [post.createdAt, dateLocale, t, i18n.language]);
 
     const createdAt = post.createdAt?.seconds ? new Date(post.createdAt.seconds * 1000) : new Date();
     // derived variables...

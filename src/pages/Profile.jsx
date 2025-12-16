@@ -4,6 +4,8 @@ import { updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
@@ -159,6 +161,11 @@ export default function Profile() {
         return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
     };
 
+    const getLastSeenText = (u) => {
+        if (!u?.lastSeen) return t('unknown_date') || 'Bilinmiyor';
+        return formatDistanceToNow(new Date(u.lastSeen.seconds * 1000), { addSuffix: true, locale: t('language') === 'tr' ? tr : enUS });
+    };
+
     return (
         <div className="max-w-4xl mx-auto w-full pb-20 animate-fade-in p-4">
             {/* Split Layout: Left Profile, Right Posts */}
@@ -172,7 +179,7 @@ export default function Profile() {
                             {!isOwnProfile && targetUser && (
                                 <div className={`absolute top-0 right-10 px-2 py-1 rounded-full text-[10px] font-bold border border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(targetUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${isOnline(targetUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                                    {isOnline(targetUser) ? 'Online' : 'Offline'}
+                                    {isOnline(targetUser) ? 'Online' : getLastSeenText(targetUser)}
                                 </div>
                             )}
 
