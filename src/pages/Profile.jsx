@@ -175,16 +175,8 @@ export default function Profile() {
                 <div className="w-full md:w-1/3">
                     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 sticky top-24 border border-gray-100 dark:border-gray-700">
                         <div className="flex flex-col items-center mb-6 relative">
-                            {/* Online Status for Others */}
-                            {!isOwnProfile && targetUser && (
-                                <div className={`absolute top-0 right-10 px-2 py-1 rounded-full text-[10px] font-bold border border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(targetUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${isOnline(targetUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                                    {isOnline(targetUser) ? 'Online' : getLastSeenText(targetUser)}
-                                </div>
-                            )}
-
                             <div className={`relative ${isOwnProfile ? 'group cursor-pointer' : ''} mt-2`} onClick={() => isOwnProfile && fileInputRef.current?.click()}>
-                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-50 dark:border-green-900/30 shadow-xl bg-gray-100">
+                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-50 dark:border-green-900/30 shadow-xl bg-gray-100 relative z-10">
                                     {(isOwnProfile ? avatar : (targetUser?.avatar || targetUser?.photoURL)) ?
                                         <img src={isOwnProfile ? avatar : (targetUser?.avatar || targetUser?.photoURL)} className="w-full h-full object-cover" />
                                         :
@@ -198,6 +190,13 @@ export default function Profile() {
                                         </div>
                                     }
                                 </div>
+                                {/* Online Status Badge - Now anchored to avatar */}
+                                {!isOwnProfile && targetUser && (
+                                    <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full text-[10px] font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 shadow-sm z-20 ${isOnline(targetUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${isOnline(targetUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                                        {isOnline(targetUser) ? 'Online' : getLastSeenText(targetUser)}
+                                    </div>
+                                )}
                                 {isOwnProfile && (
                                     <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Camera className="w-8 h-8 text-white" />
