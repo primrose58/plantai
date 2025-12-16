@@ -8,53 +8,73 @@ import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart } from 'luci
 import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
-import PostCard from '../components/Community/PostCard'; // Reuse PostCard
+import PostCard from '../components/Community/PostCard';
+import { useParams } from 'react-router-dom';
 
 export default function Profile() {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
     const { addToast } = useToast();
+    const { userId } = useParams(); // Get ID from URL if present
 
-    const [name, setName] = useState(currentUser?.displayName || '');
-    const [avatar, setAvatar] = useState(currentUser?.photoURL || '');
+    const [targetUser, setTargetUser] = useState(null);
+    const [name, setName] = useState('');
+    const [avatar, setAvatar] = useState('');
     const [loading, setLoading] = useState(false);
     const [userPosts, setUserPosts] = useState([]);
     const [postsLoading, setPostsLoading] = useState(true);
 
     const fileInputRef = useRef(null);
 
+    // Determine whose profile we are viewing
+    // If no userId param, or userId matches current user => My Profile
+    const isOwnProfile = !userId || (currentUser && userId === currentUser.uid);
+    const profileId = userId || currentUser?.uid;
+
     // Initial Load
     useEffect(() => {
         const loadData = async () => {
-            if (!currentUser) return;
+            if (!profileId) return;
 
-            // 1. Load Profile Data
-            const docRef = doc(db, 'users', currentUser.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists() && docSnap.data().avatar) {
-                setAvatar(docSnap.data().avatar);
-            }
+            setPostsLoading(true);
 
-            // 2. Load User's Public Posts
             try {
+                // 1. Load Profile Data
+                const docRef = doc(db, 'users', profileId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    setTargetUser({ uid: docSnap.id, ...docSnap.data() });
+                    setName(docSnap.data().name || docSnap.data().displayName || '');
+                    setAvatar(docSnap.data().avatar || docSnap.data().photoURL || '');
+                } else if (isOwnProfile && currentUser) {
+                    // Fallback for own profile if not in DB yet
+                    setTargetUser(currentUser);
+                    setName(currentUser.displayName || '');
+                    setAvatar(currentUser.photoURL || '');
+                }
+
+                // 2. Load User's Public Posts
                 const q = query(
                     collection(db, 'posts'),
-                    where('userId', '==', currentUser.uid),
+                    where('userId', '==', profileId),
                     orderBy('createdAt', 'desc')
                 );
                 const querySnapshot = await getDocs(q);
                 const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setUserPosts(posts);
+
             } catch (err) {
-                console.error("Failed to load user posts", err);
+                console.error("Failed to load profile data", err);
             } finally {
                 setPostsLoading(false);
             }
         };
         loadData();
-    }, [currentUser]);
+    }, [profileId, isOwnProfile, currentUser]);
 
     const handleFileChange = async (e) => {
+        if (!isOwnProfile) return;
         const file = e.target.files[0];
         if (!file) return;
 
@@ -94,6 +114,7 @@ export default function Profile() {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        if (!isOwnProfile) return;
         if (!name.trim()) return;
 
         setLoading(true);
@@ -111,10 +132,10 @@ export default function Profile() {
         }
     };
 
-    if (!currentUser) return <div className="p-10 text-center">{t('login_required')}</div>;
+    if (!profileId) return <div className="p-10 text-center">{t('login_required')}</div>;
 
     return (
-        <div className="max-w-4xl mx-auto w-full pb-20 animate-fade-in">
+        <div className="max-w-4xl mx-auto w-full pb-20 animate-fade-in p-4">
             {/* Split Layout: Left Profile, Right Posts */}
             <div className="flex flex-col md:flex-row gap-8 mt-6">
 
@@ -122,40 +143,50 @@ export default function Profile() {
                 <div className="w-full md:w-1/3">
                     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 sticky top-24 border border-gray-100 dark:border-gray-700">
                         <div className="flex flex-col items-center mb-6">
-                            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                            <div className={`relative ${isOwnProfile ? 'group cursor-pointer' : ''}`} onClick={() => isOwnProfile && fileInputRef.current?.click()}>
                                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-50 dark:border-green-900/30 shadow-xl bg-gray-100">
                                     {avatar ? <img src={avatar} className="w-full h-full object-cover" /> : <UserIcon className="w-full h-full p-6 text-gray-300" />}
                                 </div>
-                                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="w-8 h-8 text-white" />
-                                </div>
+                                {isOwnProfile && (
+                                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera className="w-8 h-8 text-white" />
+                                    </div>
+                                )}
                                 {loading && <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-full"><Loader2 className="animate-spin text-green-600" /></div>}
                             </div>
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                            {isOwnProfile && <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />}
 
-                            <h2 className="text-xl font-bold mt-4 text-gray-900 dark:text-white">{name || 'Gardener'}</h2>
-                            <p className="text-sm text-gray-500">{currentUser.email}</p>
+                            <h2 className="text-xl font-bold mt-4 text-gray-900 dark:text-white capitalize">{name || t('gardener')}</h2>
+                            {isOwnProfile && <p className="text-sm text-gray-500">{currentUser.email}</p>}
                         </div>
 
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">{t('display_name')}</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-green-500 outline-none"
-                                />
+                        {isOwnProfile ? (
+                            <form onSubmit={handleSave} className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">{t('display_name')}</label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-green-500 outline-none"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                    {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                    <span>{t('save_changes')}</span>
+                                </button>
+                            </form>
+                        ) : (
+                            <div className="text-center">
+                                <p className="text-sm text-gray-500 italic">
+                                    {t('community_member_since')} {targetUser?.createdAt?.seconds ? new Date(targetUser.createdAt.seconds * 1000).getFullYear() : ''}
+                                </p>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                            >
-                                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
-                                <span>{t('save_changes')}</span>
-                            </button>
-                        </form>
+                        )}
 
                         <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                             <div className="flex justify-between text-center">
@@ -178,7 +209,7 @@ export default function Profile() {
                 <div className="flex-1">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                         <Grid className="w-5 h-5 text-gray-400" />
-                        <span>{t('my_posts') || "My Community Posts"}</span>
+                        <span>{isOwnProfile ? (t('my_posts') || "My Community Posts") : `${name}'s Posts`}</span>
                     </h3>
 
                     {postsLoading ? (
@@ -189,8 +220,7 @@ export default function Profile() {
                                 <div key={post.id} className="break-inside-avoid">
                                     <PostCard
                                         post={post}
-                                        onViewAnalysis={() => { }} // Could link to analyses if needed
-                                    // No need to click user to see self
+                                        onViewAnalysis={() => { }}
                                     />
                                 </div>
                             ))}

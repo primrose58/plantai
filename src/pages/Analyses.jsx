@@ -283,14 +283,21 @@ export default function Analyses() {
                                         </button>
                                     )}
 
-                                    <button
-                                        onClick={(e) => handleShare(e, item)}
-                                        disabled={item.isPublic}
-                                        className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${item.isPublic ? 'bg-blue-50 text-blue-400 cursor-default' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                                    >
-                                        <Share2 className="w-5 h-5" />
-                                        {item.isPublic ? (t('shared') || 'Paylaşıldı') : (t('share') || 'Paylaş')}
-                                    </button>
+                                    <div className="flex flex-col items-center">
+                                        <button
+                                            onClick={(e) => handleShare(e, item)}
+                                            disabled={item.isPublic}
+                                            className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all w-full ${item.isPublic ? 'bg-blue-50 text-blue-400 cursor-default' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        >
+                                            <Share2 className="w-5 h-5" />
+                                            {item.isPublic ? (t('shared') || 'Paylaşıldı') : (t('share') || 'Paylaş')}
+                                        </button>
+                                        {!item.isPublic && (
+                                            <span className="text-[10px] text-gray-400 mt-1">
+                                                {t('share_help_others') || "Toplulukla paylaşarak başkalarına yardımcı ol!"}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Feedback Form */}

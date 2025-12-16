@@ -23,6 +23,7 @@ function App() {
           <Route path="messages/:chatId" element={<Chat />} />
           <Route path="analyses" element={<Analyses />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="profile/:userId" element={<Profile />} />
           <Route path="about" element={<About />} />
         </Route>
         <Route path="/login" element={<Login />} />

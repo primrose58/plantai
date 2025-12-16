@@ -140,6 +140,17 @@ export default function UserPreviewModal({ user, onClose }) {
 
                     <div className="flex flex-col gap-3 w-full mt-6">
                         <button
+                            onClick={() => {
+                                onClose();
+                                navigate(`/profile/${effectiveUser.uid}`);
+                            }}
+                            className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-300 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
+                        >
+                            <UserIcon className="w-5 h-5" />
+                            {t('view_profile') || "View Profile"}
+                        </button>
+
+                        <button
                             onClick={handleSendMessage}
                             disabled={loading || isBlocked} // Disable if blocked
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"

@@ -204,7 +204,24 @@ export async function addFeedbackUpdate(analysisId, imageBase64, note) {
  */
 export async function deletePost(postId) {
     try {
-        await deleteDoc(doc(db, 'posts', postId));
+        const postRef = doc(db, 'posts', postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) return false;
+
+        const postData = postSnap.data();
+
+        // If this post was shared from an analysis, reset the analysis status
+        if (postData.relatedAnalysisId) {
+            try {
+                const analysisRef = doc(db, 'analyses', postData.relatedAnalysisId);
+                await updateDoc(analysisRef, { isPublic: false });
+            } catch (e) {
+                console.warn("Could not sync analysis status (might be deleted)", e);
+            }
+        }
+
+        await deleteDoc(postRef);
         return true;
     } catch (error) {
         console.error("Error deleting post:", error);
