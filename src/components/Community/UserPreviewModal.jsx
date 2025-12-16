@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { blockUser, unblockUser, isUserBlocked } from '../../services/safetyService';
 
 export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
@@ -36,8 +37,6 @@ export default function UserPreviewModal({ user, onClose }) {
 
     // Derived state or helpers
     const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
-
-    import { blockUser, unblockUser, isUserBlocked } from '../../services/safetyService';
 
     // ... inside component ...
     const [isBlocked, setIsBlocked] = useState(false);
