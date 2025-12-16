@@ -9,10 +9,11 @@ import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
 import PostCard from '../components/Community/PostCard';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Profile() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { addToast } = useToast();
     const { userId } = useParams(); // Get ID from URL if present
