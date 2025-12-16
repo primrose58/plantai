@@ -153,6 +153,11 @@ export default function Profile() {
 
     if (!profileId) return <div className="p-10 text-center">{t('login_required')}</div>;
 
+    const isOnline = (u) => {
+        if (!u?.lastSeen || !u.lastSeen.seconds) return false;
+        return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
+    };
+
     return (
         <div className="max-w-4xl mx-auto w-full pb-20 animate-fade-in p-4">
             {/* Split Layout: Left Profile, Right Posts */}
