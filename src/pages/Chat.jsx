@@ -23,7 +23,7 @@ const blobToBase64 = (blob) => {
 export default function Chat() {
     const { chatId } = useParams();
     const { currentUser } = useAuth();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const bottomRef = useRef(null);
     const fileInputRef = useRef(null);
