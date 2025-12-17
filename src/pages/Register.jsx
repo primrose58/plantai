@@ -44,11 +44,6 @@ const handleSubmit = async (e) => {
     }
 };
 
-        } catch (err) {
-    setError(err.message);
-    console.error(err);
-    setLoading(false);
-}
     };
 
 const handleVerified = async () => {

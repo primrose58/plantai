@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -22,13 +22,34 @@ export function AuthProvider({ children }) {
 
                 // Fetch profile in background
                 try {
-                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
                     if (userDoc.exists()) {
                         // Merge profile data
                         setCurrentUser(prev => ({ ...prev, ...userDoc.data() }));
+                    } else {
+                        // SELF-HEALING: Create document if missing
+                        console.warn("User document missing. Creating sync record...");
+                        const newUserData = {
+                            uid: user.uid,
+                            name: user.displayName || 'User',
+                            displayName: user.displayName || 'User',
+                            email: user.email,
+                            photoURL: user.photoURL,
+                            avatar: user.photoURL,
+                            createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date(),
+                            lastSeen: new Date(),
+                            bio: ""
+                        };
+                        try {
+                            await setDoc(userDocRef, newUserData); // Requires setDoc import
+                            setCurrentUser(prev => ({ ...prev, ...newUserData }));
+                        } catch (writeErr) {
+                            console.error("Failed to auto-create user doc:", writeErr);
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching user profile:", error);
+                    console.error("Error fetching/syncing user profile:", error);
                 }
             } else {
                 setCurrentUser(null);
