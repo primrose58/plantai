@@ -313,46 +313,93 @@ export default function Chat() {
         setAttachment(null);
     };
 
-    // --- Voice Recording (Click-to-Toggle) ---
-    const toggleRecording = async () => {
+    // --- Voice Recording Logic ---
+    const recordingIntent = useRef('cancel'); // 'send' or 'cancel'
+    const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const animationFrameRef = useRef(null);
+    const [audioLevel, setAudioLevel] = useState(0);
+
+    useEffect(() => {
+        let interval;
         if (isRecording) {
-            // Stop and Send
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            setIsRecording(false);
+            setRecordingTime(0);
+            interval = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
         } else {
-            // Start
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const recorder = new MediaRecorder(stream);
-                const chunks = [];
-
-                recorder.ondataavailable = (e) => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                    // Immediately Send Audio
-                    await uploadAndSend(null, audioBlob, 'voice_message.webm', 'audio');
-
-                    stream.getTracks().forEach(track => track.stop()); // Clean up
-                };
-
-                recorder.start();
-                setMediaRecorder(recorder);
-                setIsRecording(true);
-            } catch (err) {
-                console.error("Mic error:", err);
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    addToast(t('mic_access_denied') || "Microphone access denied.", "error");
-                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    addToast(t('mic_not_found') || "No microphone found.", "error");
-                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                    addToast(t('mic_unavailable') || "Microphone unavailable.", "error");
-                } else {
-                    addToast(t('mic_generic_error') || "Could not access microphone.", "error");
-                }
-            }
+            setRecordingTime(0);
+            setAudioLevel(0);
         }
+        return () => {
+            clearInterval(interval);
+            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+            if (audioContextRef.current) audioContextRef.current.close();
+        };
+    }, [isRecording]);
+
+    const analyzeAudio = () => {
+        if (!analyserRef.current) return;
+        const array = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(array);
+        let sum = 0;
+        for (let i = 0; i < array.length; i++) {
+            sum += array[i];
+        }
+        const average = sum / array.length;
+        setAudioLevel(average); // 0-255 range
+        animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            // Audio Context for Visualizer
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 256;
+
+            audioContextRef.current = audioCtx;
+            analyserRef.current = analyser;
+            analyzeAudio();
+
+            // Media Recorder
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+            recorder.onstop = async () => {
+                // Stop tracks
+                stream.getTracks().forEach(track => track.stop());
+                if (audioContextRef.current) audioContextRef.current.close();
+                if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+                if (recordingIntent.current === 'send') {
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    // Determine duration? We can use recordingTime but it's rough.
+                    // Ideally we inject duration into metadata, but for now just send.
+                    await uploadAndSend(null, audioBlob, `voice_${Date.now()}.webm`, 'audio');
+                } else {
+                    console.log("Recording cancelled");
+                }
+            };
+
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+            recordingIntent.current = 'cancel'; // Default to cancel
+        } catch (err) {
+            console.error("Mic error:", err);
+            addToast(t('mic_error') || "Microphone error", "error");
+        }
+    };
+
+    const stopRecording = (intent) => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+        recordingIntent.current = intent;
+        mediaRecorder.stop();
+        setIsRecording(false);
     };
 
     return (
@@ -515,66 +562,97 @@ export default function Chat() {
 
             {/* Input Bar */}
             <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2 items-end">
-                {/* File Upload Hidden Input */}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    accept="image/*,.pdf,.doc,.docx,.txt"
-                />
+                {isRecording ? (
+                    // --- RECORDING UI ---
+                    <div className="flex-1 flex items-center gap-4 bg-gray-50 dark:bg-gray-700 rounded-xl px-2 py-2 animate-fade-in text-red-500">
+                        {/* Cancel Button */}
+                        <button
+                            onClick={() => stopRecording('cancel')}
+                            className="p-3 text-gray-500 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
 
-                {/* Attachment Button */}
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-3 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
-                    disabled={isRecording || editingId}
-                >
-                    <Paperclip className="w-5 h-5" />
-                </button>
+                        {/* Timer & Visualizer */}
+                        <div className="flex-1 flex items-center justify-center gap-4">
+                            <span className="font-mono font-medium text-red-600 dark:text-red-400">
+                                {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                            </span>
 
-                {/* Text Input */}
-                <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center min-h-[48px]">
-                    {isRecording ? (
-                        <div className="flex-1 px-4 flex items-center text-red-500 animate-pulse font-medium">
-                            <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
-                            {t('recording') || "Recording..."} {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                            {/* Simple Visualizer Bars */}
+                            <div className="flex items-center gap-1 h-6">
+                                {[...Array(5)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="w-1 bg-red-500 rounded-full transition-all duration-75"
+                                        style={{
+                                            height: `${Math.max(4, (audioLevel / 255) * 24 * (1 + Math.random()))}px`,
+                                            opacity: 0.7 + (audioLevel / 255) * 0.3
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <textarea
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder={editingId ? (t('edit_message_placeholder') || "Edit your message...") : (t('type_message') || "Mesaj yazın...")}
-                            className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
-                            rows={1}
-                            style={{ height: 'auto', minHeight: '48px' }}
-                        />
-                    )}
-                </div>
 
-                {/* Mic / Send Button */}
-                {newMessage.trim() || attachment ? (
-                    <button
-                        onClick={handleSend}
-                        disabled={uploading}
-                        className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 transform active:scale-95"
-                    >
-                        {uploading ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
+                        {/* Send Button */}
+                        <button
+                            onClick={() => stopRecording('send')}
+                            className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-transform transform active:scale-95"
+                        >
                             <Send className="w-5 h-5" />
-                        )}
-                    </button>
+                        </button>
+                    </div>
                 ) : (
-                    <button
-                        onClick={toggleRecording}
-                        className={`p-3 rounded-xl transition-all transform active:scale-95 shadow-lg ${isRecording
-                            ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                    >
-                        {isRecording ? <Send className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                    </button>
+                    // --- STANDARD INPUT UI ---
+                    <>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            accept="image/*,.pdf,.doc,.docx,.txt"
+                        />
+
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-3 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
+                            disabled={editingId}
+                        >
+                            <Paperclip className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center min-h-[48px]">
+                            <textarea
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder={editingId ? (t('edit_message_placeholder') || "Edit your message...") : (t('type_message') || "Mesaj yazın...")}
+                                className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
+                                rows={1}
+                                style={{ height: 'auto', minHeight: '48px' }}
+                            />
+                        </div>
+
+                        {newMessage.trim() || attachment ? (
+                            <button
+                                onClick={handleSend}
+                                disabled={uploading}
+                                className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 transform active:scale-95"
+                            >
+                                {uploading ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Send className="w-5 h-5" />
+                                )}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={startRecording}
+                                className="p-3 bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all transform active:scale-95 shadow-lg"
+                            >
+                                <Mic className="w-5 h-5" />
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
         </div >
