@@ -39,6 +39,11 @@ export function AuthProvider({ children }) {
         return unsubscribe;
     }, []);
 
+    const logout = async () => {
+        await auth.signOut();
+        setCurrentUser(null);
+    };
+
     const refreshUser = async () => {
         if (auth.currentUser) {
             await auth.currentUser.reload();
