@@ -12,6 +12,7 @@ import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
 import PostCard from '../components/Community/PostCard';
 import { useParams, useNavigate } from 'react-router-dom';
+import PageLoader from '../components/Common/PageLoader';
 
 export default function Profile() {
     const { t, i18n } = useTranslation();
@@ -161,11 +162,7 @@ export default function Profile() {
 
     // Prevent flickering: Show loader until we have the user data
     if (postsLoading && !targetUser) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            </div>
-        );
+        return <PageLoader />;
     }
 
     const isOnline = (u) => {

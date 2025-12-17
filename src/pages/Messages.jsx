@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { deleteDoc, doc } from 'firebase/firestore'; // Add deleteDoc
 import { Trash2 } from 'lucide-react'; // Add Trash2
 import { useToast } from '../contexts/ToastContext';
+import PageLoader from '../components/Common/PageLoader';
 
 import { getDoc } from 'firebase/firestore'; // Add getDoc
 
@@ -126,7 +127,7 @@ export default function Messages() {
         return () => unsubscribe();
     }, [currentUser]);
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>;
+    if (loading) return <PageLoader />;
 
     return (
         <div className="max-w-2xl mx-auto w-full">

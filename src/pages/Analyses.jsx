@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUserAnalyses, shareAnalysisToCommunity, addFeedbackUpdate, deleteAnalysis } from '../services/analysisService';
 import { Sprout, Clock, ArrowRight, Share2, Camera, Loader2, Send, Stethoscope, Activity, CalendarCheck, CheckCircle2, ChevronDown, Check, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import PageLoader from '../components/Common/PageLoader';
 
 export default function Analyses() {
     const { t } = useTranslation();
@@ -128,7 +129,7 @@ export default function Analyses() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center flex justify-center"><Loader2 className="animate-spin w-8 h-8 text-green-600" /></div>;
+    if (loading) return <PageLoader />;
 
     if (analyses.length === 0) {
         return (

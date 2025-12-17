@@ -8,6 +8,7 @@ import CreatePostModal from '../components/Community/CreatePostModal';
 import UserPreviewModal from '../components/Community/UserPreviewModal';
 import { Loader2, Plus, Search, ChevronDown, X } from 'lucide-react';
 import { PLANT_TYPES } from '../constants/plantData';
+import PageLoader from '../components/Common/PageLoader';
 
 // Analysis Modal Component
 function AnalysisDetailModal({ analysisId, onClose }) {
@@ -285,9 +286,7 @@ export default function Community() {
             </div>
 
             {loading ? (
-                <div className="flex justify-center py-10">
-                    <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                </div>
+                <PageLoader />
             ) : posts.length > 0 ? (
                 <div className="space-y-6">
                     {posts.map(post => (
