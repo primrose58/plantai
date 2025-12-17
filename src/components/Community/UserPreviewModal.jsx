@@ -166,7 +166,7 @@ export default function UserPreviewModal({ user, onClose }) {
                             {loading ? (t('starting_chat') || 'Başlatılıyor...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Mesaj Gönder'} </>}
                         </button>
 
-                        {currentUser.uid !== effectiveUser.uid && (
+                        {currentUser && currentUser.uid !== effectiveUser.uid && (
                             <button
                                 onClick={handleToggleBlock}
                                 className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isBlocked ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'text-red-500 hover:bg-red-50 border border-red-100'}`}
