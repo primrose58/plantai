@@ -21,20 +21,32 @@ const blobToBase64 = (blob) => {
 };
 
 // Waveform Visualizer Component
-const VoiceMessage = ({ src, isMine }) => {
+// Waveform Visualizer Component
+const VoiceMessage = ({ src, isMine, messageId }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
     const audioRef = useRef(null);
 
-    // Generate static waveform bars based on src hash/length
+    // Generate pseudo-random waveform bars based on unique messageId
     const bars = useMemo(() => {
-        const seed = src.length;
-        return Array.from({ length: 30 }, (_, i) => {
-            const h = Math.max(20, Math.abs(Math.sin(seed + i * 0.5)) * 100); // 20-100% height
-            return h;
+        const seedStr = messageId || src || "default";
+        let hash = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            hash = (hash << 5) - hash + seedStr.charCodeAt(i);
+            hash |= 0;
+        }
+
+        // Use hash to generate 40 bars with "voice-like" clusters
+        return Array.from({ length: 40 }, (_, i) => {
+            // Pseudo-random based on hash and index
+            const val = Math.sin((hash + i) * 132.12) * 0.5 + 0.5;
+            // Shape it to look like voice (lower at ends, higher in middle varyingly)
+            const bellCurve = 1 - Math.pow((i / 40) - 0.5, 2) * 4;
+            const h = Math.max(15, (val * 100 * bellCurve) + (val * 30));
+            return Math.min(100, h);
         });
-    }, [src]);
+    }, [src, messageId]);
 
     const togglePlay = () => {
         if (!audioRef.current) return;
@@ -84,7 +96,7 @@ const VoiceMessage = ({ src, isMine }) => {
     };
 
     return (
-        <div className="flex items-center gap-3 min-w-[200px]">
+        <div className="flex items-center gap-3 min-w-[220px]">
             <audio ref={audioRef} src={src} preload="metadata" />
             <button
                 onClick={togglePlay}
@@ -96,14 +108,14 @@ const VoiceMessage = ({ src, isMine }) => {
                 {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
             </button>
 
-            <div className="flex-1 flex flex-col gap-1">
-                <div className="flex items-center gap-0.5 h-8">
+            <div className="flex-1 flex flex-col gap-1 justify-center">
+                <div className="flex items-center gap-0.5 h-8 items-end">
                     {bars.map((heightPercent, i) => {
                         const isPlayed = (i / bars.length) * 100 < progress;
                         return (
                             <div
                                 key={i}
-                                className={`w-1 rounded-full transition-colors ${isMine
+                                className={`w-1 rounded-full transition-colors duration-150 ${isMine
                                     ? (isPlayed ? 'bg-white/90' : 'bg-green-500/40')
                                     : (isPlayed ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600')
                                     }`}
@@ -113,7 +125,7 @@ const VoiceMessage = ({ src, isMine }) => {
                     })}
                 </div>
             </div>
-            <span className={`text-[10px] font-medium ${isMine ? 'text-green-100' : 'text-gray-500'}`}>
+            <span className={`text-[10px] font-medium w-8 text-right ${isMine ? 'text-green-100' : 'text-gray-500'}`}>
                 {isPlaying ? formatDuration(audioRef.current?.currentTime) : formatDuration(duration)}
             </span>
         </div>
@@ -565,7 +577,7 @@ export default function Chat() {
 
                                     {/* Audio Player */}
                                     {isAudio && (
-                                        <VoiceMessage src={msg.fileUrl} isMine={isMine} />
+                                        <VoiceMessage src={msg.fileUrl} isMine={isMine} messageId={msg.id} />
                                     )}
 
                                     {/* File */}
@@ -672,15 +684,17 @@ export default function Chat() {
                                 {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
                             </span>
 
-                            {/* Enhanced Visualizer Bars */}
-                            <div className="flex items-center gap-0.5 h-8">
-                                {[...Array(20)].map((_, i) => (
+                            {/* Enhanced Visualizer Bars - Active & Sensitive */}
+                            <div className="flex items-center gap-0.5 h-10 items-end">
+                                {[...Array(24)].map((_, i) => (
                                     <div
                                         key={i}
                                         className="w-1 bg-red-500 rounded-full transition-all duration-75"
                                         style={{
-                                            height: `${Math.max(4, (audioLevel / 255) * 32 * (0.5 + Math.random()))}px`,
-                                            opacity: 0.5 + (audioLevel / 255) * 0.5
+                                            // More sensitive scaling: (level / 150) * 40
+                                            // Add random jitter so it always looks alive: Math.random() * 8
+                                            height: `${Math.min(40, Math.max(6, (audioLevel / 100) * 40 * (0.8 + Math.random() * 0.4) + Math.random() * 6))}px`,
+                                            opacity: 0.6 + (audioLevel / 200) * 0.4
                                         }}
                                     />
                                 ))}
