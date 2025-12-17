@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase'; // Removed storage
@@ -20,8 +20,113 @@ const blobToBase64 = (blob) => {
     });
 };
 
+// Waveform Visualizer Component
+const VoiceMessage = ({ src, isMine }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const audioRef = useRef(null);
+
+    // Generate static waveform bars based on src hash/length
+    const bars = useMemo(() => {
+        const seed = src.length;
+        return Array.from({ length: 30 }, (_, i) => {
+            const h = Math.max(20, Math.abs(Math.sin(seed + i * 0.5)) * 100); // 20-100% height
+            return h;
+        });
+    }, [src]);
+
+    const togglePlay = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const onTimeUpdate = () => {
+            if (audio.duration) {
+                setProgress((audio.currentTime / audio.duration) * 100);
+            }
+        };
+
+        const onLoadedMetadata = () => {
+            setDuration(audio.duration);
+        };
+
+        const onEnded = () => {
+            setIsPlaying(false);
+            setProgress(0);
+        };
+
+        audio.addEventListener('timeupdate', onTimeUpdate);
+        audio.addEventListener('loadedmetadata', onLoadedMetadata);
+        audio.addEventListener('ended', onEnded);
+
+        return () => {
+            audio.removeEventListener('timeupdate', onTimeUpdate);
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+            audio.removeEventListener('ended', onEnded);
+        };
+    }, []);
+
+    const formatDuration = (sec) => {
+        if (!sec) return "0:00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    return (
+        <div className="flex items-center gap-3 min-w-[200px]">
+            <audio ref={audioRef} src={src} preload="metadata" />
+            <button
+                onClick={togglePlay}
+                className={`p-2 rounded-full transition-colors flex-shrink-0 ${isMine
+                    ? 'bg-green-500 text-white hover:bg-green-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+            >
+                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+            </button>
+
+            <div className="flex-1 flex flex-col gap-1">
+                <div className="flex items-center gap-0.5 h-8">
+                    {bars.map((heightPercent, i) => {
+                        const isPlayed = (i / bars.length) * 100 < progress;
+                        return (
+                            <div
+                                key={i}
+                                className={`w-1 rounded-full transition-colors ${isMine
+                                    ? (isPlayed ? 'bg-white/90' : 'bg-green-500/40')
+                                    : (isPlayed ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600')
+                                    }`}
+                                style={{ height: `${heightPercent}%` }}
+                            />
+                        );
+                    })}
+                </div>
+            </div>
+            <span className={`text-[10px] font-medium ${isMine ? 'text-green-100' : 'text-gray-500'}`}>
+                {isPlaying ? formatDuration(audioRef.current?.currentTime) : formatDuration(duration)}
+            </span>
+        </div>
+    );
+};
+
 export default function Chat() {
     const { chatId } = useParams();
+    // ... (rest of imports/component code is preserved automatically by replace_file_content logic if strict, but wait, I can't inject Component BEFORE export default easily with replace_file_content unless I include the export line?
+    // replace_file_content targets a block.
+    // I will target the `export default function Chat...` line and insert the component before it.
+    // BUT I also need to use `useMemo` in implementation. So I need to import `useMemo`.
+
     const { currentUser } = useAuth();
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
@@ -460,19 +565,7 @@ export default function Chat() {
 
                                     {/* Audio Player */}
                                     {isAudio && (
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const audio = new Audio(msg.fileUrl);
-                                                    audio.play();
-                                                }}
-                                                className={`p-2 rounded-full ${isMine ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                                            >
-                                                <Play className="w-4 h-4" />
-                                            </button>
-                                            <div className="h-1 flex-1 bg-current opacity-20 rounded-full w-24"></div>
-                                            <span className="text-xs opacity-70">Voice</span>
-                                        </div>
+                                        <VoiceMessage src={msg.fileUrl} isMine={isMine} />
                                     )}
 
                                     {/* File */}
@@ -579,15 +672,15 @@ export default function Chat() {
                                 {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
                             </span>
 
-                            {/* Simple Visualizer Bars */}
-                            <div className="flex items-center gap-1 h-6">
-                                {[...Array(5)].map((_, i) => (
+                            {/* Enhanced Visualizer Bars */}
+                            <div className="flex items-center gap-0.5 h-8">
+                                {[...Array(20)].map((_, i) => (
                                     <div
                                         key={i}
                                         className="w-1 bg-red-500 rounded-full transition-all duration-75"
                                         style={{
-                                            height: `${Math.max(4, (audioLevel / 255) * 24 * (1 + Math.random()))}px`,
-                                            opacity: 0.7 + (audioLevel / 255) * 0.3
+                                            height: `${Math.max(4, (audioLevel / 255) * 32 * (0.5 + Math.random()))}px`,
+                                            opacity: 0.5 + (audioLevel / 255) * 0.5
                                         }}
                                     />
                                 ))}
