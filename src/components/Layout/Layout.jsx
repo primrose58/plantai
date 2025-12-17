@@ -199,7 +199,7 @@ export default function Layout() {
                         <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-3 mb-2">
                                 <img
-                                    src={currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}`}
+                                    src={currentUser.photoURL || currentUser.avatar || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}`}
                                     alt="Avatar"
                                     className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                                 />

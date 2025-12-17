@@ -39,16 +39,31 @@ export function AuthProvider({ children }) {
         return unsubscribe;
     }, []);
 
-    const logout = async () => {
-        await auth.signOut();
-        setCurrentUser(null); // Force local state clear
-        // Optional: window.location.href = '/login'; // Force full reload if needed, but let's stick to state
+    const refreshUser = async () => {
+        if (auth.currentUser) {
+            await auth.currentUser.reload();
+            const updatedUser = auth.currentUser;
+
+            // Re-fetch firestore
+            let firestoreData = {};
+            try {
+                const userDoc = await getDoc(doc(db, "users", updatedUser.uid));
+                if (userDoc.exists()) {
+                    firestoreData = userDoc.data();
+                }
+            } catch (error) {
+                console.error("Error refreshing profile:", error);
+            }
+
+            setCurrentUser({ ...updatedUser, ...firestoreData });
+        }
     };
 
     const value = {
         currentUser,
         loading,
-        logout
+        logout,
+        refreshUser
     };
 
     return (
