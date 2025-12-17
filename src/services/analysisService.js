@@ -83,6 +83,16 @@ export async function getUserAnalyses(userId) {
  */
 export async function deleteAnalysis(analysisId) {
     try {
+        // 1. Check for related shared posts and delete them (Cascade delete)
+        const q = query(collection(db, 'posts'), where('relatedAnalysisId', '==', analysisId));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+        }
+
+        // 2. Delete the analysis itself
         await deleteDoc(doc(db, COLLECTION_NAME, analysisId));
         return true;
     } catch (error) {
