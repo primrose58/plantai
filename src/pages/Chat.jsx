@@ -433,7 +433,7 @@ export default function Chat() {
 
         const average = sum / array.length;
         // Boost significantly: average is usually 0-10 for speech. Map to 0-100 range effectively.
-        setAudioLevel(average * 5);
+        setAudioLevel(average * 10); // 10x boost (extremely high sensitivity)
         animationFrameRef.current = requestAnimationFrame(analyzeAudio);
     };
 
@@ -659,19 +659,22 @@ export default function Chat() {
                             {/* Enhanced Visualizer Bars - Active & Sensitive */}
                             <div className="flex items-center gap-0.5 h-10 items-end">
                                 {[...Array(24)].map((_, i) => {
-                                    // AudioLevel is roughly 0-50 now.
-                                    // Normalize to 0-1
-                                    const normalized = Math.min(1, Math.max(0.05, audioLevel / 20));
-                                    const boosted = Math.pow(normalized, 0.6);
-                                    const baseHeight = Math.max(4, boosted * 36);
+                                    // Make it extremely sensitive. 
+                                    // audioLevel varies 0-100 roughly. 
+                                    // effective level.
+                                    const val = Math.max(0, audioLevel - 5); // noise gate
+                                    const normalized = Math.min(1, val / 40); // Max out at 40 amplitude (very easy to hit)
+
+                                    // Add some variance based on index to look like a wave
+                                    const waveFactor = Math.sin(i * 0.5 + Date.now() / 100) * 0.2 + 0.8;
 
                                     return (
                                         <div
                                             key={i}
                                             className="w-1 bg-red-500 rounded-full transition-all duration-75"
                                             style={{
-                                                height: `${Math.max(4, baseHeight * (0.6 + Math.random() * 0.8))}px`, // randomness
-                                                opacity: 0.6 + normalized * 0.4
+                                                height: `${Math.max(4, normalized * 36 * waveFactor)}px`,
+                                                opacity: 0.5 + normalized * 0.5
                                             }}
                                         />
                                     );
