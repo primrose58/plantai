@@ -54,7 +54,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            onCapture({ target: { files: [] } }, imageDataUrl); // Simulate event signature or pass data directly
+            onCapture(imageDataUrl); // Pass data directly
             onClose();
         }
     };
