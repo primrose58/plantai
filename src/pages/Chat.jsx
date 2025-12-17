@@ -686,18 +686,24 @@ export default function Chat() {
 
                             {/* Enhanced Visualizer Bars - Active & Sensitive */}
                             <div className="flex items-center gap-0.5 h-10 items-end">
-                                {[...Array(24)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="w-1 bg-red-500 rounded-full transition-all duration-75"
-                                        style={{
-                                            // More sensitive scaling: (level / 150) * 40
-                                            // Add random jitter so it always looks alive: Math.random() * 8
-                                            height: `${Math.min(40, Math.max(6, (audioLevel / 100) * 40 * (0.8 + Math.random() * 0.4) + Math.random() * 6))}px`,
-                                            opacity: 0.6 + (audioLevel / 200) * 0.4
-                                        }}
-                                    />
-                                ))}
+                                {[...Array(24)].map((_, i) => {
+                                    // Logarithmic boost for sensitivity: audioLevel is 0-255.
+                                    // small values should pop. 
+                                    const normalized = Math.min(1, (audioLevel / 128)); // Boosted 2x
+                                    const boosted = Math.pow(normalized, 0.5); // Square root curve pushes lows up
+                                    const baseHeight = Math.max(4, boosted * 36);
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="w-1 bg-red-500 rounded-full transition-all duration-75"
+                                            style={{
+                                                height: `${Math.max(6, baseHeight * (0.8 + Math.random() * 0.4))}px`, // Jitter
+                                                opacity: 0.6 + normalized * 0.4
+                                            }}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
 
