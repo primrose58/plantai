@@ -423,14 +423,17 @@ export default function Chat() {
 
     const analyzeAudio = () => {
         if (!analyserRef.current) return;
-        const array = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(array);
+        const array = new Uint8Array(analyserRef.current.fftSize);
+        analyserRef.current.getByteTimeDomainData(array); // Waveform data (128 is silence)
+
         let sum = 0;
         for (let i = 0; i < array.length; i++) {
-            sum += array[i];
+            sum += Math.abs(array[i] - 128); // Calculate amplitude
         }
+
         const average = sum / array.length;
-        setAudioLevel(average); // 0-255 range
+        // Boost significantly: average is usually 0-10 for speech. Map to 0-100 range effectively.
+        setAudioLevel(average * 5);
         animationFrameRef.current = requestAnimationFrame(analyzeAudio);
     };
 
@@ -440,6 +443,7 @@ export default function Chat() {
 
             // Audio Context for Visualizer
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            await audioCtx.resume(); // Ensure context is running for visualizer
             const analyser = audioCtx.createAnalyser();
             const source = audioCtx.createMediaStreamSource(stream);
             source.connect(analyser);
@@ -655,10 +659,10 @@ export default function Chat() {
                             {/* Enhanced Visualizer Bars - Active & Sensitive */}
                             <div className="flex items-center gap-0.5 h-10 items-end">
                                 {[...Array(24)].map((_, i) => {
-                                    // Logarithmic boost for sensitivity: audioLevel is 0-255.
-                                    // small values should pop. 
-                                    const normalized = Math.min(1, (audioLevel / 128)); // Boosted 2x
-                                    const boosted = Math.pow(normalized, 0.5); // Square root curve pushes lows up
+                                    // AudioLevel is roughly 0-50 now.
+                                    // Normalize to 0-1
+                                    const normalized = Math.min(1, Math.max(0.05, audioLevel / 20));
+                                    const boosted = Math.pow(normalized, 0.6);
                                     const baseHeight = Math.max(4, boosted * 36);
 
                                     return (
@@ -666,7 +670,7 @@ export default function Chat() {
                                             key={i}
                                             className="w-1 bg-red-500 rounded-full transition-all duration-75"
                                             style={{
-                                                height: `${Math.max(6, baseHeight * (0.8 + Math.random() * 0.4))}px`, // Jitter
+                                                height: `${Math.max(4, baseHeight * (0.6 + Math.random() * 0.8))}px`, // randomness
                                                 opacity: 0.6 + normalized * 0.4
                                             }}
                                         />
