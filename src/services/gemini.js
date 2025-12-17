@@ -11,6 +11,40 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export async function analyzePlantImage(imageData, lang = 'tr', plantType = null) {
     const images = Array.isArray(imageData) ? imageData : [imageData];
 
+    // Retry configuration
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000; // 2 seconds
+
+    let lastError;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            if (attempt > 0) {
+                console.log(`Attempt ${attempt + 1} of ${MAX_RETRIES + 1}...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            }
+
+            return await executeAnalysis(images, lang, plantType);
+        } catch (error) {
+            lastError = error;
+            // Only retry on 503 (Overloaded) or 429 (Too Many Requests) or Server Errors
+            const isRetryable = error.message.includes('503') ||
+                error.message.includes('429') ||
+                error.message.includes('overloaded') ||
+                error.message.includes('Server Error');
+
+            if (!isRetryable) {
+                throw error; // Don't retry logic errors or non-transient issues
+            }
+            console.warn(`Analysis attempt ${attempt + 1} failed:`, error.message);
+        }
+    }
+
+    throw lastError;
+}
+
+// Internal function containing the core analysis logic
+async function executeAnalysis(images, lang, plantType) {
     let promptContext = "";
     if (plantType && plantType.trim().length > 0) {
         promptContext = `The user identifies this plant as "${plantType}". Use this as context but verify visually.`;
