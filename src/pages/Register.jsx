@@ -44,7 +44,7 @@ const handleSubmit = async (e) => {
     }
 };
 
-    };
+
 
 const handleVerified = async () => {
     // User confirmed they verified.
