@@ -164,5 +164,9 @@
     "feature_3_title": "Doğrulanmış Tedaviler",
     "feature_3_desc": "Uygulanabilir tavsiyeler alın. Organik çözümlerden kimyasal tedavilere kadar sizi iyileşmeye yönlendiriyoruz.",
     "summary_title": "Kişisel Cep Botanikçiniz",
-    "summary_desc": "Plant AI, Google'ın Gemini modellerinin gücünü uzman botanik bilgisiyle birleştirir. Sadece tahmin etmiyoruz; sağlık sorunlarını yüksek hassasiyetle kategorize etmek için doku, renk ve leke desenlerini analiz ediyoruz. İster ev bahçıvanı olun ister profesyonel bir çiftçi, aracımız ihtiyaçlarınıza uyum sağlar."
+    "summary_desc": "Plant AI, Google'ın Gemini modellerinin gücünü uzman botanik bilgisiyle birleştirir. Sadece tahmin etmiyoruz; sağlık sorunlarını yüksek hassasiyetle kategorize etmek için doku, renk ve leke desenlerini analiz ediyoruz. İster ev bahçıvanı olun ister profesyonel bir çiftçi, aracımız ihtiyaçlarınıza uyum sağlar.",
+    "open_camera": "Kamerayı Aç",
+    "upload_gallery": "Galeriden Seç",
+    "retry": "Tekrar Dene",
+    "camera_permission_denied": "Kamera erişimi reddedildi. Lütfen tarayıcı izinlerini kontrol edin."
 }

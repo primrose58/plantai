@@ -120,5 +120,9 @@
   "feature_3_title": "Verified Treatments",
   "feature_3_desc": "Get actionable advice. From organic remedies to chemical treatments, we guide you to recovery.",
   "summary_title": "Your Personal Pocket Botanist",
-  "summary_desc": "Plant AI combines the power of Google's Gemini models with expert botanical knowledge. We don't just guess; we analyze texture, color, and spot patterns to categorize health issues with high precision. Whether you're a home gardener or a professional farmer, our tool adapts to your needs."
+  "summary_desc": "Plant AI combines the power of Google's Gemini models with expert botanical knowledge. We don't just guess; we analyze texture, color, and spot patterns to categorize health issues with high precision. Whether you're a home gardener or a professional farmer, our tool adapts to your needs.",
+  "open_camera": "Open Camera",
+  "upload_gallery": "Select from Gallery",
+  "retry": "Retry",
+  "camera_permission_denied": "Camera access denied. Please check your browser permissions."
 }

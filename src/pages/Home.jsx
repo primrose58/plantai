@@ -7,6 +7,7 @@ import DiagnosisResult from '../components/Plant/DiagnosisResult';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
+import CameraModal from '../components/Common/CameraModal';
 
 export default function Home() {
     const { t, i18n } = useTranslation();
@@ -24,6 +25,7 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [isSaved, setIsSaved] = useState(false);
+    const [showCamera, setShowCamera] = useState(false); // Camera Modal State
 
     // Restore state
     useEffect(() => {
@@ -53,23 +55,33 @@ export default function Home() {
         }
     };
 
+    const handleCameraCapture = (imageDataUrl) => {
+        if (imageDataUrl) {
+            processImage(imageDataUrl);
+        }
+        setShowCamera(false); // Close modal after capture
+    };
+
     const handleFileChange = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onloadend = async () => {
+        reader.onloadend = () => {
             const base64String = reader.result;
-
-            if (step === 'capture_main') {
-                setImages(prev => ({ ...prev, main: base64String }));
-                await performDiagnosis(base64String, false);
-            } else if (step === 'capture_macro') {
-                setImages(prev => ({ ...prev, macro: base64String }));
-                await performDiagnosis([images.main, base64String], true);
-            }
+            processImage(base64String);
         };
         reader.readAsDataURL(file);
+    };
+
+    const processImage = async (base64String) => {
+        if (step === 'capture_main') {
+            setImages(prev => ({ ...prev, main: base64String }));
+            await performDiagnosis(base64String, false);
+        } else if (step === 'capture_macro') {
+            setImages(prev => ({ ...prev, macro: base64String }));
+            await performDiagnosis([images.main, base64String], true);
+        }
     };
 
     const performDiagnosis = async (imageData, isMacroRetry) => {
@@ -289,21 +301,31 @@ export default function Home() {
         return (
             <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
                 <h2 className="text-2xl font-bold mb-4 text-center">
-                    {isMacro ? "Close-up Photo" : "Take Photo"}
+                    {isMacro ? "Close-up Photo" : t('scan_step_2')}
                 </h2>
 
+                <div className="w-full space-y-4">
+                    {/* 1. Camera Button */}
+                    <button
+                        onClick={() => setShowCamera(true)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-10 rounded-2xl shadow-xl flex items-center justify-center gap-4 text-xl transition-transform active:scale-95"
+                    >
+                        <Camera className="w-8 h-8" />
+                        <span>{t('open_camera') || "Open Camera"}</span>
+                    </button>
 
-
-                <button
-                    onClick={triggerFileInput}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-10 rounded-2xl shadow-xl flex items-center justify-center gap-4 text-xl w-full"
-                >
-                    <Camera className="w-8 h-8" />
-                    <span>{isMacro ? "Take Macro" : "Open Camera"}</span>
-                </button>
+                    {/* 2. Gallery Button */}
+                    <button
+                        onClick={triggerFileInput}
+                        className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-bold py-4 px-10 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md flex items-center justify-center gap-4 text-lg transition-transform active:scale-95"
+                    >
+                        <ImageIcon className="w-6 h-6" />
+                        <span>{t('upload_gallery') || "Select from Gallery"}</span>
+                    </button>
+                </div>
 
                 <button onClick={() => setStep('input_type')} className="mt-6 text-gray-500 underline">
-                    Back
+                    {t('back')}
                 </button>
             </div>
         );
@@ -402,10 +424,16 @@ export default function Home() {
             <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                // capture="environment" // REMOVED to allow gallery selection
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
+            />
+
+            <CameraModal
+                isOpen={showCamera}
+                onClose={() => setShowCamera(false)}
+                onCapture={handleCameraCapture}
             />
 
             {/* Conditional Rendering */}
