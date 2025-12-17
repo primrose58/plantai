@@ -103,38 +103,32 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
         }
     };
 
-    return (
     const handleShare = async () => {
-            const shareData = {
-                title: `Plant AI - ${post.title || post.authorName}`,
-                text: post.content,
-                url: window.location.href // Ideally link to specific post if routing exists
-            };
-
-            if (navigator.share) {
-                try {
-                    await navigator.share(shareData);
-                } catch (err) {
-                    console.log('Share canceled');
-                }
-            } else {
-                // Fallback
-                navigator.clipboard.writeText(window.location.href);
-                // Assuming addToast is available or use alert/custom UI. 
-                // Since we don't have addToast prop here, we can assume parent passes it or use window.alert for now or context.
-                // Let's use a simple alert or if we can get toast context. 
-                // Layout passes context? No, PostCard is child. 
-                // We can import useToast.
-                alert(t('link_copied') || "Link copied!");
-            }
+        const shareData = {
+            title: `Plant AI - ${post.title || post.authorName}`,
+            text: post.content,
+            url: window.location.href // Ideally link to specific post if routing exists
         };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.log('Share canceled');
+            }
+        } else {
+            // Fallback
+            navigator.clipboard.writeText(window.location.href);
+            alert(t('link_copied') || "Link copied!");
+        }
+    };
 
     // Helper for plant type translation
     const getPlantTypeLabel = (type) => {
-            if (!type || type === 'Unknown') return null;
-            // Try exact match or prefix match
-            return t(`plant_${type.toLowerCase()}`) || t(type) || type;
-        };
+        if (!type || type === 'Unknown') return null;
+        // Try exact match or prefix match
+        return t(`plant_${type.toLowerCase()}`) || t(type) || type;
+    };
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-4 animate-fade-in relative group">
