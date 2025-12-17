@@ -127,6 +127,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
     const getPlantTypeLabel = (type) => {
         if (!type || type === 'Unknown') return null;
         // Try exact match or prefix match
+        if (type.toLowerCase() === 'plant') return t('plant') || 'Bitki';
         return t(`plant_${type.toLowerCase()}`) || t(type) || type;
     };
 

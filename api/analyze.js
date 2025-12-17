@@ -24,7 +24,9 @@ export default async function handler(req, res) {
                 - Too blurry
                 - Too dark/bright
                 - Taken from too far away
-                - Not a plant
+                
+                Set "status" to "needs_details" ONLY if it is IMPOSSIBLE to identify.
+                If you can guess the plant type (e.g. potato, tomato) even if blurry, DO IT.
                 
                 Set "status" to "needs_details" and "error_details" to a specific user-friendly instruction (e.g., "Please move closer to the leaf", "Photo is too blurry").
                 
@@ -53,9 +55,10 @@ export default async function handler(req, res) {
                 - Çok bulanıksa
                 - Çok karanlık/aydınlıksa
                 - Çok uzaktan çekilmişse
-                - Bir bitki değilse
+                "status" değerini "needs_details" yap, ANCAK sadece tanımlamak İMKANSIZSA.
+                Eğer bitki türünü tahmin edebiliyorsan (örn: patates, domates vb.) bulanık olsa bile tahmin et.
                 
-                "status" değerini "needs_details" yap ve "error_details" kısmına kullanıcıya ne yapması gerektiğini söyleyen net bir talimat yaz (örn: "Lütfen yaprağa daha yaklaşın", "Fotoğraf çok bulanık").
+                "error_details" kısmına kullanıcıya ne yapması gerektiğini söyleyen net bir talimat yaz.
                 
                 Aksi takdirde, fotoğraf iyiyse:
                 1. Bitki adını tanımla.

@@ -229,16 +229,24 @@ export default function Analyses() {
                         {expandedId === item.id && (
                             <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-6 animate-fade-in-down">
 
+                                {/* Full Description (Added) */}
+                                <div className="mb-6">
+                                    <h4 className="font-bold text-gray-900 dark:text-white mb-2">{t('description')}</h4>
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                        {item.result.description}
+                                    </p>
+                                </div>
+
                                 {/* Treatment Steps */}
                                 <div className="mb-6">
                                     <h4 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                         <Stethoscope className="w-5 h-5 text-green-600" />
-                                        {item.result.is_treatable === false ? (t('preventive_measures') || "Koruyucu Önlemler") : (t('treatment_steps') || "Tedavi Adımları")}
+                                        {item.result.is_treatable === false ? (t('prevention_tips') || "Koruyucu Önlemler") : (t('treatment_steps') || "Tedavi Adımları")}
                                     </h4>
 
                                     {item.result.is_treatable === false && (
                                         <div className="mb-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900/30">
-                                            Bu bitki ne yazık ki kurtarılamayabilir.
+                                            {t('plant_not_recoverable') || "Bu bitki ne yazık ki kurtarılamayabilir."}
                                         </div>
                                     )}
 
