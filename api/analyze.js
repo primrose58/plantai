@@ -62,7 +62,8 @@ export default async function handler(req, res) {
                 
                 Aksi takdirde, fotoğraf iyiyse:
                 1. Bitki adını tanımla.
-                2. Hastalıklı mı yoksa sağlıklı mı olduğunu belirle.
+                2. Bilimsel (Latince) adını belirt ("latin_name").
+                3. Hastalıklı mı yoksa sağlıklı mı olduğunu belirle.
                 3. Hastalıklıysa, hastalık adını yaz.
                 4. Sorunun açıklamasını yaz.
                 5. Tedavi tavsiyesi ver.

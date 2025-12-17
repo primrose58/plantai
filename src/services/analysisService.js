@@ -156,7 +156,18 @@ export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantTy
         const title = `${plantType} - ${analysisData.result.disease_name}`;
 
         // Use the description from AI directly as it provides the best context
-        const content = `Analiz Sonucu: ${analysisData.result.disease_name}\n\n${analysisData.result.description}`;
+        let content = `Analiz Sonucu: ${analysisData.result.disease_name}\n\n${analysisData.result.description}`;
+
+        // Add Treatment Steps or Prevention Tips
+        if (analysisData.result.is_treatable === false) {
+            if (analysisData.result.preventive_measures && analysisData.result.preventive_measures.length > 0) {
+                content += `\n\n🛡️ Koruyucu Önlemler:\n` + analysisData.result.preventive_measures.map(step => `• ${step}`).join('\n');
+            }
+        } else {
+            if (analysisData.result.treatment_steps && analysisData.result.treatment_steps.length > 0) {
+                content += `\n\n💊 Tedavi Adımları:\n` + analysisData.result.treatment_steps.map(step => `• ${step}`).join('\n');
+            }
+        }
 
         await addDoc(collection(db, 'posts'), {
             userId: analysisData.userId,
