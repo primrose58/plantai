@@ -17,7 +17,7 @@ import PageLoader from '../components/Common/PageLoader';
 export default function Profile() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { currentUser } = useAuth();
+    const { currentUser, refreshUser } = useAuth();
     const { addToast } = useToast();
     const { userId } = useParams(); // Get ID from URL if present
 
@@ -129,6 +129,7 @@ export default function Profile() {
 
             // Background sync
             updateUserPostsName(currentUser.uid, name, base64Avatar);
+            await refreshUser();
             addToast(t('profile_updated') || 'Profile updated!', "success");
         } catch (err) {
             console.error(err);
@@ -150,6 +151,7 @@ export default function Profile() {
 
             // Sync posts
             updateUserPostsName(currentUser.uid, name, avatar);
+            await refreshUser();
             addToast(t('profile_updated') || 'Profile updated!', "success");
         } catch (err) {
             addToast('Failed to update profile.', "error");
