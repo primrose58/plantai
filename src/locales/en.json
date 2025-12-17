@@ -126,5 +126,11 @@
   "error_not_plant": "No plant detected. Please ensure the subject is a clear plant or leaf.",
   "error_server_busy": "Our AI botanist is currently overwhelmed. Please try again in a few seconds.",
   "retry": "Retry",
-  "camera_permission_denied": "Camera access denied. Please check your browser permissions."
+  "camera_permission_denied": "Camera access denied. Please check your browser permissions.""last_seen": "Last seen",
+  "prevention_tips": "Prevention Tips",
+  "plant_not_recoverable": "This plant may not fully recover, but follow these steps to prevent spread.",
+  "description": "Description",
+  "urgency": "Urgency",
+  "spread_risk": "Spread Risk",
+  "new_scan": "New Scan"
 }
