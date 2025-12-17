@@ -41,7 +41,7 @@ const VoiceMessage = ({ src, isMine, messageId }) => {
 
         wavesurfer.current = WaveSurfer.create({
             container: containerRef.current,
-            waveColor: isMine ? 'rgba(255, 255, 255, 0.6)' : 'rgba(75, 85, 99, 0.4)',
+            waveColor: isMine ? 'rgba(255, 255, 255, 0.3)' : 'rgba(75, 85, 99, 0.3)', // Lower opacity for better contrast
             progressColor: isMine ? '#ffffff' : '#16a34a', // White for mine, Green for others
             cursorColor: 'transparent',
             barWidth: 3,
