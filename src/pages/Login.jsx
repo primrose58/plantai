@@ -189,7 +189,11 @@ export default function Login() {
 
                     <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
                         Don't have an account?{' '}
-                        <Link to="/register" className="text-green-600 hover:text-green-700 font-semibold hover:underline">
+                        <Link
+                            to="/register"
+                            state={location.state} // Pass the pending state to Register
+                            className="text-green-600 hover:text-green-700 font-semibold hover:underline"
+                        >
                             {t('register')}
                         </Link>
                     </div>

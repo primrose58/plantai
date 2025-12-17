@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine, Save, CheckCircle } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine, Save, CheckCircle, Brain, Sparkles, Activity, ShieldCheck, Zap } from 'lucide-react';
 import { analyzePlantImage } from '../services/gemini';
 import { saveAnalysis } from '../services/analysisService';
 import DiagnosisResult from '../components/Plant/DiagnosisResult';
@@ -81,7 +81,7 @@ export default function Home() {
             const analysis = await analyzePlantImage(imageData, i18n.language, plantType);
 
             if (analysis.status === 'needs_details') {
-                addToast(t('need_macro_photo'), 'info');
+                addToast(t('need_macro_photo') || "I need a closer look. Please take a macro photo.", 'info');
                 setStep('capture_macro');
             } else if (analysis.status === 'error') {
                 throw new Error(analysis.error);
@@ -148,42 +148,110 @@ export default function Home() {
 
     // --- LANDING PAGE COMPONENT ---
     const renderLanding = () => (
-        <div className="flex flex-col items-center justify-center py-10 px-4 animate-fade-in w-full">
-            <div className="text-center max-w-3xl mb-12">
-                <span className="inline-block px-4 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold text-sm mb-4">
-                    {t('hero_badge')}
-                </span>
-                <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight" dangerouslySetInnerHTML={{ __html: t('hero_title') }} />
-                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-                    {t('hero_desc')}
+        <div className="flex flex-col items-center w-full animate-fade-in relative overflow-hidden">
+
+            {/* Background Decoration */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-30 dark:opacity-10">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-green-400 rounded-full mix-blend-multiply filter blur-[100px] animate-float opacity-70"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-300 rounded-full mix-blend-multiply filter blur-[120px] animate-float delay-100 opacity-70"></div>
+            </div>
+
+            {/* HERO SECTION */}
+            <div className="text-center max-w-4xl py-20 px-4 z-10">
+                <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border border-white/20 dark:border-gray-700/50 shadow-sm mb-8 animate-fade-in">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent font-bold text-sm tracking-wide">
+                        {t('ai_powered_v2') || "POWERED BY GEMINI AI"}
+                    </span>
+                </div>
+
+                <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight tracking-tight animate-slide-up">
+                    {t('hero_title_1') || "Heal your plants with"} <br />
+                    <span className="text-gradient drop-shadow-sm">{t('hero_title_highlight') || "AI Precision"}</span>
+                </h1>
+
+                <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed animate-slide-up delay-100">
+                    {t('hero_desc_v2') || "Instantly identify diseases, get treatment plans, and monitor plant health with our advanced AI botanist. Just snap a photo."}
                 </p>
+
                 <button
                     onClick={() => setStep('input_type')}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all text-lg flex items-center justify-center gap-3 mx-auto"
+                    className="group relative bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-5 px-12 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all text-xl flex items-center justify-center gap-3 mx-auto animate-slide-up delay-200"
                 >
-                    <Sprout className="w-6 h-6" />
-                    {t('start_diagnosis')}
+                    <div className="absolute inset-0 rounded-full bg-white/20 group-hover:scale-110 transition-transform opacity-0 group-hover:opacity-100 duration-500 blur-lg"></div>
+                    <span className="relative flex items-center gap-3">
+                        <Camera className="w-6 h-6" />
+                        {t('start_diagnosis')}
+                    </span>
                 </button>
             </div>
 
-            {/* Steps Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+            {/* FEATURES GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl px-4 z-10 mb-20 animate-slide-up delay-300">
                 {[
-                    { title: t('step_1_title'), desc: t('step_1_desc'), icon: ScanLine, color: 'bg-blue-100 text-blue-600' },
-                    { title: t('step_2_title'), desc: t('step_2_desc'), icon: Camera, color: 'bg-purple-100 text-purple-600' },
-                    { title: t('step_3_title'), desc: t('step_3_desc'), icon: Sprout, color: 'bg-orange-100 text-orange-600' },
+                    {
+                        title: t('feature_1_title') || "Instant Analysis",
+                        desc: t('feature_1_desc') || "Get results in seconds. Our AI analyzes leaf patterns to detect subtle signs of disease.",
+                        icon: Zap,
+                        color: 'from-yellow-400 to-orange-500'
+                    },
+                    {
+                        title: t('feature_2_title') || "Smart Interactions",
+                        desc: t('feature_2_desc') || "The AI knows when it needs a better look. It will ask for macro shots if the problem is unclear.",
+                        icon: Brain,
+                        color: 'from-blue-400 to-indigo-500'
+                    },
+                    {
+                        title: t('feature_3_title') || "Verified Treatments",
+                        desc: t('feature_3_desc') || "Get actionable advice. From organic remedies to chemical treatments, we guide you to recovery.",
+                        icon: ShieldCheck,
+                        color: 'from-green-400 to-emerald-500'
+                    },
                 ].map((s, i) => {
                     const Icon = s.icon;
                     return (
-                        <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center hover:scale-105 transition-transform">
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${s.color} dark:bg-opacity-20`}>
-                                <Icon className="w-8 h-8" />
+                        <div key={i} className="glass-card p-8 hover:scale-[1.02] transition-transform duration-300 group">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-gradient-to-br ${s.color} shadow-lg text-white transform group-hover:rotate-6 transition-transform`}>
+                                <Icon className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">{s.title}</h3>
-                            <p className="text-gray-500 dark:text-gray-400">{s.desc}</p>
+                            <h3 className="font-bold text-2xl mb-3 text-gray-900 dark:text-white">{s.title}</h3>
+                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{s.desc}</p>
                         </div>
                     );
                 })}
+            </div>
+
+            {/* HOW IT WORKS / SUMMARY */}
+            <div className="w-full max-w-6xl px-4 z-10 mb-20">
+                <div className="glass p-10 rounded-3xl text-center md:text-left flex flex-col md:flex-row items-center gap-10">
+                    <div className="flex-1">
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                            {t('summary_title') || "Your Personal Pocket Botanist"}
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg leading-relaxed">
+                            {t('summary_desc') || "Plant AI combines the power of Google's Gemini models with expert botanical knowledge. We don't just guess; we analyze texture, color, and spot patterns to categorize health issues with high precision. Whether you're a home gardener or a professional farmer, our tool adapts to your needs."}
+                        </p>
+                        <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
+                                <Activity className="w-4 h-4 text-green-500" /> 95% Accuracy
+                            </div>
+                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
+                                <ScanLine className="w-4 h-4 text-blue-500" /> Macro Support
+                            </div>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-1/3 flex justify-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                            <img src="/placeholder-plant.png" // Placeholder - handled by UI or we can put an icon
+                                onError={(e) => { e.target.style.display = 'none' }}
+                                className="relative w-48 h-48 object-contain drop-shadow-2xl"
+                                alt=""
+                            />
+                            <Sprout className="w-48 h-48 text-green-600 dark:text-green-400 drop-shadow-2xl relative z-10" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

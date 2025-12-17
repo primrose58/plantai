@@ -32,12 +32,13 @@ export function ToastProvider({ children }) {
                         key={toast.id}
                         className={`
                             pointer-events-auto
-                            flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-sm backdrop-blur-xl border
+                            flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg backdrop-blur-md border
                             transform transition-all duration-500 animate-slide-in hover:scale-102
-                            ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-800 dark:text-green-300' : ''}
-                            ${toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-800 dark:text-red-300' : ''}
-                            ${toast.type === 'info' ? 'bg-white/80 border-white/40 dark:bg-gray-800/80 dark:border-gray-700 text-gray-800 dark:text-gray-200' : ''}
-                            min-w-[200px] max-w-xs
+                            ${toast.type === 'success' ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-700/50 dark:text-emerald-100' : ''}
+                            ${toast.type === 'error' ? 'bg-rose-50/90 border-rose-200 text-rose-800 dark:bg-rose-900/40 dark:border-rose-700/50 dark:text-rose-100' : ''}
+                            ${toast.type === 'info' ? 'bg-indigo-50/90 border-indigo-200 text-indigo-800 dark:bg-indigo-900/40 dark:border-indigo-700/50 dark:text-indigo-100' : ''}
+                            ${toast.type === 'warning' ? 'bg-amber-50/90 border-amber-200 text-amber-800 dark:bg-amber-900/40 dark:border-amber-700/50 dark:text-amber-100' : ''}
+                            min-w-[300px] max-w-sm
                         `}
                     >
                         {/* Minimalist: No icon for chat messages (info), subtle dot for status */}

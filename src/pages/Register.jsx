@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sprout, UserPlus } from 'lucide-react';
 import VerifyEmailModal from '../components/Auth/VerifyEmailModal';
@@ -18,6 +18,7 @@ export default function Register() {
     const [registeredUser, setRegisteredUser] = useState(null);
 
     const navigate = useNavigate();
+    const location = useLocation(); // Add useLocation
     const { t } = useTranslation();
 
     const handleSubmit = async (e) => {
@@ -58,7 +59,20 @@ export default function Register() {
         // Ideally we reload one last time
         if (auth.currentUser) await auth.currentUser.reload();
         setShowVerifyModal(false);
-        navigate('/'); // Go to home/dashboard
+
+        // Return to Home with state if it exists
+        if (location.state?.returnUrl && location.state?.pendingResult) {
+            navigate(location.state.returnUrl, {
+                replace: true,
+                state: {
+                    restoredResult: location.state.pendingResult,
+                    restoredImages: location.state.pendingImages,
+                    restoredPlantType: location.state.pendingPlantType
+                }
+            });
+        } else {
+            navigate('/'); // Go to home/dashboard
+        }
     };
 
     return (

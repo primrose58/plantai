@@ -108,5 +108,17 @@
   "user_posts_title": "{{name}}'s Posts",
   "new_conversation": "New Chat",
   "view_analysis_report": "View Analysis Report",
-  "type_message": "Type a message..."
+  "type_message": "Type a message...",
+  "ai_powered_v2": "POWERED BY GEMINI AI",
+  "hero_title_1": "Heal your plants with",
+  "hero_title_highlight": "AI Precision",
+  "hero_desc_v2": "Instantly identify diseases, get treatment plans, and monitor plant health with our advanced AI botanist. Just snap a photo.",
+  "feature_1_title": "Instant Analysis",
+  "feature_1_desc": "Get results in seconds. Our AI analyzes leaf patterns to detect subtle signs of disease.",
+  "feature_2_title": "Smart Interactions",
+  "feature_2_desc": "The AI knows when it needs a better look. It will ask for macro shots if the problem is unclear.",
+  "feature_3_title": "Verified Treatments",
+  "feature_3_desc": "Get actionable advice. From organic remedies to chemical treatments, we guide you to recovery.",
+  "summary_title": "Your Personal Pocket Botanist",
+  "summary_desc": "Plant AI combines the power of Google's Gemini models with expert botanical knowledge. We don't just guess; we analyze texture, color, and spot patterns to categorize health issues with high precision. Whether you're a home gardener or a professional farmer, our tool adapts to your needs."
 }

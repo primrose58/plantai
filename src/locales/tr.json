@@ -152,5 +152,17 @@
     "user_posts_title": "{{name}} Gönderileri",
     "new_conversation": "Yeni Sohbet",
     "view_analysis_report": "Analiz Raporunu Gör",
-    "type_message": "Mesaj yazın..."
+    "type_message": "Mesaj yazın...",
+    "ai_powered_v2": "GEMINI AI DESTEKLİ",
+    "hero_title_1": "Bitkilerinizi İyileştirin",
+    "hero_title_highlight": "Yapay Zeka Hassasiyeti",
+    "hero_desc_v2": "Gelişmiş AI botanikçimiz ile hastalıkları anında teşhis edin, tedavi planları alın ve bitki sağlığını izleyin. Sadece bir fotoğraf çekin.",
+    "feature_1_title": "Anında Analiz",
+    "feature_1_desc": "Saniyeler içinde sonuç alın. Yapay zekamız hastalık belirtilerini tespit etmek için yaprak desenlerini analiz eder.",
+    "feature_2_title": "Akıllı Etkileşimler",
+    "feature_2_desc": "Yapay zeka ne zaman daha iyi bir bakışa ihtiyacı olduğunu bilir. Sorun net değilse makro çekimler ister.",
+    "feature_3_title": "Doğrulanmış Tedaviler",
+    "feature_3_desc": "Uygulanabilir tavsiyeler alın. Organik çözümlerden kimyasal tedavilere kadar sizi iyileşmeye yönlendiriyoruz.",
+    "summary_title": "Kişisel Cep Botanikçiniz",
+    "summary_desc": "Plant AI, Google'ın Gemini modellerinin gücünü uzman botanik bilgisiyle birleştirir. Sadece tahmin etmiyoruz; sağlık sorunlarını yüksek hassasiyetle kategorize etmek için doku, renk ve leke desenlerini analiz ediyoruz. İster ev bahçıvanı olun ister profesyonel bir çiftçi, aracımız ihtiyaçlarınıza uyum sağlar."
 }

@@ -18,7 +18,17 @@ export default async function handler(req, res) {
 
         // Prompts based on language
         const prompts = {
-            en: `Analyze this plant image. 
+            en: `Analyze this plant image.
+                CRITICAL: First, check if the image is clear enough to identify a plant and diagnosis.
+                If the image is:
+                - Too blurry
+                - Too dark/bright
+                - Taken from too far away
+                - Not a plant
+                
+                Set "status" to "needs_details" and "error_details" to a specific user-friendly instruction (e.g., "Please move closer to the leaf", "Photo is too blurry").
+                
+                Otherwise, if the image is good:
                 1. Identify the plant name.
                 2. Identify if it has any disease or is healthy.
                 3. If diseased, provide the disease name.
@@ -34,9 +44,20 @@ export default async function handler(req, res) {
                     "description": "...",
                     "treatment": "...",
                     "confidence": 95,
-                    "status": "success" (or "needs_details" if unclear)
+                    "status": "success", (or "needs_details")
+                    "error_details": "..." (Optional, only if status is needs_details)
                 }`,
             tr: `Bu bitki fotoğrafını analiz et.
+                KRİTİK: Önce fotoğrafın bir bitkiyi teşhis etmek için yeterince net olup olmadığını kontrol et.
+                Eğer fotoğraf:
+                - Çok bulanıksa
+                - Çok karanlık/aydınlıksa
+                - Çok uzaktan çekilmişse
+                - Bir bitki değilse
+                
+                "status" değerini "needs_details" yap ve "error_details" kısmına kullanıcıya ne yapması gerektiğini söyleyen net bir talimat yaz (örn: "Lütfen yaprağa daha yaklaşın", "Fotoğraf çok bulanık").
+                
+                Aksi takdirde, fotoğraf iyiyse:
                 1. Bitki adını tanımla.
                 2. Hastalıklı mı yoksa sağlıklı mı olduğunu belirle.
                 3. Hastalıklıysa, hastalık adını yaz.
@@ -52,7 +73,8 @@ export default async function handler(req, res) {
                     "description": "...",
                     "treatment": "...",
                     "confidence": 95,
-                    "status": "success" (veya belirsizse "needs_details")
+                    "status": "success", (veya "needs_details")
+                    "error_details": "..." (Opsiyonel, sadece needs_details ise)
                 }`
         };
 
