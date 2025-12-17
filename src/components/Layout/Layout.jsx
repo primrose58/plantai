@@ -18,6 +18,7 @@ import {
     Moon,
     Clock // Import Clock
 } from 'lucide-react';
+import ErrorBoundary from '../ErrorBoundary';
 
 import { useState, useEffect } from 'react';
 
@@ -144,7 +145,7 @@ export default function Layout() {
         <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
-                <Link to="/" className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Link to="/" onClick={() => window.scrollTo(0, 0)} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <Sprout className="w-8 h-8 text-green-600" />
                     <h1 className="text-2xl font-bold tracking-tight">
                         <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -229,7 +230,7 @@ export default function Layout() {
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Mobile Header for Lang Switch & Logo */}
                 <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <Link to="/" onClick={() => window.scrollTo(0, 0)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg">
                             <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -243,7 +244,9 @@ export default function Layout() {
 
                 <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 pb-24 md:pb-8 scroll-smooth relative" id="main-scroll">
                     <div className="w-full h-full flex flex-col">
-                        <Outlet />
+                        <ErrorBoundary>
+                            <Outlet />
+                        </ErrorBoundary>
                     </div>
                 </div>
 

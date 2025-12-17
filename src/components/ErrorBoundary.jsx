@@ -1,37 +1,56 @@
 import React from 'react';
+import { Home, RefreshCw, AlertTriangle } from 'lucide-react';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
+        this.state = { hasError: false, error: null };
     }
 
     static getDerivedStateFromError(error) {
-        return { hasError: true };
+        return { hasError: true, error };
     }
 
     componentDidCatch(error, errorInfo) {
         console.error("Uncaught error:", error, errorInfo);
-        this.setState({ error, errorInfo });
     }
+
+    handleGoHome = () => {
+        this.setState({ hasError: false, error: null });
+        window.location.href = '/';
+    };
+
+    handleReload = () => {
+        window.location.reload();
+    };
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="p-8 bg-red-50 text-red-900 min-h-screen flex flex-col items-center justify-center">
-                    <h1 className="text-3xl font-bold mb-4">Something went wrong.</h1>
-                    <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full overflow-auto border border-red-200">
-                        <h2 className="text-xl font-bold mb-2 text-red-600">Error: {this.state.error?.toString()}</h2>
-                        <details className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-100 p-4 rounded">
-                            {this.state.errorInfo?.componentStack}
-                        </details>
+                <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-fade-in text-gray-900 dark:text-white">
+                    <div className="bg-red-100 dark:bg-red-900/30 p-6 rounded-full mb-6">
+                        <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400" />
                     </div>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-8 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold"
-                    >
-                        Reload Page
-                    </button>
+                    <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+                    <p className="mb-8 max-w-md text-gray-500 dark:text-gray-400">
+                        {this.state.error?.message || "An unexpected error occurred."}
+                    </p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={this.handleReload}
+                            className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Reload
+                        </button>
+                        <button
+                            onClick={this.handleGoHome}
+                            className="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-lg hover:shadow-green-500/30 flex items-center gap-2"
+                        >
+                            <Home className="w-5 h-5" />
+                            Go Home
+                        </button>
+                    </div>
                 </div>
             );
         }
