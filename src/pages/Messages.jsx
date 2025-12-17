@@ -57,6 +57,18 @@ function ChatListItem({ chat, currentUser }) {
         }
     };
 
+    // Date Localization Logic
+    const { i18n } = useTranslation();
+    const dateLocale = i18n.language === 'tr' ? require('date-fns/locale').tr : require('date-fns/locale').enUS;
+
+    // Helper for message preview translation
+    const getMessagePreview = (msg) => {
+        if (!msg) return t('new_conversation') || 'Yeni Sohbet';
+        if (msg === '📷 Photo' || msg.includes('📷 Photo')) return `📷 ${t('photo') || "Photo"}`;
+        if (msg === '🎤 Voice Message' || msg.includes('🎤 Voice Message')) return `🎤 ${t('voice_message') || "Voice Message"}`;
+        return msg;
+    };
+
     return (
         <div className="relative group">
             <Link
@@ -75,12 +87,15 @@ function ChatListItem({ chat, currentUser }) {
                         </h3>
                         {chat.updatedAt && (
                             <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
-                                {formatDistanceToNow(new Date(chat.updatedAt.seconds * 1000), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(chat.updatedAt.seconds * 1000), {
+                                    addSuffix: true,
+                                    locale: dateLocale
+                                })}
                             </span>
                         )}
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {chat.lastMessage || t('new_conversation') || 'Yeni Sohbet'}
+                        {getMessagePreview(chat.lastMessage)}
                     </p>
                 </div>
             </Link>

@@ -104,8 +104,41 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
     };
 
     return (
+    const handleShare = async () => {
+            const shareData = {
+                title: `Plant AI - ${post.title || post.authorName}`,
+                text: post.content,
+                url: window.location.href // Ideally link to specific post if routing exists
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log('Share canceled');
+                }
+            } else {
+                // Fallback
+                navigator.clipboard.writeText(window.location.href);
+                // Assuming addToast is available or use alert/custom UI. 
+                // Since we don't have addToast prop here, we can assume parent passes it or use window.alert for now or context.
+                // Let's use a simple alert or if we can get toast context. 
+                // Layout passes context? No, PostCard is child. 
+                // We can import useToast.
+                alert(t('link_copied') || "Link copied!");
+            }
+        };
+
+    // Helper for plant type translation
+    const getPlantTypeLabel = (type) => {
+            if (!type || type === 'Unknown') return null;
+            // Try exact match or prefix match
+            return t(`plant_${type.toLowerCase()}`) || t(type) || type;
+        };
+
+    return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-4 animate-fade-in relative group">
-            {/* Edit Button (Owner Only) */}
+            {/* ... (Edit Button Owner Only - existing code) ... */}
             {isOwner && (
                 <button
                     onClick={handleDelete}
@@ -116,8 +149,8 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                 </button>
             )}
 
-            {/* Header - Hidden if hideAuthor is true */}
-            {!post.hideAuthor && ( // Add prop support later or check prop passed
+            {/* Header */}
+            {!post.hideAuthor && (
                 <div className="p-4 flex items-center justify-between">
                     <div
                         className="flex items-center gap-3 cursor-pointer"
@@ -148,11 +181,11 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                 </p>
                 {post.plantType && post.plantType !== 'Unknown' && (
                     <span className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-md mb-2">
-                        {t(post.plantType) || post.plantType}
+                        {getPlantTypeLabel(post.plantType)}
                     </span>
                 )}
 
-                {/* View Analysis Button (If Shared) */}
+                {/* View Analysis Button */}
                 {post.relatedAnalysisId && (
                     <div className="mt-2">
                         <button
@@ -171,10 +204,10 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                 <div className="w-full h-64 sm:h-80 bg-gray-100 dark:bg-gray-900 overflow-hidden cursor-pointer relative group/image" onClick={() => window.open(post.image, '_blank')}>
                     <img src={post.image} alt="Post" className="w-full h-full object-cover" loading="lazy" />
 
-                    {/* View Count Overlay (Mockup for now as requested) */}
+                    {/* View Count Overlay */}
                     <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
-                        <MessageCircle className="w-3 h-3" /> {/* Using generic icon similar to requested 'seen' */}
-                        <span>{20 + (post.likes?.length || 0) * 5} Seen</span>
+                        <MessageCircle className="w-3 h-3" />
+                        <span>{20 + (post.likes?.length || 0) * 5} {t('views') || "Görüntülenme"}</span>
                     </div>
                 </div>
             )}
@@ -201,7 +234,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                         <span className="text-sm font-medium">{commentCount || t('comment')}</span>
                     </button>
 
-                    {/* Edit Button (Owner Only) */}
+                    {/* Edit Button */}
                     {isOwner && (
                         <button
                             className="flex items-center gap-1.5 text-gray-500 hover:text-green-500 transition-colors"
@@ -213,8 +246,12 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                     )}
                 </div>
 
-                <button className="text-gray-500 hover:text-green-600 transition-colors">
+                <button
+                    onClick={handleShare}
+                    className="text-gray-500 hover:text-green-600 transition-colors flex items-center gap-1"
+                >
                     <Share2 className="w-5 h-5" />
+                    <span className="text-sm hidden sm:inline">{t('share') || "Paylaş"}</span>
                 </button>
             </div>
 

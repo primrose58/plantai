@@ -262,12 +262,15 @@ export default function Chat() {
         }
     };
 
+    // Date Locale Logic
+    const dateLocale = i18n.language === 'tr' ? require('date-fns/locale').tr : require('date-fns/locale').enUS;
+
     const getStatusText = (user) => {
         if (!user?.lastSeen) return 'Offline';
         const lastSeen = user.lastSeen.seconds * 1000;
         const diff = Date.now() - lastSeen;
         if (diff < 3 * 60 * 1000) return 'Online';
-        return `Last seen ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true })}`;
+        return `${t('last_seen') || "Last seen"} ${formatDistanceToNow(new Date(lastSeen), { addSuffix: true, locale: dateLocale })}`;
     };
 
     const isOnline = (user) => {
@@ -281,290 +284,146 @@ export default function Chat() {
         return new Date(timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const handleFileSelect = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    // ... existing code ...
 
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-            addToast("File too large (Max 10MB)", "error");
-            return;
-        }
+    {/* Edited Tag */ }
+    {
+        msg.editedAt && (
+            <span className={`text-[10px] block text-right mt-1 opacity-60 ${isMine ? 'text-green-100' : 'text-gray-400'}`}>
+                ({t('edited') || "Edited"} {formatTime(msg.editedAt)})
+            </span>
+        )
+    }
+                                </div >
 
-        const type = file.type.startsWith('image/') ? 'image' : 'file';
-        const previewUrl = type === 'image' ? URL.createObjectURL(file) : null;
-        setAttachment({ file, type, previewUrl });
-    };
-
-    // --- Message Editing ---
-    const startEdit = (msg) => {
-        setNewMessage(msg.text || '');
-        setEditingId(msg.id);
-        setAttachment(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        setNewMessage('');
-        setAttachment(null);
-    };
-
-    // --- Voice Recording (Click-to-Toggle) ---
-    const toggleRecording = async () => {
-        if (isRecording) {
-            // Stop and Send
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            setIsRecording(false);
-        } else {
-            // Start
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const recorder = new MediaRecorder(stream);
-                const chunks = [];
-
-                recorder.ondataavailable = (e) => chunks.push(e.data);
-                recorder.onstop = async () => {
-                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                    // Immediately Send Audio
-                    await uploadAndSend(null, audioBlob, 'voice_message.webm', 'audio');
-
-                    stream.getTracks().forEach(track => track.stop()); // Clean up
-                };
-
-                recorder.start();
-                setMediaRecorder(recorder);
-                setIsRecording(true);
-            } catch (err) {
-                console.error("Mic error:", err);
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    addToast(t('mic_access_denied') || "Microphone access denied.", "error");
-                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    addToast(t('mic_not_found') || "No microphone found.", "error");
-                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                    addToast(t('mic_unavailable') || "Microphone unavailable.", "error");
-                } else {
-                    addToast(t('mic_generic_error') || "Could not access microphone.", "error");
-                }
-            }
-        }
-    };
-
-    return (
-        <div className="flex flex-col h-[calc(100vh-theme(spacing.32))] md:h-[calc(100vh-theme(spacing.16))] max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden relative">
-            {/* Header */}
-            {loading && <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 z-50 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div></div>}
-
-            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4 bg-white dark:bg-gray-800 z-10 shadow-sm">
-                <button onClick={() => navigate('/messages')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </button>
-
-                {otherUser ? (
-                    <div className="flex items-center gap-3">
-                        <img
-                            src={otherUser.photoURL || otherUser.avatar || `https://ui-avatars.com/api/?name=${otherUser.name || 'User'}`}
-                            alt={otherUser.name}
-                            className="w-10 h-10 rounded-full object-cover border border-gray-100"
-                        />
-                        <div>
-                            <h2 className="font-bold text-gray-900 dark:text-gray-100 leading-tight">{otherUser.name || otherUser.displayName || 'User'}</h2>
-                            <div className="flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${isOnline(otherUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{getStatusText(otherUser)}</span>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <h2 className="font-bold text-gray-900 dark:text-gray-100">Chat</h2>
-                )}
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50 dark:bg-gray-900/50">
-                {messages.map(msg => {
-                    const isMine = msg.senderId === currentUser.uid;
-                    const isAudio = msg.type === 'audio';
-                    const isImage = msg.type === 'image';
-                    const isFile = msg.type === 'file';
-
-                    return (
-                        <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} group`}>
-                            <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                                {/* Message Bubble */}
-                                <div className={`px-4 py-2.5 shadow-sm text-sm md:text-base relative group-hover:shadow-md transition-all ${isMine
-                                    ? 'bg-green-600 text-white rounded-2xl rounded-br-none'
-                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700'
-                                    } ${isAudio ? 'min-w-[150px]' : ''}`}>
-
-                                    {/* --- Content Types --- */}
-
-                                    {/* Image */}
-                                    {isImage && (
-                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-                                            <img src={msg.fileUrl} alt="attachment" className="max-w-full h-48 object-cover rounded-lg mb-2" />
-                                        </a>
-                                    )}
-
-                                    {/* Audio Player */}
-                                    {isAudio && (
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const audio = new Audio(msg.fileUrl);
-                                                    audio.play();
-                                                }}
-                                                className={`p-2 rounded-full ${isMine ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                                            >
-                                                <Play className="w-4 h-4" />
-                                            </button>
-                                            <div className="h-1 flex-1 bg-current opacity-20 rounded-full w-24"></div>
-                                            <span className="text-xs opacity-70">Voice</span>
-                                        </div>
-                                    )}
-
-                                    {/* File */}
-                                    {isFile && (
-                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 underline decoration-current">
-                                            <Paperclip className="w-4 h-4" />
-                                            <span className="truncate max-w-[150px]">{msg.fileName || 'File'}</span>
-                                        </a>
-                                    )}
-
-                                    {/* Text */}
-                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-
-                                    {/* Edited Tag */}
-                                    {msg.editedAt && (
-                                        <span className={`text-[10px] block text-right mt-1 opacity-60 ${isMine ? 'text-green-100' : 'text-gray-400'}`}>
-                                            (Edited {formatTime(msg.editedAt)})
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Actions Menu (Edit/Delete) - Only if mine */}
-                                {isMine && (
-                                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => startEdit(msg)}
-                                            className="p-1 text-gray-400 hover:text-blue-500"
-                                            title="Edit"
-                                        >
-                                            <Edit2 className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteMessage(msg.id)}
-                                            className="p-1 text-gray-400 hover:text-red-500"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Timestamp */}
-                            <span className="text-[10px] text-gray-400 mt-1 px-1 font-medium">
-                                {formatTime(msg.createdAt)}
-                            </span>
-                        </div>
-                    );
-                })}
-                <div ref={bottomRef} />
-            </div>
-
-            {/* Editing Indicator */}
-            {editingId && (
-                <div className="px-4 py-2 bg-yellow-50 dark:bg-gray-700 flex items-center justify-between text-xs text-yellow-700 dark:text-yellow-300">
-                    <span>{t('editing_message') || "Editing message..."}</span>
-                    <button onClick={cancelEdit}><X className="w-4 h-4" /></button>
-                </div>
-            )}
-
-            {/* Attachment Preview */}
-            {attachment && (
-                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {attachment.type === 'image' ? (
-                            <img src={attachment.previewUrl} alt="preview" className="w-10 h-10 rounded object-cover" />
-                        ) : (
-                            <FileText className="w-8 h-8 text-gray-500" />
-                        )}
-                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[200px]">
-                            {attachment.file.name}
-                        </span>
-                    </div>
-                    <button onClick={() => setAttachment(null)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full">
-                        <X className="w-4 h-4 text-gray-500" />
-                    </button>
-                </div>
-            )}
-
-            {/* Input Bar */}
-            <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2 items-end">
-                {/* File Upload Hidden Input */}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    accept="image/*,.pdf,.doc,.docx,.txt"
-                />
-
-                {/* Attachment Button */}
+        {/* Actions Menu (Edit/Delete) - Only if mine */ }
+    {
+        isMine && (
+            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-3 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
-                    disabled={isRecording || editingId}
+                    onClick={() => startEdit(msg)}
+                    className="p-1 text-gray-400 hover:text-blue-500"
+                    title="Edit"
                 >
-                    <Paperclip className="w-5 h-5" />
+                    <Edit2 className="w-3 h-3" />
                 </button>
-
-                {/* Text Input */}
-                <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center min-h-[48px]">
-                    {isRecording ? (
-                        <div className="flex-1 px-4 flex items-center text-red-500 animate-pulse font-medium">
-                            <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
-                            {t('recording') || "Recording..."} {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
-                        </div>
-                    ) : (
-                        <textarea
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder={editingId ? (t('edit_message_placeholder') || "Edit your message...") : (t('type_message') || "Mesaj yazın...")}
-                            className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
-                            rows={1}
-                            style={{ height: 'auto', minHeight: '48px' }}
-                        />
-                    )}
-                </div>
-
-                {/* Mic / Send Button */}
-                {newMessage.trim() || attachment ? (
-                    <button
-                        onClick={handleSend}
-                        disabled={uploading}
-                        className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 transform active:scale-95"
-                    >
-                        {uploading ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                            <Send className="w-5 h-5" />
-                        )}
-                    </button>
-                ) : (
-                    <button
-                        onClick={toggleRecording}
-                        className={`p-3 rounded-xl transition-all transform active:scale-95 shadow-lg ${isRecording
-                            ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                    >
-                        {isRecording ? <Send className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                    </button>
-                )}
+                <button
+                    onClick={() => handleDeleteMessage(msg.id)}
+                    className="p-1 text-gray-400 hover:text-red-500"
+                    title="Delete"
+                >
+                    <Trash2 className="w-3 h-3" />
+                </button>
             </div>
+        )
+    }
+                            </div >
+
+        {/* Timestamp */ }
+        < span className = "text-[10px] text-gray-400 mt-1 px-1 font-medium" >
+            { formatTime(msg.createdAt) }
+                            </span >
+                        </div >
+                    );
+})}
+<div ref={bottomRef} />
+            </div >
+
+    {/* Editing Indicator */ }
+{
+    editingId && (
+        <div className="px-4 py-2 bg-yellow-50 dark:bg-gray-700 flex items-center justify-between text-xs text-yellow-700 dark:text-yellow-300">
+            <span>{t('editing_message') || "Editing message..."}</span>
+            <button onClick={cancelEdit}><X className="w-4 h-4" /></button>
         </div>
+    )
+}
+
+{/* Attachment Preview */ }
+{
+    attachment && (
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-100 dark:border-gray-600 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                {attachment.type === 'image' ? (
+                    <img src={attachment.previewUrl} alt="preview" className="w-10 h-10 rounded object-cover" />
+                ) : (
+                    <FileText className="w-8 h-8 text-gray-500" />
+                )}
+                <span className="text-sm text-gray-600 dark:text-gray-300 truncate max-w-[200px]">
+                    {attachment.file.name}
+                </span>
+            </div>
+            <button onClick={() => setAttachment(null)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full">
+                <X className="w-4 h-4 text-gray-500" />
+            </button>
+        </div>
+    )
+}
+
+{/* Input Bar */ }
+<div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 flex gap-2 items-end">
+    {/* File Upload Hidden Input */}
+    <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*,.pdf,.doc,.docx,.txt"
+    />
+
+    {/* Attachment Button */}
+    <button
+        onClick={() => fileInputRef.current?.click()}
+        className="p-3 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
+        disabled={isRecording || editingId}
+    >
+        <Paperclip className="w-5 h-5" />
+    </button>
+
+    {/* Text Input */}
+    <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-2xl flex items-center min-h-[48px]">
+        {isRecording ? (
+            <div className="flex-1 px-4 flex items-center text-red-500 animate-pulse font-medium">
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
+                {t('recording') || "Recording..."} {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+            </div>
+        ) : (
+            <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={editingId ? (t('edit_message_placeholder') || "Edit your message...") : (t('type_message') || "Mesaj yazın...")}
+                className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
+                rows={1}
+                style={{ height: 'auto', minHeight: '48px' }}
+            />
+        )}
+    </div>
+
+    {/* Mic / Send Button */}
+    {newMessage.trim() || attachment ? (
+        <button
+            onClick={handleSend}
+            disabled={uploading}
+            className="p-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-200 dark:shadow-none transition-all disabled:opacity-50 transform active:scale-95"
+        >
+            {uploading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+                <Send className="w-5 h-5" />
+            )}
+        </button>
+    ) : (
+        <button
+            onClick={toggleRecording}
+            className={`p-3 rounded-xl transition-all transform active:scale-95 shadow-lg ${isRecording
+                ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+        >
+            {isRecording ? <Send className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+        </button>
+    )}
+</div>
+        </div >
     );
 }

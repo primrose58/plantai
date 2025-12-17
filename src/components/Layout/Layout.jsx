@@ -197,11 +197,18 @@ export default function Layout() {
                     {/* User Info / Auth */}
                     {currentUser ? (
                         <div className="flex flex-col gap-2">
-                            <div className="px-2 py-1">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{t('welcome_user')}</p>
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                                    {currentUser.displayName || currentUser.email}
-                                </p>
+                            <div className="flex items-center gap-3 mb-2">
+                                <img
+                                    src={currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}`}
+                                    alt="Avatar"
+                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                />
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{t('welcome_user')}</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={currentUser.displayName || currentUser.email}>
+                                        {currentUser.displayName || currentUser.email}
+                                    </p>
+                                </div>
                             </div>
                             <button
                                 onClick={async () => {
