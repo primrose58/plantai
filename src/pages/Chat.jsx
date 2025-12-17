@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Send, ArrowLeft, Trash2, Edit2, Mic, Paperclip, X, Image as ImageIcon, FileText, Play, Pause } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { formatDistanceToNow } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 import imageCompression from 'browser-image-compression'; // Import compression
 
 // Helper: Convert Blob/File to Base64
@@ -263,7 +264,7 @@ export default function Chat() {
     };
 
     // Date Locale Logic
-    const dateLocale = i18n.language === 'tr' ? require('date-fns/locale').tr : require('date-fns/locale').enUS;
+    const dateLocale = i18n.language === 'tr' ? tr : enUS;
 
     const getStatusText = (user) => {
         if (!user?.lastSeen) return 'Offline';

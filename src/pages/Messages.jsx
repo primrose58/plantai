@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
 
 import { deleteDoc, doc } from 'firebase/firestore'; // Add deleteDoc
 import { Trash2 } from 'lucide-react'; // Add Trash2
@@ -59,7 +60,7 @@ function ChatListItem({ chat, currentUser }) {
 
     // Date Localization Logic
     const { i18n } = useTranslation();
-    const dateLocale = i18n.language === 'tr' ? require('date-fns/locale').tr : require('date-fns/locale').enUS;
+    const dateLocale = i18n.language === 'tr' ? tr : enUS;
 
     // Helper for message preview translation
     const getMessagePreview = (msg) => {
