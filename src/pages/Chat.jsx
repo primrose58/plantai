@@ -331,7 +331,15 @@ export default function Chat() {
                 setIsRecording(true);
             } catch (err) {
                 console.error("Mic error:", err);
-                addToast("Could not access microphone", "error");
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    addToast("Microphone access denied. Please allow microphone permissions in your browser settings.", "error");
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    addToast("No microphone found on this device.", "error");
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    addToast("Microphone is physically unavailable or in use by another app.", "error");
+                } else {
+                    addToast("Could not access microphone. Ensure you are on HTTPS and have a working mic.", "error");
+                }
             }
         }
     };
