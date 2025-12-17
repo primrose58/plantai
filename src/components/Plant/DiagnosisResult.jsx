@@ -47,7 +47,7 @@ export default function DiagnosisResult({ result, onReset }) {
                     <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20">
                         <div className="flex items-center gap-2 mb-1 text-orange-700 dark:text-orange-500 font-semibold">
                             <Activity className="w-5 h-5" />
-                            <span>Urgency</span>
+                            <span>{t('urgency')}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                             <div className="bg-orange-600 h-2.5 rounded-full" style={{ width: `${result.urgency}%` }}></div>
@@ -57,7 +57,7 @@ export default function DiagnosisResult({ result, onReset }) {
                     <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20">
                         <div className="flex items-center gap-2 mb-1 text-blue-700 dark:text-blue-500 font-semibold">
                             <Sprout className="w-5 h-5" />
-                            <span>Spread Risk</span>
+                            <span>{t('spread_risk')}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                             <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${result.spread_risk}%` }}></div>
@@ -67,7 +67,7 @@ export default function DiagnosisResult({ result, onReset }) {
 
                 {/* Description */}
                 <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('description')}</h3>
                     <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                         {result.description}
                     </p>
@@ -106,7 +106,7 @@ export default function DiagnosisResult({ result, onReset }) {
                         onClick={onReset}
                         className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-3 rounded-xl font-medium transition-colors"
                     >
-                        New Scan
+                        {t('new_scan')}
                     </button>
                     {/* Add Save/Share buttons here later */}
                 </div>
