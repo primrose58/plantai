@@ -140,7 +140,7 @@ export default function Home() {
 
         } catch (error) {
             console.error("Manual save failed:", error);
-            addToast("Failed to save analysis: " + error.message, "error");
+            addToast((t('save_fail') || "Failed to save analysis:") + " " + error.message, "error");
         }
     };
 
@@ -309,7 +309,7 @@ export default function Home() {
         return (
             <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
                 <h2 className="text-2xl font-bold mb-4 text-center">
-                    {isMacro ? "Close-up Photo" : t('scan_step_2')}
+                    {isMacro ? (t('close_up_photo') || "Close-up Photo") : t('scan_step_2')}
                 </h2>
 
                 <div className="w-full space-y-4">
@@ -350,7 +350,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white animate-bounce">
                 {t('analyzing') || "Analyzing..."}
             </h2>
-            <p className="text-gray-500 mt-2">AI Botanist is thinking...</p>
+            <p className="text-gray-500 mt-2">{t('ai_thinking') || "AI Botanist is thinking..."}</p>
         </div>
     );
 

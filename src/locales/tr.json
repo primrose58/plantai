@@ -170,5 +170,18 @@
     "error_not_plant": "Bitki tespit edilemedi. Lütfen net bir bitki veya yaprak fotoğrafı çektiğinizden emin olun.",
     "error_server_busy": "Yapay zeka asistanımız şu anda çok yoğun. Lütfen birkaç saniye sonra tekrar deneyin.",
     "retry": "Tekrar Dene",
-    "camera_permission_denied": "Kamera erişimi reddedildi. Lütfen tarayıcı izinlerini kontrol edin."
+    "camera_permission_denied": "Kamera erişimi reddedildi. Lütfen tarayıcı izinlerini kontrol edin.",
+    "close_up_photo": "Yakın Çekim Fotoğraf",
+    "ai_thinking": "Bitki AI Düşünüyor...",
+    "save_fail": "Analiz kaydedilemedi:",
+    "mic_access_denied": "Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarından izin verin.",
+    "mic_not_found": "Bu cihazda mikrofon bulunamadı.",
+    "mic_unavailable": "Mikrofon kullanılamıyor veya başka bir uygulama tarafından kullanılıyor.",
+    "mic_generic_error": "Mikrofona erişilemedi. HTTPS bağlantısını ve mikrofonunuzu kontrol edin.",
+    "recording": "Kaydediliyor...",
+    "editing_message": "Mesaj düzenleniyor...",
+    "edit_message_placeholder": "Mesajınızı düzenleyin...",
+    "treatment_started": "Tedavi süreci başlatıldı!",
+    "save_info": "Bilgiyi Kaydet",
+    "start_treatment": "Tedaviye Başla"
 }

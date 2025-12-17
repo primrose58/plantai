@@ -339,13 +339,13 @@ export default function Chat() {
             } catch (err) {
                 console.error("Mic error:", err);
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    addToast("Microphone access denied. Please allow microphone permissions in your browser settings.", "error");
+                    addToast(t('mic_access_denied') || "Microphone access denied.", "error");
                 } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    addToast("No microphone found on this device.", "error");
+                    addToast(t('mic_not_found') || "No microphone found.", "error");
                 } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                    addToast("Microphone is physically unavailable or in use by another app.", "error");
+                    addToast(t('mic_unavailable') || "Microphone unavailable.", "error");
                 } else {
-                    addToast("Could not access microphone. Ensure you are on HTTPS and have a working mic.", "error");
+                    addToast(t('mic_generic_error') || "Could not access microphone.", "error");
                 }
             }
         }
@@ -477,7 +477,7 @@ export default function Chat() {
             {/* Editing Indicator */}
             {editingId && (
                 <div className="px-4 py-2 bg-yellow-50 dark:bg-gray-700 flex items-center justify-between text-xs text-yellow-700 dark:text-yellow-300">
-                    <span>Editing message...</span>
+                    <span>{t('editing_message') || "Editing message..."}</span>
                     <button onClick={cancelEdit}><X className="w-4 h-4" /></button>
                 </div>
             )}
@@ -526,13 +526,13 @@ export default function Chat() {
                     {isRecording ? (
                         <div className="flex-1 px-4 flex items-center text-red-500 animate-pulse font-medium">
                             <div className="w-3 h-3 bg-red-500 rounded-full mr-3 animate-pulse"></div>
-                            Recording... {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                            {t('recording') || "Recording..."} {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
                         </div>
                     ) : (
                         <textarea
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder={editingId ? "Edit your message..." : (t('type_message') || "Mesaj yazın...")}
+                            placeholder={editingId ? (t('edit_message_placeholder') || "Edit your message...") : (t('type_message') || "Mesaj yazın...")}
                             className="w-full bg-transparent px-4 py-3 max-h-32 focus:outline-none text-gray-800 dark:text-white resize-none"
                             rows={1}
                             style={{ height: 'auto', minHeight: '48px' }}
