@@ -103,7 +103,15 @@ export default function Home() {
             }
         } catch (err) {
             console.error(err);
-            const msg = err.message || t('error_diagnosis_failed') || 'Diagnosis failed.';
+            let msg = err.message || t('error_diagnosis_failed') || 'Diagnosis failed.';
+
+            // Map specific errors to localized friendly messages
+            if (msg.includes('NOT_PLANT')) {
+                msg = t('error_not_plant');
+            } else if (msg.includes('503') || msg.includes('overloaded')) {
+                msg = t('error_server_busy');
+            }
+
             addToast(msg, 'error'); // REAL ERROR SHOWN HERE
             setStep('capture_main');
         } finally {

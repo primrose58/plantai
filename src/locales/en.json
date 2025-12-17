@@ -123,6 +123,8 @@
   "summary_desc": "Plant AI combines the power of Google's Gemini models with expert botanical knowledge. We don't just guess; we analyze texture, color, and spot patterns to categorize health issues with high precision. Whether you're a home gardener or a professional farmer, our tool adapts to your needs.",
   "open_camera": "Open Camera",
   "upload_gallery": "Select from Gallery",
+  "error_not_plant": "No plant detected. Please ensure the subject is a clear plant or leaf.",
+  "error_server_busy": "Our AI botanist is currently overwhelmed. Please try again in a few seconds.",
   "retry": "Retry",
   "camera_permission_denied": "Camera access denied. Please check your browser permissions."
 }

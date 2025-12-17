@@ -167,6 +167,8 @@
     "summary_desc": "Plant AI, Google'ın Gemini modellerinin gücünü uzman botanik bilgisiyle birleştirir. Sadece tahmin etmiyoruz; sağlık sorunlarını yüksek hassasiyetle kategorize etmek için doku, renk ve leke desenlerini analiz ediyoruz. İster ev bahçıvanı olun ister profesyonel bir çiftçi, aracımız ihtiyaçlarınıza uyum sağlar.",
     "open_camera": "Kamerayı Aç",
     "upload_gallery": "Galeriden Seç",
+    "error_not_plant": "Bitki tespit edilemedi. Lütfen net bir bitki veya yaprak fotoğrafı çektiğinizden emin olun.",
+    "error_server_busy": "Yapay zeka asistanımız şu anda çok yoğun. Lütfen birkaç saniye sonra tekrar deneyin.",
     "retry": "Tekrar Dene",
     "camera_permission_denied": "Kamera erişimi reddedildi. Lütfen tarayıcı izinlerini kontrol edin."
 }
