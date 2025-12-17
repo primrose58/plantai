@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
+import WaveSurfer from 'wavesurfer.js';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../services/firebase'; // Removed storage
@@ -22,71 +23,54 @@ const blobToBase64 = (blob) => {
 
 // Waveform Visualizer Component
 // Waveform Visualizer Component
+// Waveform Visualizer Component using Wavesurfer
 const VoiceMessage = ({ src, isMine, messageId }) => {
+    const containerRef = useRef(null);
+    const wavesurfer = useRef(null);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
-    const audioRef = useRef(null);
-
-    // Generate pseudo-random waveform bars based on unique messageId
-    const bars = useMemo(() => {
-        const seedStr = messageId || src || "default";
-        let hash = 0;
-        for (let i = 0; i < seedStr.length; i++) {
-            hash = (hash << 5) - hash + seedStr.charCodeAt(i);
-            hash |= 0;
-        }
-
-        // Use hash to generate 40 bars with "voice-like" clusters
-        return Array.from({ length: 40 }, (_, i) => {
-            // Pseudo-random based on hash and index
-            const val = Math.sin((hash + i) * 132.12) * 0.5 + 0.5;
-            // Shape it to look like voice (lower at ends, higher in middle varyingly)
-            const bellCurve = 1 - Math.pow((i / 40) - 0.5, 2) * 4;
-            const h = Math.max(15, (val * 100 * bellCurve) + (val * 30));
-            return Math.min(100, h);
-        });
-    }, [src, messageId]);
-
-    const togglePlay = () => {
-        if (!audioRef.current) return;
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play();
-        }
-        setIsPlaying(!isPlaying);
-    };
+    const [currentTime, setCurrentTime] = useState(0);
 
     useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
+        if (!containerRef.current) return;
 
-        const onTimeUpdate = () => {
-            if (audio.duration) {
-                setProgress((audio.currentTime / audio.duration) * 100);
-            }
-        };
+        // Destroy previous instance if exists to prevent duplicates
+        if (wavesurfer.current) {
+            wavesurfer.current.destroy();
+        }
 
-        const onLoadedMetadata = () => {
-            setDuration(audio.duration);
-        };
+        wavesurfer.current = WaveSurfer.create({
+            container: containerRef.current,
+            waveColor: isMine ? 'rgba(255, 255, 255, 0.6)' : 'rgba(75, 85, 99, 0.4)',
+            progressColor: isMine ? '#ffffff' : '#16a34a', // White for mine, Green for others
+            cursorColor: 'transparent',
+            barWidth: 3,
+            barRadius: 2,
+            cursorWidth: 0,
+            height: 48, // Taller like WhatsApp
+            barGap: 3,
+            normalize: true, // Maximizes the waveform height
+            url: src,
+        });
 
-        const onEnded = () => {
-            setIsPlaying(false);
-            setProgress(0);
-        };
-
-        audio.addEventListener('timeupdate', onTimeUpdate);
-        audio.addEventListener('loadedmetadata', onLoadedMetadata);
-        audio.addEventListener('ended', onEnded);
+        wavesurfer.current.on('play', () => setIsPlaying(true));
+        wavesurfer.current.on('pause', () => setIsPlaying(false));
+        wavesurfer.current.on('timeupdate', (time) => setCurrentTime(time));
+        wavesurfer.current.on('ready', (d) => setDuration(d));
+        wavesurfer.current.on('finish', () => setIsPlaying(false));
 
         return () => {
-            audio.removeEventListener('timeupdate', onTimeUpdate);
-            audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-            audio.removeEventListener('ended', onEnded);
+            if (wavesurfer.current) {
+                wavesurfer.current.destroy();
+            }
         };
-    }, []);
+    }, [src, isMine]);
+
+    const togglePlay = () => {
+        if (wavesurfer.current) {
+            wavesurfer.current.playPause();
+        }
+    };
 
     const formatDuration = (sec) => {
         if (!sec) return "0:00";
@@ -96,37 +80,21 @@ const VoiceMessage = ({ src, isMine, messageId }) => {
     };
 
     return (
-        <div className="flex items-center gap-3 min-w-[220px]">
-            <audio ref={audioRef} src={src} preload="metadata" />
+        <div className="flex items-center gap-3 min-w-[200px] sm:min-w-[240px] pr-2">
             <button
                 onClick={togglePlay}
-                className={`p-2 rounded-full transition-colors flex-shrink-0 ${isMine
+                className={`p-2 rounded-full transition-colors flex-shrink-0 cursor-pointer z-10 ${isMine
                     ? 'bg-green-500 text-white hover:bg-green-400'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
             >
-                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
             </button>
 
-            <div className="flex-1 flex flex-col gap-1 justify-center">
-                <div className="flex items-center gap-0.5 h-8 items-end">
-                    {bars.map((heightPercent, i) => {
-                        const isPlayed = (i / bars.length) * 100 < progress;
-                        return (
-                            <div
-                                key={i}
-                                className={`w-1 rounded-full transition-colors duration-150 ${isMine
-                                    ? (isPlayed ? 'bg-white/90' : 'bg-green-500/40')
-                                    : (isPlayed ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600')
-                                    }`}
-                                style={{ height: `${heightPercent}%` }}
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-            <span className={`text-[10px] font-medium w-8 text-right ${isMine ? 'text-green-100' : 'text-gray-500'}`}>
-                {isPlaying ? formatDuration(audioRef.current?.currentTime) : formatDuration(duration)}
+            <div className="flex-1 overflow-hidden relative" ref={containerRef} />
+
+            <span className={`text-[11px] font-medium w-9 text-right tabular-nums ${isMine ? 'text-green-100' : 'text-gray-500'}`}>
+                {formatDuration(isPlaying ? currentTime : duration)}
             </span>
         </div>
     );
