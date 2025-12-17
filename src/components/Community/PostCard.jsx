@@ -150,7 +150,6 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => onUserClick && onUserClick(post.userId)}
                     >
-                    >
                         <img
                             src={(isOwner && (currentUser?.photoURL || currentUser?.avatar))
                                 ? (currentUser.photoURL || currentUser.avatar)
