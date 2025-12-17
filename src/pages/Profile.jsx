@@ -253,6 +253,11 @@ export default function Profile() {
 
                                 <button
                                     onClick={() => {
+                                        if (!currentUser) {
+                                            addToast(t('login_to_message') || "Please login to send messages", 'info');
+                                            navigate('/login');
+                                            return;
+                                        }
                                         // Pass robust user object
                                         const safeUser = {
                                             uid: targetUser.uid || profileId,

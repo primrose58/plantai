@@ -28,6 +28,13 @@ export default function Chat() {
     const fileInputRef = useRef(null);
     const { addToast } = useToast();
 
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!currentUser) {
+            navigate('/login');
+        }
+    }, [currentUser, navigate]);
+
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
