@@ -6,13 +6,16 @@ import { MessageCircle, Heart, Share2, Trash2, Send, Edit2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { toggleLike, addComment, deletePost, updatePost } from '../../services/analysisService';
 
-export default function PostCard({ post, onUserClick, onViewAnalysis }) {
+import { useNavigate } from 'react-router-dom';
+
+export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailView = false }) {
+    const navigate = useNavigate();
     const { t, i18n } = useTranslation();
     const { currentUser } = useAuth();
     const dateLocale = i18n.language === 'tr' ? tr : enUS;
 
     const [commentText, setCommentText] = useState('');
-    const [showComments, setShowComments] = useState(false);
+    const [showComments, setShowComments] = useState(isDetailView); // Auto-show in detail view
     const [likeLoading, setLikeLoading] = useState(false);
 
     // Edit State
@@ -107,7 +110,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
         const shareData = {
             title: `Plant AI - ${post.title || post.authorName}`,
             text: post.content,
-            url: window.location.href // Ideally link to specific post if routing exists
+            url: window.location.origin + '/community/post/' + post.id
         };
 
         if (navigator.share) {
@@ -118,7 +121,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
             }
         } else {
             // Fallback
-            navigator.clipboard.writeText(window.location.href);
+            navigator.clipboard.writeText(shareData.url);
             alert(t('link_copied') || "Link copied!");
         }
     };
@@ -173,7 +176,10 @@ export default function PostCard({ post, onUserClick, onViewAnalysis }) {
             {/* Content */}
             <div className={`px-4 pb-2 ${post.hideAuthor ? 'pt-4' : ''}`}>
                 {post.title && <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200 mb-1">{post.title}</h3>}
-                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap">
+                <p
+                    className={`text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-wrap ${!isDetailView ? 'cursor-pointer hover:opacity-80' : ''}`}
+                    onClick={() => !isDetailView && navigate(`/community/post/${post.id}`)}
+                >
                     {post.content}
                 </p>
                 {post.plantType && post.plantType !== 'Unknown' && (

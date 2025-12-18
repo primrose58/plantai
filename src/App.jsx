@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import Community from './pages/Community';
+import PostDetail from './pages/PostDetail';
 import Messages from './pages/Messages';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
@@ -21,6 +22,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="community" element={<Community />} />
+          <Route path="community/post/:postId" element={<PostDetail />} />
           <Route path="messages" element={<Messages />} />
           <Route path="messages/:chatId" element={<Chat />} />
           <Route path="analyses" element={<Analyses />} />
