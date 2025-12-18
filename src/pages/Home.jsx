@@ -1,8 +1,71 @@
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Camera, Image as ImageIcon, Loader2, ArrowRight, Sprout, AlertCircle, ScanLine, Save, CheckCircle, Brain, Sparkles, Activity, ShieldCheck, Zap } from 'lucide-react';
+import { analyzePlantImage } from '../services/gemini';
+import { saveAnalysis } from '../services/analysisService';
+import DiagnosisResult from '../components/Plant/DiagnosisResult';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
+import CameraModal from '../components/Common/CameraModal';
 import imageCompression from 'browser-image-compression';
 
 export default function Home() {
-    // ... existing hooks ...
-    // ... (skip down to handleFileChange) ...
+    const { t, i18n } = useTranslation();
+    const { currentUser } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { addToast } = useToast();
+
+    const fileInputRef = useRef(null);
+
+    // Wizard State
+    const [step, setStep] = useState('landing');
+    const [plantType, setPlantType] = useState('');
+    const [images, setImages] = useState({ main: null, macro: null });
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const [isSaved, setIsSaved] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); // New state for loading feedback
+    const [showCamera, setShowCamera] = useState(false); // Camera Modal State
+
+    // Restore state or Reset
+    useEffect(() => {
+        if (location.state?.refreshId) {
+            resetScan();
+            setStep('landing'); // FORCE LANDING PAGE
+        } else if (location.state?.restoredResult) {
+            setResult(location.state.restoredResult);
+            setStep('result');
+            if (location.state?.restoredImages) {
+                setImages(location.state.restoredImages);
+                setPlantType(location.state.restoredPlantType || '');
+            }
+        }
+    }, [location.state]);
+
+    const handleNextStep = () => {
+        if (step === 'input_type') setStep('capture_main');
+    };
+
+    const handleSkipType = () => {
+        setPlantType('');
+        setStep('capture_main');
+    };
+
+    const triggerFileInput = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleCameraCapture = (imageDataUrl) => {
+        if (imageDataUrl) {
+            processImage(imageDataUrl);
+        }
+        setShowCamera(false); // Close modal after capture
+    };
 
     const handleFileChange = async (event) => {
         const file = event.target.files?.[0];

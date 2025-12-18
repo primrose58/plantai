@@ -276,7 +276,7 @@ export default function Layout() {
                                 className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all ${isActive ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500'
                                     }`}
                             >
-                                <Icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} />
+                                <Icon className="w-7 h-7" />
                             </Link>
                         );
                     })}
