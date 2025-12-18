@@ -3,7 +3,7 @@ import { X, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-const UserListModal = ({ isOpen, onClose, title, users, loading }) => {
+const UserListModal = ({ isOpen, onClose, title, users, loading, actionLabel, onAction }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
@@ -63,6 +63,18 @@ const UserListModal = ({ isOpen, onClose, title, users, loading }) => {
                                     </h4>
                                     {/* Optional: Add bio or username if available */}
                                 </div>
+                                {/* Action Button (Unfollow/Remove) */}
+                                {onAction && actionLabel && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onAction(user.id);
+                                        }}
+                                        className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors mr-2"
+                                    >
+                                        {actionLabel}
+                                    </button>
+                                )}
                                 <button className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">
                                     {t('view_profile')}
                                 </button>

@@ -463,7 +463,19 @@ export default function Profile() {
                 title={listModalType === 'followers' ? t('followers') : t('following')}
                 users={listUsers}
                 loading={listLoading}
+                // Pass appropriate action handler
+                actionLabel={
+                    isOwnProfile
+                        ? (listModalType === 'following' ? (t('unfollow') || 'Takipten Çık') : (t('remove') || 'Çıkar'))
+                        : null
+                }
+                onAction={
+                    isOwnProfile
+                        ? (listModalType === 'following' ? handleUnfollowFromList : handleRemoveFollowerFromList)
+                        : null
+                }
             />
         </>
     );
 }
+```
