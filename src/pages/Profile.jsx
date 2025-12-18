@@ -280,6 +280,33 @@ export default function Profile() {
         return formatDistanceToNow(new Date(u.lastSeen.seconds * 1000), { addSuffix: true, locale: i18n.language === 'tr' ? tr : enUS });
     };
 
+    const handleUnfollowFromList = async (targetId) => {
+        if (!confirm(t('confirm_unfollow') || 'Takipten çıkmak istediğinize emin misiniz?')) return;
+        try {
+            await unfollowUser(currentUser.uid, targetId);
+            setListUsers(prev => prev.filter(u => u.id !== targetId));
+            setStats(prev => ({ ...prev, followingCount: Math.max(0, prev.followingCount - 1) }));
+            addToast(t('unfollowed_user') || 'Takipten çıkıldı', 'success');
+        } catch (error) {
+            console.error(error);
+            addToast('Error', 'error');
+        }
+    };
+
+    const handleRemoveFollowerFromList = async (targetId) => {
+        if (!confirm(t('confirm_remove_follower') || 'Bu takipçiyi çıkarmak istediğinize emin misiniz?')) return;
+        try {
+            // Remove follower: means they (targetId) stop following me (currentUser.uid)
+            await unfollowUser(targetId, currentUser.uid);
+            setListUsers(prev => prev.filter(u => u.id !== targetId));
+            setStats(prev => ({ ...prev, followersCount: Math.max(0, prev.followersCount - 1) }));
+            addToast(t('follower_removed') || 'Takipçi çıkarıldı', 'success');
+        } catch (error) {
+            console.error(error);
+            addToast('Error', 'error');
+        }
+    };
+
     return (
         <>
             <div className="max-w-4xl mx-auto w-full pb-20 animate-fade-in p-4">
