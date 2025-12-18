@@ -44,6 +44,10 @@ export default function NotificationsModal({ onClose }) {
     const handleAccept = async (request) => {
         if (processingId) return;
         setProcessingId(request.id);
+
+        // Optimistic Update
+        setRequests(prev => prev.filter(r => r.id !== request.id));
+
         try {
             await acceptFollowRequest(
                 request.id, // requestId (which is requesterId)
@@ -53,10 +57,10 @@ export default function NotificationsModal({ onClose }) {
                 { displayName: currentUser.displayName, photoURL: currentUser.photoURL }
             );
             addToast(t('request_accepted') || 'Request Accepted', 'success');
-            // List will update automatically via onSnapshot
         } catch (error) {
             console.error(error);
             addToast(t('error_occurred') || 'Error', 'error');
+            // Revert on error (optional, but simplified here)
         } finally {
             setProcessingId(null);
         }
@@ -65,6 +69,10 @@ export default function NotificationsModal({ onClose }) {
     const handleReject = async (requestId) => {
         if (processingId) return;
         setProcessingId(requestId);
+
+        // Optimistic Update
+        setRequests(prev => prev.filter(r => r.id !== requestId));
+
         try {
             await rejectFollowRequest(currentUser.uid, requestId);
             addToast(t('request_rejected') || 'Request Rejected', 'info');
@@ -117,12 +125,12 @@ export default function NotificationsModal({ onClose }) {
                                         }}
                                     >
                                         <img
-                                            src={request.followerPhoto || `https://ui-avatars.com/api/?name=${request.followerName}`}
+                                            src={request.followerPhoto || `https://ui-avatars.com/api/?name=${request.followerName || 'User'}&background=random`}
                                             alt={request.followerName}
                                             className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-gray-600"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{request.followerName}</h4>
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{request.followerName || 'User'}</h4>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">{t('wants_to_follow') || 'Wants to follow you'}</p>
                                         </div>
                                     </div>
