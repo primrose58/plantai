@@ -25,6 +25,7 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [isSaved, setIsSaved] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); // New state for loading feedback
     const [showCamera, setShowCamera] = useState(false); // Camera Modal State
 
     // Restore state or Reset
@@ -124,8 +125,9 @@ export default function Home() {
 
     const handleSaveResult = async () => {
         if (!currentUser) return;
-        if (isSaved) return;
+        if (isSaved || isSaving) return;
 
+        setIsSaving(true);
         try {
             const docId = await saveAnalysis(currentUser.uid, plantType, images, result);
             setIsSaved(true);
@@ -144,6 +146,7 @@ export default function Home() {
         } catch (error) {
             console.error("Manual save failed:", error);
             addToast((t('save_fail') || "Failed to save analysis:") + " " + error.message, "error");
+            setIsSaving(false); // Only reset on error, otherwise keep disabled until redirect
         }
     };
 
@@ -371,8 +374,8 @@ export default function Home() {
                     {currentUser && (
                         <button
                             onClick={handleSaveResult}
-                            disabled={isSaved}
-                            className={`mt-4 w-full font-bold py-4 px-6 rounded-xl border shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-3 ${isSaved
+                            disabled={isSaved || isSaving}
+                            className={`mt-4 w-full font-bold py-4 px-6 rounded-xl border shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-3 ${isSaved || isSaving
                                 ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-default'
                                 : 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white border-transparent'
                                 }`}
@@ -381,6 +384,11 @@ export default function Home() {
                                 <>
                                     <CheckCircle className="w-6 h-6" />
                                     <span>{t('saved') || 'Kaydedildi'}</span>
+                                </>
+                            ) : isSaving ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>{t('saving') || 'Kaydediliyor...'}</span>
                                 </>
                             ) : (
                                 <>
