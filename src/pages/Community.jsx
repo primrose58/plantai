@@ -8,7 +8,7 @@ import CreatePostModal from '../components/Community/CreatePostModal';
 import UserPreviewModal from '../components/Community/UserPreviewModal';
 import { Loader2, Plus, Search, ChevronDown, X } from 'lucide-react';
 import { PLANT_TYPES } from '../constants/plantData';
-import { PLANT_TYPES } from '../constants/plantData';
+
 import PageLoader from '../components/Common/PageLoader';
 import DailyBotCard from '../components/Community/DailyBotCard';
 import { getDailyPost } from '../services/dailyBotService';
