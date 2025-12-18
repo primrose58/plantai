@@ -134,5 +134,16 @@
   "description": "Description",
   "urgency": "Urgency",
   "spread_risk": "Spread Risk",
-  "new_scan": "New Scan"
+  "new_scan": "New Scan",
+  "back_to_community": "Back to Community",
+  "welcome_back": "Welcome Back",
+  "create_account": "Create Account",
+  "login_desc": "Log in to continue",
+  "register_desc": "Register to join the community",
+  "register_now": "Register Now",
+  "login_now": "Log In",
+  "no_account": "Don't have an account?",
+  "error_invalid_credential": "Invalid email or password",
+  "error_email_in_use": "Email already in use",
+  "error_generic": "An error occurred"
 }

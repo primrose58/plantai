@@ -213,5 +213,15 @@
     "urgency": "Aciliyet",
     "spread_risk": "Yayılma Riski",
     "new_scan": "Yeni Tarama",
-    "back_to_community": "Topluluğa Dön"
+    "back_to_community": "Topluluğa Dön",
+    "welcome_back": "Tekrar Hoşgeldiniz",
+    "create_account": "Hesap Oluştur",
+    "login_desc": "Devam etmek için giriş yapın",
+    "register_desc": "Topluluğa katılmak için kayıt olun",
+    "register_now": "Hemen Kaydol",
+    "login_now": "Giriş Yap",
+    "no_account": "Hesabınız yok mu?",
+    "error_invalid_credential": "Hatalı e-posta veya şifre",
+    "error_email_in_use": "Bu e-posta zaten kullanımda",
+    "error_generic": "Bir hata oluştu"
 }
