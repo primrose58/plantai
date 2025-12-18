@@ -16,7 +16,10 @@ import {
     Info,
     Sun,
     Moon,
-    Clock
+    Clock,
+    Menu,
+    X,
+    Bell
 } from 'lucide-react';
 import ErrorBoundary from '../ErrorBoundary';
 
