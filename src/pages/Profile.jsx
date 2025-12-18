@@ -1,3 +1,5 @@
+import { followUser, unfollowUser, checkFollowStatus, getUserStats, getFollowers, getFollowing } from '../services/userService';
+import UserListModal from '../components/Common/UserListModal';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateProfile } from 'firebase/auth';
@@ -6,7 +8,7 @@ import { auth, db } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
-import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle } from 'lucide-react';
+import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle, UserPlus, UserMinus, Users } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
@@ -27,6 +29,14 @@ export default function Profile() {
     const [loading, setLoading] = useState(false);
     const [userPosts, setUserPosts] = useState([]);
     const [postsLoading, setPostsLoading] = useState(true);
+
+    // Follow System State
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [stats, setStats] = useState({ followersCount: 0, followingCount: 0 });
+    const [listModalOpen, setListModalOpen] = useState(false);
+    const [listModalType, setListModalType] = useState('followers'); // 'followers' or 'following'
+    const [listUsers, setListUsers] = useState([]);
+    const [listLoading, setListLoading] = useState(false);
 
     const fileInputRef = useRef(null);
 
@@ -90,6 +100,16 @@ export default function Profile() {
 
                 setUserPosts(posts);
 
+                // 3. Load Follow Stats
+                const userStats = await getUserStats(profileId);
+                setStats(userStats);
+
+                // 4. Check Follow Status if logged in and not own profile
+                if (currentUser && !isOwnProfile) {
+                    const status = await checkFollowStatus(currentUser.uid, profileId);
+                    setIsFollowing(status);
+                }
+
             } catch (err) {
                 console.error("Failed to load profile data", err);
             } finally {
@@ -98,6 +118,55 @@ export default function Profile() {
         };
         loadData();
     }, [profileId, isOwnProfile, currentUser]);
+
+    // Handle Follow/Unfollow
+    const handleFollowToggle = async () => {
+        if (!currentUser) {
+            addToast(t('login_required'), 'info');
+            return;
+        }
+        if (loading) return;
+        setLoading(true);
+
+        try {
+            if (isFollowing) {
+                await unfollowUser(currentUser.uid, profileId);
+                setStats(prev => ({ ...prev, followersCount: Math.max(0, prev.followersCount - 1) }));
+                setIsFollowing(false);
+            } else {
+                await followUser(
+                    currentUser.uid,
+                    { displayName: currentUser.displayName, photoURL: currentUser.photoURL },
+                    profileId,
+                    { displayName: targetUser?.name || targetUser?.displayName, photoURL: targetUser?.avatar || targetUser?.photoURL }
+                );
+                setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 }));
+                setIsFollowing(true);
+            }
+        } catch (error) {
+            console.error(error);
+            addToast(t('something_went_wrong'), 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle List Modal
+    const openListModal = async (type) => {
+        setListModalType(type);
+        setListModalOpen(true);
+        setListLoading(true);
+        try {
+            const list = type === 'followers'
+                ? await getFollowers(profileId)
+                : await getFollowing(profileId);
+            setListUsers(list);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setListLoading(false);
+        }
+    };
 
     const handleFileChange = async (e) => {
         if (!isOwnProfile) return;
@@ -275,59 +344,116 @@ export default function Profile() {
                                 </button>
                             </div>
                         )}
+                        {/* Follow Stats */}
+                        <div className="flex items-center justify-center gap-6 mb-6">
+                            <div
+                                className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center min-w-[80px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() => openListModal('followers')}
+                            >
+                                <span className="block text-xl font-bold text-gray-900 dark:text-white">{stats.followersCount}</span>
+                                <span className="text-xs text-gray-500 font-medium">{t('followers')}</span>
+                            </div>
+                            <div
+                                className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center min-w-[80px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                onClick={() => openListModal('following')}
+                            >
+                                <span className="block text-xl font-bold text-gray-900 dark:text-white">{stats.followingCount}</span>
+                                <span className="text-xs text-gray-500 font-medium">{t('following_count')}</span>
+                            </div>
+                        </div>
 
-                        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-                            <div className="flex justify-between text-center">
-                                <div>
-                                    <div className="text-2xl font-bold text-green-600">{userPosts.length}</div>
-                                    <div className="text-xs text-gray-400 font-medium">{t('posts') || 'Gönderi'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-bold text-blue-600">
+                        {/* Follow / Edit Button */}
+                        {!isOwnProfile && (
+                            <div className="flex gap-2 w-full px-6 mb-6">
+                                <button
+                                    onClick={handleFollowToggle}
+                                    disabled={loading}
+                                    className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${isFollowing
+                                            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+                                            : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
+                                        }`}
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
+                                    {isFollowing ? t('unfollow') : t('follow')}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* User List Modal */}
+                        <UserListModal
+                            isOpen={listModalOpen}
+                            onClose={() => setListModalOpen(false)}
+                            title={listModalType === 'followers' ? t('followers') : t('following')}
+                            users={listUsers}
+                            loading={listLoading}
+                        />
+
+                        {/* Details section (Member since, Last seen) */}
+                        <div className="w-full border-t border-gray-100 dark:border-gray-700 pt-6 px-4">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+                                        <Leaf className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold uppercase opacity-70 mb-0.5">{t('gardener')}</p>
                                         {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
                                     </div>
                                     <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
                                 </div>
                             </div>
+                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex justify-between text-center">
+                                    <div>
+                                        <div className="text-2xl font-bold text-green-600">{userPosts.length}</div>
+                                        <div className="text-xs text-gray-400 font-medium">{t('posts') || 'Gönderi'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-blue-600">
+                                            {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
+                                        </div>
+                                        <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Right: Posts Grid */}
+                    <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <Grid className="w-5 h-5 text-gray-400" />
+                            <span>
+                                {isOwnProfile
+                                    ? (t('my_posts') || "Gönderilerim")
+                                    : (t('user_posts_title', { name: targetUser?.name || 'Kullanıcı' }) || `${targetUser?.name || 'Kullanıcı'} Gönderileri`)
+                                }
+                            </span>
+                        </h3>
+
+                        {postsLoading ? (
+                            <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
+                        ) : userPosts.length > 0 ? (
+                            <div className="columns-1 gap-6 space-y-6">
+                                {userPosts.map(post => (
+                                    <div key={post.id} className="break-inside-avoid">
+                                        <PostCard
+                                            post={{ ...post, hideAuthor: isOwnProfile }}
+                                            onViewAnalysis={() => { }}
+                                            onDelete={(deletedId) => setUserPosts(prev => prev.filter(p => p.id !== deletedId))}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
+                                <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500">{t('no_posts_yet')}</p>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
-
-                {/* Right: Posts Grid */}
-                <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <Grid className="w-5 h-5 text-gray-400" />
-                        <span>
-                            {isOwnProfile
-                                ? (t('my_posts') || "Gönderilerim")
-                                : (t('user_posts_title', { name: targetUser?.name || 'Kullanıcı' }) || `${targetUser?.name || 'Kullanıcı'} Gönderileri`)
-                            }
-                        </span>
-                    </h3>
-
-                    {postsLoading ? (
-                        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
-                    ) : userPosts.length > 0 ? (
-                        <div className="columns-1 gap-6 space-y-6">
-                            {userPosts.map(post => (
-                                <div key={post.id} className="break-inside-avoid">
-                                    <PostCard
-                                        post={{ ...post, hideAuthor: isOwnProfile }}
-                                        onViewAnalysis={() => { }}
-                                        onDelete={(deletedId) => setUserPosts(prev => prev.filter(p => p.id !== deletedId))}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
-                            <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">{t('no_posts_yet')}</p>
-                        </div>
-                    )}
-                </div>
-
             </div>
-        </div>
-    );
+            );
 }

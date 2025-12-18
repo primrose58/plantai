@@ -229,5 +229,12 @@
     "error_email_in_use": "Bu e-posta zaten kullanımda",
     "error_generic": "Bir hata oluştu",
     "daily_bot_title": "Plant AI Günlük Bilgi",
-    "delete_analysis": "Analizi Sil"
+    "delete_analysis": "Analizi Sil",
+    "follow": "Takip Et",
+    "following": "Takip Ediliyor",
+    "followers": "Takipçi",
+    "following_count": "Takip Edilen",
+    "unfollow": "Takibi Bırak",
+    "no_followers": "Henüz takipçi yok",
+    "no_following": "Henüz kimseyi takip etmiyor"
 }
