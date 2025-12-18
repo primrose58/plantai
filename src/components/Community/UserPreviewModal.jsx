@@ -92,36 +92,51 @@ export default function UserPreviewModal({ user, onClose }) {
             return;
         }
         if (followLoading) return;
+
+        console.log("Follow Toggle Initiated:", {
+            currentUser: currentUser.uid,
+            targetUser: effectiveUser.uid,
+            status: { isFollowing, isRequested }
+        });
+
         setFollowLoading(true);
 
         try {
             if (isFollowing) {
                 // Unfollow
+                console.log("Unfollowing...");
                 await unfollowUser(currentUser.uid, effectiveUser.uid);
                 setIsFollowing(false);
                 setIsRequested(false);
-                addToast(t('unfollowed_user') || 'User unfollowed', 'info');
+                addToast(t('unfollowed_user') || 'Takipten çıkıldı', 'info');
             } else if (isRequested) {
                 // Cancel Request
+                console.log("Cancelling Request...");
                 await cancelFollowRequest(currentUser.uid, effectiveUser.uid);
                 setIsRequested(false);
-                addToast(t('request_cancelled') || 'Request Cancelled', 'info');
+                addToast(t('request_cancelled') || 'İstek iptal edildi', 'info');
             } else {
                 // Send Request
+                console.log("Sending Request...", {
+                    uid: currentUser.uid,
+                    name: currentUser.displayName,
+                    photo: currentUser.photoURL
+                });
+
                 await sendFollowRequest(
                     currentUser.uid,
                     {
-                        displayName: currentUser.displayName || null,
+                        displayName: currentUser.displayName || 'Unknown User',
                         photoURL: currentUser.photoURL || null
                     },
                     effectiveUser.uid
                 );
                 setIsRequested(true);
-                addToast(t('request_sent') || 'Follow request sent', 'success');
+                addToast(t('request_sent') || 'Takip isteği gönderildi', 'success');
             }
         } catch (error) {
-            console.error(error);
-            addToast(t('error_occurred') || 'An error occurred', 'error');
+            console.error("Follow Error:", error);
+            addToast(t('error_occurred') || 'Bir hata oluştu: ' + error.message, 'error');
         } finally {
             setFollowLoading(false);
         }
@@ -263,18 +278,17 @@ export default function UserPreviewModal({ user, onClose }) {
                                             };
                                             navigate('/messages/new', { state: { targetUser: safeUser } });
                                         } else {
-                                            // Trigger toast if clicked, but visually it tells user what to do
-                                            addToast(t('must_follow_to_message') || 'You must follow this user to send a message.', 'warning');
+                                            // Trigger toast if clicked
+                                            addToast(t('must_follow_to_message') || 'Mesaj göndermek için takip etmelisin', 'info');
                                         }
                                     }}
-                                    className={`flex-1 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 ${isFollowing
-                                        ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                                    className={`flex-1 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-95 ${isFollowing
+                                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-200'
+                                        : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
                                         }`}
-                                // Note: We do NOT disable it completely so they can click and get the toast explaining why
                                 >
                                     <MessageCircle className="w-5 h-5" />
-                                    {isFollowing ? (t('send_message') || 'Send Message') : (t('must_follow') || 'Follow to Message')}
+                                    {t('send_message') || 'Mesaj Gönder'}
                                 </button>
                             )}
                         </div>
