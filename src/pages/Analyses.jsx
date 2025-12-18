@@ -166,29 +166,20 @@ export default function Analyses() {
                 {analyses.map((item) => (
                     <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-3xl shadow-sm border transition-all duration-300 overflow-hidden ${expandedId === item.id ? 'border-green-500 ring-4 ring-green-500/10 shadow-lg' : 'border-gray-100 dark:border-gray-700 hover:shadow-md'} relative group`}>
 
-                        {/* Delete Button (Absolute Top Right) */}
-                        <button
-                            onClick={(e) => handleDelete(e, item.id)}
-                            className="absolute top-4 right-4 z-10 p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-gray-100 dark:border-gray-700"
-                            title={t('delete')}
-                        >
-                            <Trash2 className="w-5 h-5" />
-                        </button>
-
                         {/* Summary Card Area (Always Visible) */}
                         <div
-                            className="p-5 flex gap-5 cursor-pointer md:items-center relative"
+                            className="p-5 flex gap-5 cursor-pointer items-center relative"
                             onClick={() => toggleExpand(item.id)}
                         >
                             <img
                                 src={item.mainImage}
                                 alt={item.plantType}
-                                className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover bg-gray-100 shadow-inner shrink-0"
+                                className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover bg-gray-100 shadow-sm shrink-0"
                             />
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-1">
-                                    <h3 className="font-bold text-lg md:text-xl text-gray-900 dark:text-white capitalize truncate">
+                                <div className="flex justify-between items-start mb-1 gap-2">
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white capitalize truncate">
                                         {item.plantType || 'Unknown Plant'}
                                     </h3>
                                     <span className="text-xs font-medium text-gray-400 flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg shrink-0">
@@ -197,42 +188,35 @@ export default function Analyses() {
                                     </span>
                                 </div>
 
-                                <p className="text-red-600 dark:text-red-400 font-bold mb-2 flex items-center gap-2">
+                                <p className="text-red-600 dark:text-red-400 font-bold mb-1 text-sm flex items-center gap-2">
                                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                                     {item.result.disease_name}
                                 </p>
 
-                                <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 md:line-clamp-1">
-                                    {item.result.description}
-                                </p>
-
-                                <div className="mt-3 flex items-center gap-4 text-xs font-bold text-gray-400">
-                                    <div className="flex items-center gap-1 text-green-600">
-                                        <CalendarCheck className="w-4 h-4" />
-                                        <span>7 Günlük Program</span>
-                                    </div>
+                                <div className="flex items-center gap-3 text-xs font-bold text-gray-400 mt-2">
+                                    <span className="text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
+                                        7 Günlük Program
+                                    </span>
                                     {item.isPublic && (
-                                        <div className="flex items-center gap-1 text-blue-500">
-                                            <Share2 className="w-4 h-4" />
-                                            <span>Paylaşıldı</span>
-                                        </div>
+                                        <span className="text-blue-500 flex items-center gap-1">
+                                            <Share2 className="w-3 h-3" />
+                                            Paylaşıldı
+                                        </span>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="absolute right-5 bottom-5 md:static md:block hidden">
-                                <ChevronDown className={`w-6 h-6 text-gray-300 transition-transform ${expandedId === item.id ? 'rotate-180' : ''}`} />
-                            </div>
+                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expandedId === item.id ? 'rotate-180' : ''}`} />
                         </div>
 
                         {/* Expanded Details Area */}
                         {expandedId === item.id && (
                             <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-6 animate-fade-in-down">
 
-                                {/* Full Description (Added) */}
+                                {/* Full Description */}
                                 <div className="mb-6">
                                     <h4 className="font-bold text-gray-900 dark:text-white mb-2">{t('description')}</h4>
-                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm">
                                         {item.result.description}
                                     </p>
                                 </div>
@@ -253,10 +237,10 @@ export default function Analyses() {
                                     <div className="space-y-3">
                                         {(item.result.is_treatable === false ? item.result.preventive_measures : item.result.treatment_steps)?.map((step, idx) => (
                                             <div key={idx} className="flex gap-4 p-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${item.result.is_treatable === false ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${item.result.is_treatable === false ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
                                                     {idx + 1}
                                                 </div>
-                                                <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed pt-1">
+                                                <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">
                                                     {step}
                                                 </p>
                                             </div>
@@ -268,9 +252,9 @@ export default function Analyses() {
                                 {item.updates && item.updates.length > 0 && (
                                     <div className="mb-6">
                                         <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wider opacity-70">Gelişmeler</h4>
-                                        <div className="flex gap-4 overflow-x-auto pb-4">
+                                        <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                                             {item.updates.map((update, uIdx) => (
-                                                <div key={uIdx} className="min-w-[200px] bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 shadow-sm">
+                                                <div key={uIdx} className="min-w-[200px] bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 shadow-sm shrink-0">
                                                     {update.imageUrl && <img src={update.imageUrl} className="w-full h-32 object-cover rounded-lg mb-2" />}
                                                     <p className="text-xs text-gray-500 mb-1">{new Date(update.createdAt?.seconds * 1000).toLocaleDateString()}</p>
                                                     <p className="text-sm text-gray-800 dark:text-gray-200">{update.note}</p>
@@ -281,32 +265,36 @@ export default function Analyses() {
                                 )}
 
                                 {/* Action Bar */}
-                                <div className="flex flex-wrap gap-3">
-                                    {item.result.is_treatable && (
-                                        <button
-                                            onClick={() => setFeedbackOpenId(feedbackOpenId === item.id ? null : item.id)}
-                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
-                                        >
-                                            <Camera className="w-5 h-5" />
-                                            {t('add_update') || "Gelişme Ekle"}
-                                        </button>
-                                    )}
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex gap-3">
+                                        {item.result.is_treatable && (
+                                            <button
+                                                onClick={() => setFeedbackOpenId(feedbackOpenId === item.id ? null : item.id)}
+                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
+                                            >
+                                                <Camera className="w-5 h-5" />
+                                                {t('add_update') || "Gelişme Ekle"}
+                                            </button>
+                                        )}
 
-                                    <div className="flex flex-col items-center">
                                         <button
                                             onClick={(e) => handleShare(e, item)}
                                             disabled={item.isPublic}
-                                            className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all w-full ${item.isPublic ? 'bg-blue-50 text-blue-400 cursor-default' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                            className={`flex-1 px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${item.isPublic ? 'bg-blue-50 text-blue-400 cursor-default' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                         >
                                             <Share2 className="w-5 h-5" />
                                             {item.isPublic ? (t('shared') || 'Paylaşıldı') : (t('share') || 'Paylaş')}
                                         </button>
-                                        {!item.isPublic && (
-                                            <span className="text-[10px] text-gray-400 mt-1">
-                                                {t('share_help_others') || "Toplulukla paylaşarak başkalarına yardımcı ol!"}
-                                            </span>
-                                        )}
                                     </div>
+
+                                    {/* Delete Button - Moved to bottom of expanded view for safety and UI cleaniness */}
+                                    <button
+                                        onClick={(e) => handleDelete(e, item.id)}
+                                        className="w-full py-3 mt-2 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        {t('delete_analysis') || "Analizi Sil"}
+                                    </button>
                                 </div>
 
                                 {/* Feedback Form */}

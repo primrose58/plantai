@@ -314,6 +314,7 @@ export default function Profile() {
                                     <PostCard
                                         post={{ ...post, hideAuthor: isOwnProfile }}
                                         onViewAnalysis={() => { }}
+                                        onDelete={(deletedId) => setUserPosts(prev => prev.filter(p => p.id !== deletedId))}
                                     />
                                 </div>
                             ))}
