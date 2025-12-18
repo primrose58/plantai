@@ -146,6 +146,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             // 2. Create Post (Pass Base64 string directly)
             await createPost(currentUser.uid, {
                 authorName: currentUser.displayName || 'Gardener',
+                userAvatar: currentUser.photoURL || currentUser.avatar || null, // Save avatar for persistence
                 content,
                 plantType: plantType || 'other',
                 image: base64Image, // This is now a string, not a File

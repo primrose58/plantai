@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaRobot, FaLightbulb, FaBug, FaLeaf, FaShareAlt } from 'react-icons/fa'; // Icons for different types
+import { Sprout, Share2, Lightbulb, Bug, Leaf } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const DailyBotCard = ({ fact }) => {
@@ -31,10 +31,10 @@ const DailyBotCard = ({ fact }) => {
 
     const getIcon = () => {
         switch (fact.type) {
-            case 'pest': return <FaBug className="text-red-500" />;
-            case 'disease': return <FaLeaf className="text-yellow-500" />;
-            case 'tip': return <FaLightbulb className="text-yellow-400" />;
-            default: return <FaRobot className="text-blue-400" />;
+            case 'pest': return <Bug className="text-red-500 w-6 h-6" />;
+            case 'disease': return <Leaf className="text-yellow-500 w-6 h-6" />;
+            case 'tip': return <Lightbulb className="text-yellow-400 w-6 h-6" />;
+            default: return <Sprout className="text-green-500 w-6 h-6" />;
         }
     };
 
@@ -47,16 +47,30 @@ const DailyBotCard = ({ fact }) => {
         }
     };
 
+    const handleShare = async () => {
+        const shareData = {
+            title: `Plant AI Daily Tip: ${fact.title}`,
+            text: fact.content,
+            url: window.location.origin
+        };
+        if (navigator.share) {
+            try { await navigator.share(shareData); } catch (e) { /* clean */ }
+        } else {
+            navigator.clipboard.writeText(fact.content);
+            alert("Copied to clipboard!");
+        }
+    };
+
     return (
         <div className={`mb-6 rounded-xl border p-4 shadow-sm relative overflow-hidden ${getBgColor()} transition-all hover:shadow-md`}>
             {/* Header Badge */}
             <div className="flex items-center gap-2 mb-3">
                 <div className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm">
-                    <FaRobot className="text-green-600 text-xl" />
+                    <Sprout className="text-green-600 w-5 h-5" />
                 </div>
                 <div>
                     <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {t('community.dailyBot', 'PlantAI Daily Log')}
+                        {t('daily_bot_title') || "Plant AI Günlük Bilgi"}
                     </h3>
                     <div className="text-xs text-gray-400">{new Date().toLocaleDateString()}</div>
                 </div>
@@ -91,9 +105,13 @@ const DailyBotCard = ({ fact }) => {
                         {fact.content}
                     </p>
 
-                    <div className="mt-auto flex justify-end">
-                        <button className="text-xs flex items-center gap-1 text-gray-500 hover:text-green-600 transition-colors">
-                            <FaShareAlt /> Share Fact
+                    <div className="mt-auto flex justify-end border-t border-gray-200 dark:border-gray-700/50 pt-3">
+                        <button
+                            onClick={handleShare}
+                            className="text-gray-500 hover:text-green-600 transition-colors flex items-center gap-1"
+                        >
+                            <Share2 className="w-5 h-5" />
+                            <span className="text-sm font-medium">{(t('share') || "paylaş").toLowerCase()}</span>
                         </button>
                     </div>
                 </div>

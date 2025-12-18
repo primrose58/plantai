@@ -145,5 +145,6 @@
   "no_account": "Don't have an account?",
   "error_invalid_credential": "Invalid email or password",
   "error_email_in_use": "Email already in use",
-  "error_generic": "An error occurred"
+  "error_generic": "An error occurred",
+  "daily_bot_title": "Plant AI Daily Log"
 }
