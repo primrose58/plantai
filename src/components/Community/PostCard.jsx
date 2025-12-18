@@ -6,8 +6,8 @@ import { MessageCircle, Heart, Share2, Trash2, Send, Edit2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { toggleLike, addComment, deletePost, updatePost } from '../../services/analysisService';
 
-import { useAuthModal } from '../../contexts/AuthModalContext';
-import { useNavigate } from 'react-router-dom';
+import { db } from '../../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailView = false, authorOverride = null }) {
     const { openLogin } = useAuthModal();
@@ -24,6 +24,32 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(post?.content || '');
 
+    // Live Author Data State
+    const [fetchedAuthor, setFetchedAuthor] = useState(null);
+
+    // Check ownership
+    const isOwner = currentUser?.uid === post?.userId;
+
+    // Fetch live author data if needed
+    useEffect(() => {
+        if (!post?.userId || isOwner || authorOverride) return;
+
+        const fetchAuthor = async () => {
+            // Basic cache or check (could be improved, but per-card fetch is requested request)
+            try {
+                const docRef = doc(db, 'users', post.userId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    setFetchedAuthor(docSnap.data());
+                }
+            } catch (err) {
+                console.error("Failed to fetch author for post", post.id, err);
+            }
+        };
+
+        fetchAuthor();
+    }, [post?.userId, isOwner, authorOverride, post.id]);
+
     const handleEditSubmit = async () => {
         try {
             await updatePost(post.id, { content: editContent });
@@ -36,7 +62,6 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
     // Safety checks
     if (!post) return null;
 
-    const isOwner = currentUser?.uid === post.userId;
     const isLiked = post.likes && currentUser && post.likes.includes(currentUser.uid);
     const likeCount = post.likes ? post.likes.length : 0;
     const commentCount = post.comments ? post.comments.length : 0;
@@ -136,6 +161,18 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
         return t(`plant_${type.toLowerCase()}`) || t(type) || type;
     };
 
+    // Determine Avatar Source Logic
+    // 1. Owner -> currentUser (highest priority live)
+    // 2. Override -> authorOverride (passed from Detail)
+    // 3. Fetched -> fetchedAuthor (live data for others)
+    // 4. Fallback -> post.userAvatar (static snapshot)
+    const avatarSrc = (() => {
+        if (isOwner && (currentUser?.photoURL || currentUser?.avatar)) return currentUser.photoURL || currentUser.avatar;
+        if (authorOverride?.photoURL || authorOverride?.avatar) return authorOverride.photoURL || authorOverride.avatar;
+        if (fetchedAuthor?.photoURL || fetchedAuthor?.avatar) return fetchedAuthor.photoURL || fetchedAuthor.avatar;
+        return post.userAvatar || `https://ui-avatars.com/api/?name=${post.authorName || 'Gardener'}&background=random`;
+    })();
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-4 animate-fade-in relative group">
             {/* ... (Edit Button Owner Only - existing code) ... */}
@@ -157,9 +194,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
                         onClick={() => onUserClick && onUserClick(post.userId)}
                     >
                         <img
-                            src={(isOwner && (currentUser?.photoURL || currentUser?.avatar))
-                                ? (currentUser.photoURL || currentUser.avatar)
-                                : (authorOverride?.photoURL || authorOverride?.avatar || post.userAvatar || `https://ui-avatars.com/api/?name=${post.authorName || 'Gardener'}&background=random`)}
+                            src={avatarSrc}
                             alt={post.authorName}
                             className="w-10 h-10 rounded-full object-cover border border-gray-200"
                         />
