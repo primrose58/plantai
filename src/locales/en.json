@@ -163,5 +163,11 @@
   "request_sent": "Follow request sent",
   "request_cancelled": "Request cancelled",
   "must_follow_to_message": "You must follow to send message",
-  "notifications": "Notifications"
+  "notifications": "Notifications",
+  "request_accepted": "Request accepted",
+  "request_rejected": "Request rejected",
+  "follow_requests": "Follow Requests",
+  "wants_to_follow": "Wants to follow you",
+  "no_notifications": "No new notifications",
+  "error_occurred": "An error occurred"
 }

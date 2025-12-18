@@ -241,5 +241,11 @@
     "request_sent": "Takip isteği gönderildi",
     "request_cancelled": "İstek iptal edildi",
     "must_follow_to_message": "Mesaj göndermek için takip etmelisiniz",
-    "notifications": "Bildirimler"
+    "notifications": "Bildirimler",
+    "request_accepted": "İstek kabul edildi",
+    "request_rejected": "İstek reddedildi",
+    "follow_requests": "Takip İstekleri",
+    "wants_to_follow": "Seni takip etmek istiyor",
+    "no_notifications": "Yeni bildirim yok",
+    "error_occurred": "Bir hata oluştu"
 }

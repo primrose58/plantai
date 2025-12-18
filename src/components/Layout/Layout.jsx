@@ -134,13 +134,31 @@ export default function Layout() {
         return () => unsubscribe();
     }, [currentUser, location.pathname, addToast, sound]);
 
+    // Listen for unread notifications (requests)
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(collection(db, 'users', currentUser.uid, 'followRequests'));
+        const unsub = onSnapshot(q, (snap) => {
+            setUnreadCount(snap.size);
+        });
+        return () => unsub();
+    }, [currentUser]);
+
     const navItems = [
-        { path: '/', icon: Home, label: t('app_name'), public: true },
-        { path: '/community', icon: Globe, label: t('community'), public: true },
-        { path: '/analyses', icon: Clock, label: t('analyses'), public: false }, // New Tab
-        { path: '/messages', icon: MessageCircle, label: t('messages'), public: false },
-        { path: '/profile', icon: User, label: t('profile'), public: false },
-        { path: '/about', icon: Info, label: t('about'), public: true },
+        { name: 'home', path: '/', icon: Home, label: t('app_name'), public: true },
+        { name: 'community', path: '/community', icon: Globe, label: t('community'), public: true },
+        { name: 'my_analyses', path: '/analyses', icon: Clock, label: t('analyses'), public: false },
+        { name: 'messages', path: '/messages', icon: MessageCircle, label: t('messages'), public: false },
+        {
+            name: 'notifications',
+            action: () => setShowNotifications(true),
+            icon: Bell,
+            badge: unreadCount > 0 ? unreadCount : null,
+            label: t('notifications'),
+            public: false
+        },
+        { name: 'profile', path: '/profile', icon: User, label: t('profile'), public: false },
+        { name: 'about', path: '/about', icon: Info, label: t('about'), public: true },
     ];
 
     const visibleNavItems = navItems.filter(item => item.public || currentUser);
@@ -161,6 +179,37 @@ export default function Layout() {
                     {visibleNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
+
+                        const Content = (
+                            <>
+                                <Icon className="w-5 h-5" />
+                                <span>{item.label}</span>
+                                {item.badge && (
+                                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                                        {item.badge}
+                                    </span>
+                                )}
+                            </>
+                        );
+
+                        if (item.action) {
+                            return (
+                                <button
+                                    key={item.name}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        item.action();
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                                        }`}
+                                >
+                                    {Content}
+                                </button>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.path}
@@ -171,8 +220,7 @@ export default function Layout() {
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
                                     }`}
                             >
-                                <Icon className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                {Content}
                             </Link>
                         );
                     })}
@@ -287,6 +335,7 @@ export default function Layout() {
                     )}
                 </nav>
             </main>
+            {showNotifications && <NotificationsModal onClose={() => setShowNotifications(false)} />}
         </div>
     );
 }
