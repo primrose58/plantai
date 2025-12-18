@@ -124,8 +124,9 @@ export const sendFollowRequest = async (currentUserId, currentUserData, targetUs
         // Add to target user's 'followRequests' subcollection
         await setDoc(doc(db, 'users', targetUserId, 'followRequests', currentUserId), {
             followerId: currentUserId,
-            followerName: currentUserData.displayName || currentUserData.name,
-            followerPhoto: currentUserData.photoURL || currentUserData.avatar,
+            // Ensure no undefined values
+            followerName: (currentUserData.displayName || currentUserData.name) || 'User',
+            followerPhoto: (currentUserData.photoURL || currentUserData.avatar) || null,
             createdAt: serverTimestamp(),
             status: 'pending'
         });
