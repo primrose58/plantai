@@ -369,8 +369,8 @@ export default function Profile() {
                                     onClick={handleFollowToggle}
                                     disabled={loading}
                                     className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${isFollowing
-                                            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
-                                            : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
+                                        ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+                                        : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
                                         }`}
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
@@ -397,22 +397,20 @@ export default function Profile() {
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-xs font-semibold uppercase opacity-70 mb-0.5">{t('gardener')}</p>
-                                        {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
                                     </div>
-                                    <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
                                 </div>
-                            </div>
-                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-                                <div className="flex justify-between text-center">
-                                    <div>
-                                        <div className="text-2xl font-bold text-green-600">{userPosts.length}</div>
-                                        <div className="text-xs text-gray-400 font-medium">{t('posts') || 'Gönderi'}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-blue-600">
-                                            {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
+                                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="flex justify-between text-center">
+                                        <div>
+                                            <div className="text-2xl font-bold text-green-600">{userPosts.length}</div>
+                                            <div className="text-xs text-gray-400 font-medium">{t('posts') || 'Gönderi'}</div>
                                         </div>
-                                        <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-blue-600">
+                                                {userPosts.reduce((acc, curr) => acc + (curr.likes?.length || 0), 0)}
+                                            </div>
+                                            <div className="text-xs text-gray-400 font-medium">{t('likes') || 'Beğeni'}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -422,7 +420,6 @@ export default function Profile() {
                     {/* Right: Posts Grid */}
                     <div className="flex-1">
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                            <Grid className="w-5 h-5 text-gray-400" />
                             <span>
                                 {isOwnProfile
                                     ? (t('my_posts') || "Gönderilerim")
