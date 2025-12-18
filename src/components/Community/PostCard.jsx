@@ -6,9 +6,11 @@ import { MessageCircle, Heart, Share2, Trash2, Send, Edit2 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { toggleLike, addComment, deletePost, updatePost } from '../../services/analysisService';
 
+import { useAuthModal } from '../../contexts/AuthModalContext';
 import { useNavigate } from 'react-router-dom';
 
-export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailView = false }) {
+export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailView = false, authorOverride = null }) {
+    const { openLogin } = useAuthModal();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
     const { currentUser } = useAuth();
@@ -157,7 +159,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
                         <img
                             src={(isOwner && (currentUser?.photoURL || currentUser?.avatar))
                                 ? (currentUser.photoURL || currentUser.avatar)
-                                : (post.userAvatar || `https://ui-avatars.com/api/?name=${post.authorName || 'Gardener'}&background=random`)}
+                                : (authorOverride?.photoURL || authorOverride?.avatar || post.userAvatar || `https://ui-avatars.com/api/?name=${post.authorName || 'Gardener'}&background=random`)}
                             alt={post.authorName}
                             className="w-10 h-10 rounded-full object-cover border border-gray-200"
                         />
@@ -321,10 +323,16 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
                             </button>
                         </form>
                     ) : (
-                        <p className="text-center text-sm text-gray-500">{t('login_to_comment')}</p>
+                        <button
+                            onClick={openLogin}
+                            className="w-full py-3 text-center text-sm text-green-600 bg-green-50 dark:bg-green-900/10 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/20 transition-colors font-medium"
+                        >
+                            {t('login_to_comment') || "Yorum yapmak için giriş yapın"}
+                        </button>
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

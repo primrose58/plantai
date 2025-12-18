@@ -17,6 +17,8 @@ export default function PostDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [author, setAuthor] = useState(null);
+
     useEffect(() => {
         if (!postId) return;
 
@@ -26,8 +28,28 @@ export default function PostDetail() {
         // Real-time listener for the specific post
         const unsubscribe = onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
-                setPost({ id: docSnap.id, ...docSnap.data() });
+                const postData = { id: docSnap.id, ...docSnap.data() };
+                setPost(postData);
                 setError(null);
+
+                // Fetch author data if we have userId
+                if (postData.userId) {
+                    // Try to get cached or real-time user data? 
+                    // Real-time is better for avatar updates.
+                    // But prevent nesting listeners too deep or creating too many.
+                    // For now, let's just do a one-time fetch or a listener. 
+                    // Listener is safer for "hesabın fotojenik görünmüyor neden" if they just updated it.
+
+                    const userRef = doc(db, 'users', postData.userId);
+                    // We don't need to unsubscribe this one strictly inside the other but it's cleaner to manage.
+                    // Let's us fetch locally for now to minimize complexity, or use onSnapshot.
+                    getDoc(userRef).then(uSnap => {
+                        if (uSnap.exists()) {
+                            setAuthor(uSnap.data());
+                        }
+                    });
+                }
+
             } else {
                 setError(t('post_not_found') || "Post not found");
                 setPost(null);
@@ -105,6 +127,7 @@ export default function PostDetail() {
                         post={post}
                         isDetailView={true} // New prop to handle specific detail view logic
                         onUserClick={(userId) => navigate(`/profile/${userId}`)}
+                        authorOverride={author}
                     />
                 </div>
             )}

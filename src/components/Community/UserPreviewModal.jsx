@@ -1,6 +1,7 @@
 import { X, MessageCircle, User as UserIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 import { startChat } from '../../services/analysisService';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -77,8 +78,7 @@ export default function UserPreviewModal({ user, onClose }) {
 
     const handleSendMessage = async () => {
         if (!currentUser) {
-            addToast(t('login_to_message'), 'info');
-            navigate('/login');
+            openLogin();
             return;
         }
         if (currentUser.uid === effectiveUser.uid) {
