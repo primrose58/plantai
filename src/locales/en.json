@@ -158,5 +158,10 @@
   "following_count": "Following",
   "unfollow": "Unfollow",
   "no_followers": "No followers yet",
-  "no_following": "Not following anyone yet"
+  "no_following": "Not following anyone yet",
+  "requested": "Requested",
+  "request_sent": "Follow request sent",
+  "request_cancelled": "Request cancelled",
+  "must_follow_to_message": "You must follow to send message",
+  "notifications": "Notifications"
 }

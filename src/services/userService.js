@@ -89,17 +89,113 @@ export const unfollowUser = async (currentUserId, targetUserId) => {
 };
 
 /**
- * Check if current user follows target user
+ * Check if current user follows target user OR has a pending request
  */
 export const checkFollowStatus = async (currentUserId, targetUserId) => {
     try {
-        if (!currentUserId || !targetUserId) return false;
-        const docRef = doc(db, 'users', currentUserId, 'following', targetUserId);
-        const docSnap = await getDoc(docRef);
-        return docSnap.exists();
+        if (!currentUserId || !targetUserId) return { isFollowing: false, isRequested: false };
+
+        // Check following
+        const followRef = doc(db, 'users', currentUserId, 'following', targetUserId);
+        const followSnap = await getDoc(followRef);
+        const isFollowing = followSnap.exists();
+
+        // Check pending request
+        // We check if a request doc exists in targetUser's notifications or a dedicated requests subcollection
+        // For simplicity, let's use a dedicated 'followRequests' subcollection on the TARGET user
+        const requestRef = doc(db, 'users', targetUserId, 'followRequests', currentUserId);
+        const requestSnap = await getDoc(requestRef);
+        const isRequested = requestSnap.exists();
+
+        return { isFollowing, isRequested };
     } catch (error) {
         console.error("Error checking follow status:", error);
-        return false;
+        return { isFollowing: false, isRequested: false };
+    }
+};
+
+/**
+ * Send Follow Request
+ */
+export const sendFollowRequest = async (currentUserId, currentUserData, targetUserId) => {
+    try {
+        if (!currentUserId || !targetUserId) throw new Error("Invalid IDs");
+
+        // Add to target user's 'followRequests' subcollection
+        await setDoc(doc(db, 'users', targetUserId, 'followRequests', currentUserId), {
+            followerId: currentUserId,
+            followerName: currentUserData.displayName || currentUserData.name,
+            followerPhoto: currentUserData.photoURL || currentUserData.avatar,
+            createdAt: serverTimestamp(),
+            status: 'pending'
+        });
+
+        // Also add to Notification system (will be implemented next, but good to prep)
+        // await addNotification(targetUserId, 'follow_request', currentUserId, ...);
+
+        return true;
+    } catch (error) {
+        console.error("Error sending follow request:", error);
+        throw error;
+    }
+};
+
+/**
+ * Cancel Follow Request (Un-request)
+ */
+export const cancelFollowRequest = async (currentUserId, targetUserId) => {
+    try {
+        await deleteDoc(doc(db, 'users', targetUserId, 'followRequests', currentUserId));
+        return true;
+    } catch (error) {
+        console.error("Error cancelling request:", error);
+        throw error;
+    }
+};
+
+/**
+ * Accept Follow Request
+ */
+export const acceptFollowRequest = async (requestId, requesterId, requesterData, currentUserId, currentUserData) => {
+    try {
+        // 1. Perform the actual Follow (Requester -> CurrentUser)
+        // Note: The requester is following the current user.
+        await followUser(requesterId, requesterData, currentUserId, currentUserData);
+
+        // 2. Delete the request
+        await deleteDoc(doc(db, 'users', currentUserId, 'followRequests', requesterId));
+
+        return true;
+    } catch (error) {
+        console.error("Error accepting request:", error);
+        throw error;
+    }
+};
+
+/**
+ * Reject Follow Request
+ */
+export const rejectFollowRequest = async (currentUserId, requesterId) => {
+    try {
+        await deleteDoc(doc(db, 'users', currentUserId, 'followRequests', requesterId));
+        return true;
+    } catch (error) {
+        console.error("Error rejecting request:", error);
+        throw error;
+    }
+};
+
+/**
+ * Get Incoming Follow Requests
+ */
+export const getFollowRequests = async (userId) => {
+    try {
+        const q = query(collection(db, 'users', userId, 'followRequests'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Error fetching requests:", error);
+        return [];
     }
 };
 
@@ -125,13 +221,33 @@ export const getUserStats = async (userId) => {
 };
 
 /**
- * Get list of followers
+ * Get list of followers with FRESH user data
  */
 export const getFollowers = async (userId) => {
     try {
         const q = query(collection(db, 'users', userId, 'followers'), orderBy('followedAt', 'desc'), limit(50));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (snapshot.empty) return [];
+
+        const followerIds = snapshot.docs.map(doc => doc.id);
+        const followers = [];
+
+        // Fetch fresh user data for each follower
+        // Note: Firestore 'in' query supports max 10 items. For >10, we'd need multiple queries or individual fetches.
+        // For simplicity in this iteration, we'll do individual fetches (or parallel).
+        // A optimized production app might use 'in' batches. 
+
+        const userPromises = followerIds.map(id => getDoc(doc(db, 'users', id)));
+        const userSnapshots = await Promise.all(userPromises);
+
+        userSnapshots.forEach(snap => {
+            if (snap.exists()) {
+                followers.push({ id: snap.id, ...snap.data() });
+            }
+        });
+
+        return followers;
     } catch (error) {
         console.error("Error fetching followers:", error);
         return [];
@@ -139,13 +255,28 @@ export const getFollowers = async (userId) => {
 };
 
 /**
- * Get list of following
+ * Get list of following with FRESH user data
  */
 export const getFollowing = async (userId) => {
     try {
         const q = query(collection(db, 'users', userId, 'following'), orderBy('followedAt', 'desc'), limit(50));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (snapshot.empty) return [];
+
+        const followingIds = snapshot.docs.map(doc => doc.id);
+        const following = [];
+
+        const userPromises = followingIds.map(id => getDoc(doc(db, 'users', id)));
+        const userSnapshots = await Promise.all(userPromises);
+
+        userSnapshots.forEach(snap => {
+            if (snap.exists()) {
+                following.push({ id: snap.id, ...snap.data() });
+            }
+        });
+
+        return following;
     } catch (error) {
         console.error("Error fetching following:", error);
         return [];

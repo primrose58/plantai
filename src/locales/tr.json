@@ -236,5 +236,10 @@
     "following_count": "Takip Edilen",
     "unfollow": "Takibi Bırak",
     "no_followers": "Henüz takipçi yok",
-    "no_following": "Henüz kimseyi takip etmiyor"
+    "no_following": "Henüz kimseyi takip etmiyor",
+    "requested": "İstek Gönderildi",
+    "request_sent": "Takip isteği gönderildi",
+    "request_cancelled": "İstek iptal edildi",
+    "must_follow_to_message": "Mesaj göndermek için takip etmelisiniz",
+    "notifications": "Bildirimler"
 }

@@ -1,4 +1,4 @@
-import { followUser, unfollowUser, checkFollowStatus, getUserStats, getFollowers, getFollowing } from '../services/userService';
+import { followUser, unfollowUser, checkFollowStatus, getUserStats, getFollowers, getFollowing, sendFollowRequest, cancelFollowRequest } from '../services/userService';
 import UserListModal from '../components/Common/UserListModal';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,7 @@ import { auth, db } from '../services/firebase';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { tr, enUS } from 'date-fns/locale';
-import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle, UserPlus, UserMinus, Users } from 'lucide-react';
+import { Camera, Save, User as UserIcon, Loader2, Grid, Leaf, Heart, MessageCircle, UserPlus, UserMinus, Users, Clock } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
@@ -32,6 +32,7 @@ export default function Profile() {
 
     // Follow System State
     const [isFollowing, setIsFollowing] = useState(false);
+    const [isRequested, setIsRequested] = useState(false);
     const [stats, setStats] = useState({ followersCount: 0, followingCount: 0 });
     const [listModalOpen, setListModalOpen] = useState(false);
     const [listModalType, setListModalType] = useState('followers'); // 'followers' or 'following'
@@ -106,8 +107,9 @@ export default function Profile() {
 
                 // 4. Check Follow Status if logged in and not own profile
                 if (currentUser && !isOwnProfile) {
-                    const status = await checkFollowStatus(currentUser.uid, profileId);
-                    setIsFollowing(status);
+                    const { isFollowing, isRequested } = await checkFollowStatus(currentUser.uid, profileId);
+                    setIsFollowing(isFollowing);
+                    setIsRequested(isRequested);
                 }
 
             } catch (err) {
@@ -119,7 +121,7 @@ export default function Profile() {
         loadData();
     }, [profileId, isOwnProfile, currentUser]);
 
-    // Handle Follow/Unfollow
+    // Handle Follow/Unfollow/Request
     const handleFollowToggle = async () => {
         if (!currentUser) {
             addToast(t('login_required'), 'info');
@@ -130,18 +132,27 @@ export default function Profile() {
 
         try {
             if (isFollowing) {
+                // Unfollow
                 await unfollowUser(currentUser.uid, profileId);
                 setStats(prev => ({ ...prev, followersCount: Math.max(0, prev.followersCount - 1) }));
                 setIsFollowing(false);
+                setIsRequested(false);
+            } else if (isRequested) {
+                // Cancel Request
+                await cancelFollowRequest(currentUser.uid, profileId);
+                setIsRequested(false);
+                addToast(t('request_cancelled') || 'Request Cancelled', 'info');
             } else {
-                await followUser(
+                // Send Request
+                // Note: User wants "Follow Request" system. 
+                // So we do NOT call followUser immediately.
+                await sendFollowRequest(
                     currentUser.uid,
                     { displayName: currentUser.displayName, photoURL: currentUser.photoURL },
-                    profileId,
-                    { displayName: targetUser?.name || targetUser?.displayName, photoURL: targetUser?.avatar || targetUser?.photoURL }
+                    profileId
                 );
-                setStats(prev => ({ ...prev, followersCount: prev.followersCount + 1 }));
-                setIsFollowing(true);
+                setIsRequested(true);
+                addToast(t('request_sent') || 'Follow request sent', 'success');
             }
         } catch (error) {
             console.error(error);
@@ -329,6 +340,12 @@ export default function Profile() {
                                             navigate('/login');
                                             return;
                                         }
+                                        // Requirement: Must be following to message
+                                        if (!isFollowing && !isOwnProfile) {
+                                            addToast(t('must_follow_to_message') || "Mesaj göndermek için takip etmelisiniz", 'warning');
+                                            return;
+                                        }
+
                                         // Pass robust user object
                                         const safeUser = {
                                             uid: targetUser.uid || profileId,
@@ -337,7 +354,10 @@ export default function Profile() {
                                         };
                                         navigate('/messages/new', { state: { targetUser: safeUser } });
                                     }}
-                                    className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                    className={`w-full font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${(!isFollowing && !isOwnProfile)
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                        }`}
                                 >
                                     <MessageCircle className="w-5 h-5" />
                                     <span>{t('send_message')}</span>
@@ -370,11 +390,17 @@ export default function Profile() {
                                     disabled={loading}
                                     className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${isFollowing
                                         ? 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
-                                        : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
+                                        : isRequested
+                                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400'
+                                            : 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/20'
                                         }`}
                                 >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
-                                    {isFollowing ? t('unfollow') : t('follow')}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                        isFollowing ? <UserMinus className="w-4 h-4" /> :
+                                            isRequested ? <Clock className="w-4 h-4" /> :
+                                                <UserPlus className="w-4 h-4" />
+                                    )}
+                                    {isFollowing ? t('unfollow') : isRequested ? (t('requested') || 'Requested') : t('follow')}
                                 </button>
                             </div>
                         )}
