@@ -1,5 +1,9 @@
 {
     "app_name": "Bitki AI",
+    "something_went_wrong": "Bir şeyler ters gitti",
+    "unexpected_error": "Beklenmedik bir hata oluştu.",
+    "reload": "Yenile",
+    "go_home": "Ana Sayfa",
     "welcome": "Bitki AI'ye Hoşgeldiniz",
     "plant_diagnosis": "Bitki Teşhisi",
     "community": "Topluluk",

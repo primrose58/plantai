@@ -1,5 +1,9 @@
 {
   "app_name": "Plant AI",
+  "something_went_wrong": "Something went wrong",
+  "unexpected_error": "An unexpected error occurred.",
+  "reload": "Reload",
+  "go_home": "Go Home",
   "welcome": "Welcome to Plant AI",
   "plant_diagnosis": "Plant Diagnosis",
   "community": "Community",
