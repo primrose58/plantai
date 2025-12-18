@@ -8,6 +8,8 @@ import { toggleLike, addComment, deletePost, updatePost } from '../../services/a
 
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuthModal } from '../../contexts/AuthModalContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailView = false, authorOverride = null }) {
     const { openLogin } = useAuthModal();
