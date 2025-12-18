@@ -158,9 +158,16 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
     // Helper for plant type translation
     const getPlantTypeLabel = (type) => {
         if (!type || type === 'Unknown') return null;
-        // Try exact match or prefix match
-        if (type.toLowerCase() === 'plant') return t('plant') || 'Bitki';
-        return t(`plant_${type.toLowerCase()}`) || t(type) || type;
+        // Try precise translation
+        const key = `plant_${type.toLowerCase().replace(/\s+/g, '_')}`; // Handle spaces if any
+        const label = t(key);
+
+        // If translation returned the key, just return the formatted type
+        if (!label || label === key) {
+            // Capitalize First Letter
+            return type.charAt(0).toUpperCase() + type.slice(1);
+        }
+        return label;
     };
 
     // Determine Avatar Source Logic

@@ -160,13 +160,15 @@ export async function createPost(userId, postData, onProgress) {
 export async function shareAnalysisToCommunity(AnalysisId, analysisData, plantType, authorName = "Gardener", authorAvatar = null) {
     try {
         // Localized Title/Content based on Plant Type and Disease
-        // In a real app we might pass the 't' function or language code, 
-        // Here we default to a smart template assuming Turkish context if widely used, or generic English
+        // Updated formatting per user request: "Plant Name (Latin Name)"
 
-        const title = `${plantType} - ${analysisData.result.disease_name}`;
+        const plantLatin = analysisData.result.plant_latin_name || analysisData.result.latin_name || '';
+        const diseaseLatin = analysisData.result.disease_latin_name || (plantLatin ? '' : analysisData.result.latin_name) || '';
+
+        const title = `${plantType}${plantLatin ? ` (${plantLatin})` : ''}`;
 
         // Use the description from AI directly as it provides the best context
-        let content = `Analiz Sonucu: ${analysisData.result.disease_name}\n\n${analysisData.result.description}`;
+        let content = `Analiz Sonucu: ${analysisData.result.disease_name}${diseaseLatin && diseaseLatin !== analysisData.result.disease_name ? ` (${diseaseLatin})` : ''}\n\n${analysisData.result.description}`;
 
         // Add Treatment Steps or Prevention Tips
         if (analysisData.result.is_treatable === false) {

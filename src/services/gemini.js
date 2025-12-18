@@ -63,8 +63,9 @@ async function executeAnalysis(images, lang, plantType) {
     {
         "status": "success",
         "plant_name": "Common Plant Name (e.g. Tomato, Rose)",
+        "plant_latin_name": "Latin Name of the Plant (e.g. Solanum lycopersicum)",
         "disease_name": "Disease Name",
-        "latin_name": "Latin Name",
+        "disease_latin_name": "Latin Name of the Disease/Pathogen (if applicable)",
         "confidence": 90,
         "urgency": 50,
         "spread_risk": 40,
