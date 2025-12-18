@@ -148,7 +148,10 @@ export default function Profile() {
                 // So we do NOT call followUser immediately.
                 await sendFollowRequest(
                     currentUser.uid,
-                    { displayName: currentUser.displayName, photoURL: currentUser.photoURL },
+                    {
+                        displayName: currentUser.displayName || null,
+                        photoURL: currentUser.photoURL || null
+                    },
                     profileId
                 );
                 setIsRequested(true);

@@ -1,4 +1,5 @@
-import { X, MessageCircle, User as UserIcon } from 'lucide-react';
+```javascript
+import { X, MessageCircle, User, UserPlus, UserCheck, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModal } from '../../contexts/AuthModalContext';
@@ -9,7 +10,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { blockUser, unblockUser, isUserBlocked } from '../../services/safetyService';
-import { checkFollowStatus } from '../../services/userService';
+import { checkFollowStatus, sendFollowRequest, cancelFollowRequest, unfollowUser } from '../../services/userService';
 
 export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
@@ -17,8 +18,10 @@ export default function UserPreviewModal({ user, onClose }) {
     const [loading, setLoading] = useState(false);
     const { t, i18n } = useTranslation();
     const { addToast } = useToast();
+    const { openLogin } = useAuthModal(); // Assuming openLogin is available from AuthModalContext
 
     const [liveUser, setLiveUser] = useState(user);
+    const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
         // Safe guard inside effect
@@ -41,12 +44,14 @@ export default function UserPreviewModal({ user, onClose }) {
     const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
 
     const [isFollowing, setIsFollowing] = useState(false);
+    const [isRequested, setIsRequested] = useState(false);
 
     useEffect(() => {
         const checkFollow = async () => {
             if (currentUser && effectiveUser) {
-                const { isFollowing } = await checkFollowStatus(currentUser.uid, effectiveUser.uid);
+                const { isFollowing, isRequested } = await checkFollowStatus(currentUser.uid, effectiveUser.uid);
                 setIsFollowing(isFollowing);
+                setIsRequested(isRequested);
             }
         };
         checkFollow();
@@ -81,6 +86,47 @@ export default function UserPreviewModal({ user, onClose }) {
         }
     };
 
+    const handleFollowToggle = async () => {
+        if (!currentUser) {
+            openLogin();
+            return;
+        }
+        if (followLoading) return;
+        setFollowLoading(true);
+
+        try {
+            if (isFollowing) {
+                // Unfollow
+                await unfollowUser(currentUser.uid, effectiveUser.uid);
+                setIsFollowing(false);
+                setIsRequested(false);
+                addToast(t('unfollowed_user') || 'User unfollowed', 'info');
+            } else if (isRequested) {
+                // Cancel Request
+                await cancelFollowRequest(currentUser.uid, effectiveUser.uid);
+                setIsRequested(false);
+                addToast(t('request_cancelled') || 'Request Cancelled', 'info');
+            } else {
+                // Send Request
+                await sendFollowRequest(
+                    currentUser.uid,
+                    {
+                        displayName: currentUser.displayName || null,
+                        photoURL: currentUser.photoURL || null
+                    },
+                    effectiveUser.uid
+                );
+                setIsRequested(true);
+                addToast(t('request_sent') || 'Follow request sent', 'success');
+            }
+        } catch (error) {
+            console.error(error);
+            addToast(t('error_occurred') || 'An error occurred', 'error');
+        } finally {
+            setFollowLoading(false);
+        }
+    };
+
     const isOnline = (u) => {
         if (!u?.lastSeen || !u.lastSeen.seconds) return false;
         return (Date.now() - u.lastSeen.seconds * 1000) < 3 * 60 * 1000;
@@ -104,7 +150,7 @@ export default function UserPreviewModal({ user, onClose }) {
             // Check if chat already exists
             // We can check this by querying 'chats' where participants contains both IDs
             // But simpler to just navigate to a "new" route and let the Chat component handle the check/creation
-            // This avoids double filtering logic here. 
+            // This avoids double filtering logic here.
             // We'll navigate to /messages/new?userId=... or use state
 
             // However, to be nice, let's try to find it first so we don't show "New Chat" if real one exists
@@ -139,19 +185,19 @@ export default function UserPreviewModal({ user, onClose }) {
                 <div className="flex flex-col items-center relative">
                     <img
                         src={effectiveUser.photoURL || effectiveUser.avatar || `https://ui-avatars.com/api/?name=${effectiveUser.name}`}
-                        alt={effectiveUser.name}
-                        className="w-24 h-24 rounded-full object-cover mb-4 shadow-lg border-4 border-green-50 dark:border-green-900"
-                    />
+alt = { effectiveUser.name }
+className = "w-24 h-24 rounded-full object-cover mb-4 shadow-lg border-4 border-green-50 dark:border-green-900"
+    />
 
-                    {/* Status Indicator */}
-                    <div className={`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(effectiveUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isOnline(effectiveUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                        {isOnline(effectiveUser) ? 'Online' : 'Offline'}
-                    </div>
+    {/* Status Indicator */ }
+    < div className = {`absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold border-2 border-white dark:border-gray-800 flex items-center gap-1 ${isOnline(effectiveUser) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        <div className={`w-2 h-2 rounded-full ${isOnline(effectiveUser) ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+{ isOnline(effectiveUser) ? 'Online' : 'Offline' }
+                    </div >
 
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{effectiveUser.name || 'User'}</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
-                        <UserIcon className="w-3 h-3" />
+                        <User className="w-3 h-3" />
                         <span>
                             {t('joined') || 'Katılma Tarihi'}: {effectiveUser.createdAt?.seconds
                                 ? new Date(effectiveUser.createdAt.seconds * 1000).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long', year: 'numeric' })
@@ -167,46 +213,87 @@ export default function UserPreviewModal({ user, onClose }) {
                             }}
                             className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-300 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
                         >
-                            <UserIcon className="w-5 h-5" />
+                            <User className="w-5 h-5" />
                             {t('view_profile') || "Profili Gör"}
                         </button>
 
-                        <button
-                            onClick={async () => {
-                                if (isFollowing) {
-                                    // Navigate to messages
-                                    onClose();
-                                    const safeUser = {
-                                        uid: effectiveUser.uid,
-                                        name: effectiveUser.name || effectiveUser.displayName || 'User',
-                                        photoURL: effectiveUser.photoURL || effectiveUser.avatar || null
-                                    };
-                                    navigate('/messages/new', { state: { targetUser: safeUser } });
-                                } else {
-                                    addToast(t('must_follow_to_message'), 'warning');
-                                }
-                            }}
-                            className={`w-full font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 ${isFollowing
-                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                                }`}
-                            disabled={!isFollowing}
-                        >
-                            <MessageCircle className="w-5 h-5" />
-                            {t('send_message')}
-                        </button>
+                        {/* Actions */}
+                        <div className="flex gap-3 w-full">
+                            {/* Follow Button */}
+                            {currentUser && currentUser.uid !== effectiveUser.uid && (
+                                <button
+                                    onClick={handleFollowToggle}
+                                    disabled={followLoading}
+                                    className={`flex-1 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 ${
+                                        isFollowing
+                                        ? 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-white'
+                                        : isRequested
+                                            ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'
+                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                    }`}
+                                >
+                                    {isFollowing ? (
+                                        <>
+                                            <UserCheck className="w-5 h-5" />
+                                            {t('following') || 'Following'}
+                                        </>
+                                    ) : isRequested ? (
+                                        <>
+                                            <Clock className="w-5 h-5" />
+                                            {t('requested') || 'Requested'}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UserPlus className="w-5 h-5" />
+                                            {t('follow') || 'Follow'}
+                                        </>
+                                    )}
+                                </button>
+                            )}
 
+                            {/* Message Button - Conditional UI */}
+                            {currentUser && currentUser.uid !== effectiveUser.uid && (
+                             <button
+                                onClick={async () => {
+                                    if (isFollowing) {
+                                         onClose();
+                                         const safeUser = {
+                                             uid: effectiveUser.uid,
+                                             name: effectiveUser.name || effectiveUser.displayName || 'User',
+                                             photoURL: effectiveUser.photoURL || effectiveUser.avatar || null
+                                         };
+                                         navigate('/messages/new', { state: { targetUser: safeUser } });
+                                    } else {
+                                        // Trigger toast if clicked, but visually it tells user what to do
+                                        addToast(t('must_follow_to_message') || 'You must follow this user to send a message.', 'warning');
+                                    }
+                                }}
+                                className={`flex-1 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 ${
+                                    isFollowing
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                                }`}
+                                // Note: We do NOT disable it completely so they can click and get the toast explaining why
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                                {isFollowing ? (t('send_message') || 'Send Message') : (t('must_follow') || 'Follow to Message')}
+                            </button>
+                            )}
+                        </div>
+
+                        {/* Block Button (User can block regardless) */}
                         {currentUser && currentUser.uid !== effectiveUser.uid && (
                             <button
                                 onClick={handleToggleBlock}
                                 className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isBlocked ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'text-red-500 hover:bg-red-50 border border-red-100'}`}
                             >
-                                {isBlocked ? (t('unblock_user') || 'Engeli Kaldır') : (t('block_user') || 'Kullanıcıyı Engelle')}
+                                {isBlocked ? (t('unblock_user') || 'Unblock User') : (t('block_user') || 'Block User')}
                             </button>
                         )}
                     </div>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 }
+```

@@ -247,5 +247,6 @@
     "follow_requests": "Takip İstekleri",
     "wants_to_follow": "Seni takip etmek istiyor",
     "no_notifications": "Yeni bildirim yok",
-    "error_occurred": "Bir hata oluştu"
+    "error_occurred": "Bir hata oluştu",
+    "must_follow": "Mesaj İçin Takip Et"
 }

@@ -169,5 +169,6 @@
   "follow_requests": "Follow Requests",
   "wants_to_follow": "Wants to follow you",
   "no_notifications": "No new notifications",
-  "error_occurred": "An error occurred"
+  "error_occurred": "An error occurred",
+  "must_follow": "Follow to Message"
 }
