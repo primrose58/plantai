@@ -34,7 +34,11 @@ export default function Layout() {
     };
 
     // Dark Mode Logic
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [theme, setTheme] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved) return saved;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    });
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -142,7 +146,7 @@ export default function Layout() {
     const visibleNavItems = navItems.filter(item => item.public || currentUser);
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
+        <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
                 <Link to="/" onClick={() => window.scrollTo(0, 0)} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -249,7 +253,7 @@ export default function Layout() {
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 pb-24 md:pb-8 scroll-smooth relative" id="main-scroll">
+                <div className="flex-1 overflow-y-auto w-full p-4 md:p-8 pb-32 md:pb-8 scroll-smooth relative" id="main-scroll">
                     <div className="w-full h-full flex flex-col">
                         <ErrorBoundary>
                             <Outlet />
@@ -267,18 +271,16 @@ export default function Layout() {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`flex flex-col items-center justify-center p-2 rounded-lg ${isActive ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                                className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all ${isActive ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500'
                                     }`}
                             >
-                                <Icon className={`w-6 h-6 ${isActive ? 'fill-current' : ''}`} />
-                                <span className="text-xs mt-1 font-medium">{item.label}</span>
+                                <Icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} />
                             </Link>
                         );
                     })}
                     {!currentUser && (
-                        <Link to="/login" className="flex flex-col items-center justify-center p-2 text-gray-500">
-                            <LogIn className="w-6 h-6" />
-                            <span className="text-xs mt-1 font-medium">{t('login')}</span>
+                        <Link to="/login" className="flex flex-col items-center justify-center p-3 text-gray-400">
+                            <LogIn className="w-7 h-7" />
                         </Link>
                     )}
                 </nav>
