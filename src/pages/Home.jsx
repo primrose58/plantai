@@ -27,9 +27,13 @@ export default function Home() {
     const [isSaved, setIsSaved] = useState(false);
     const [showCamera, setShowCamera] = useState(false); // Camera Modal State
 
-    // Restore state
+    // Restore state or Reset
     useEffect(() => {
-        if (location.state?.restoredResult) {
+        if (location.state?.refreshId) {
+            resetScan();
+            // Clear history state to prevent loop if desired, but timestamp check handles it naturally
+            // We just let it run once per unique click (since component re-renders)
+        } else if (location.state?.restoredResult) {
             setResult(location.state.restoredResult);
             setStep('result');
             if (location.state?.restoredImages) {

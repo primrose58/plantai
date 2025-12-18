@@ -149,7 +149,7 @@ export default function Layout() {
         <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
-                <Link to="/" onClick={() => window.scrollTo(0, 0)} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <Sprout className="w-8 h-8 text-green-600" />
                     <h1 className="text-2xl font-bold tracking-tight">
                         <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -165,6 +165,7 @@ export default function Layout() {
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                state={{ refreshId: new Date().getTime() }}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
                                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
@@ -241,7 +242,7 @@ export default function Layout() {
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Mobile Header for Lang Switch & Logo */}
                 <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
-                    <Link to="/" onClick={() => window.scrollTo(0, 0)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg">
                             <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -271,6 +272,7 @@ export default function Layout() {
                             <Link
                                 key={item.path}
                                 to={item.path}
+                                state={{ refreshId: new Date().getTime() }}
                                 className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all ${isActive ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500'
                                     }`}
                             >
