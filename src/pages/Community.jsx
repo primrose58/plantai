@@ -8,7 +8,10 @@ import CreatePostModal from '../components/Community/CreatePostModal';
 import UserPreviewModal from '../components/Community/UserPreviewModal';
 import { Loader2, Plus, Search, ChevronDown, X } from 'lucide-react';
 import { PLANT_TYPES } from '../constants/plantData';
+import { PLANT_TYPES } from '../constants/plantData';
 import PageLoader from '../components/Common/PageLoader';
+import DailyBotCard from '../components/Community/DailyBotCard';
+import { getDailyPost } from '../services/dailyBotService';
 
 // Analysis Modal Component
 function AnalysisDetailModal({ analysisId, onClose }) {
@@ -140,6 +143,7 @@ export default function Community() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [viewAnalysisId, setViewAnalysisId] = useState(null); // New state for Analysis Modal
+    const [dailyFact, setDailyFact] = useState(null);
 
     // Filter State
     const [filterType, setFilterType] = useState('All');
@@ -204,6 +208,15 @@ export default function Community() {
         // Cleanup
         return () => unsubscribe();
     }, [filterType]);
+
+    // Fetch Daily Fact
+    useEffect(() => {
+        async function loadDaily() {
+            const fact = await getDailyPost();
+            if (fact) setDailyFact(fact);
+        }
+        loadDaily();
+    }, []);
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-20 p-4">
@@ -287,28 +300,33 @@ export default function Community() {
 
             {loading ? (
                 <PageLoader />
-            ) : posts.length > 0 ? (
-                <div className="space-y-6">
-                    {posts.map(post => (
-                        <PostCard
-                            key={post.id}
-                            post={post}
-                            onViewAnalysis={(id) => setViewAnalysisId(id)}
-                            onUserClick={(userId) => {
-                                // Create minimal user object for preview
-                                setSelectedUser({
-                                    id: userId,
-                                    name: post.authorName || 'Gardener',
-                                    avatar: post.userAvatar
-                                });
-                            }}
-                        />
-                    ))}
-                </div>
             ) : (
-                <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-                    <p className="text-lg mb-2">{t('no_posts_yet')}</p>
-                    <p className="text-sm">{t('be_the_first')}</p>
+                <div className="space-y-6">
+                    {/* Daily Bot Card */}
+                    {dailyFact && <DailyBotCard fact={dailyFact} />}
+
+                    {posts.length > 0 ? (
+                        posts.map(post => (
+                            <PostCard
+                                key={post.id}
+                                post={post}
+                                onViewAnalysis={(id) => setViewAnalysisId(id)}
+                                onUserClick={(userId) => {
+                                    // Create minimal user object for preview
+                                    setSelectedUser({
+                                        id: userId,
+                                        name: post.authorName || 'Gardener',
+                                        avatar: post.userAvatar
+                                    });
+                                }}
+                            />
+                        ))
+                    ) : (
+                        <div className="text-center py-20 text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <p className="text-lg mb-2">{t('no_posts_yet')}</p>
+                            <p className="text-sm">{t('be_the_first')}</p>
+                        </div>
+                    )}
                 </div>
             )}
 

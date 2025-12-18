@@ -1,0 +1,30 @@
+6bf724e fix: Infinite loading in Messages.jsx if currentUser is null
+5eb777c fix: i18n crash in UserPreviewModal
+7369a47 feat: UserPreviewModal Enhancements (Level, Profile Button Fix) & Auth Data Sync
+359b510 fix: Remove missing AnalysisDetailModal to fix build
+838b402 fix: Community.jsx crash (missing import), Messages.jsx infinite load, PostCard style tweaks
+4851ea9 style: Revert Online Status dot, Refine Profile/Community Level UI layout
+c5340d3 fix: Profile inputs, Community Badges (lazy load), Messages/About crash fixes
+8087edd feat: Gamification UI overhaul - 50 levels, sidebar profile, post badges, tiered colors
+6171f49 fix: restored Analyses logic, prevented Messages crash, fixed Profile avatar
+e4fe2e3 fix: restored state logic in Community.jsx and fixed event handler name in Profile.jsx
+e7118ab fix: restored missing imports (useNavigate, PageLoader) in Profile.jsx
+06a6e54 fix: restored missing state and logic in Profile.jsx
+6aa40e4 fix: removed undefined Router wrapper preventing app launch
+dc5cb9a feat: added skeleton loaders for community feed
+983078e feat: implemented advanced 50-level gamification system
+96ee48f feat: added gamification levels and profile xp card
+7646d26 fix: restore missing export and improve community toasts
+a28fa94 fix: added missing sidebar context and pages
+75a0ecf feat: added toast notification system
+47aa6b5 feat: frontend UI for dynamic schedule and progress analysis
+af29e57 feat: proper advanced treatment and progress api
+27b27e4 fix: Cascade delete for shared posts and plant localization
+59675b4 feat: Add scientific name to analysis and treatment details to shared posts
+5e587eb fix: Analyses description expansion, localization keys, and plant ID prompt
+168dda1 fix: Full restore of Register.jsx with Firestore sync
+3f9f3f2 fix: Register syntax correction (remove extra brace)
+6d68f4c fix: Register syntax and add AuthContext user healing
+fc5b1da fix: Create Firestore user document on registration
+d901235 fix: Optimize voice message waveform colors for all themes
+af6f3ee fix: Improve voice message text/waveform contrast

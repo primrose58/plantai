@@ -191,3 +191,66 @@ async function executeAnalysis(images, lang, plantType) {
         }
     }
 }
+
+/**
+ * Generates a random daily plant/pest/disease fact.
+ * @param {string} lang - 'tr' or 'en'
+ */
+export async function generateDailyPlantFact(lang = 'tr') {
+    const topics = [
+        "A common garden pest (e.g., aphids, spider mites)",
+        "A fascinating fungal disease (e.g., powdery mildew)",
+        "An interesting beneficial insect (e.g., ladybugs)",
+        "A weird or cool plant adaptation",
+        "A tip for organic gardening"
+    ];
+    // Randomly select a topic to ensure variety
+    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+
+    const promptText = `
+    Generate a short, engaging "Daily Plant Fact" for a community of gardeners.
+    Topic: ${randomTopic}
+    Language: ${lang === 'en' ? 'ENGLISH' : 'TURKISH'}
+
+    The tone should be fun, educational, and slightly informal (like a friendly bot).
+    
+    Return a VALID JSON object with this structure:
+    {
+        "title": "Catchy Title",
+        "content": "One or two short paragraphs of interesting info. No markdown.",
+        "imageKeyword": "A precise English keyword to search for an image (e.g. 'ladybug leaf', 'powdery mildew rose')",
+        "type": "tip" | "pest" | "disease" | "fun_fact"
+    }
+    
+    Ensure the content is accurate but simple to read.
+    Return ONLY valid raw JSON (no markdown block).
+    `;
+
+    try {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error("API Key missing");
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const result = await model.generateContent(promptText);
+        const response = await result.response;
+        const text = response.text();
+
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanText);
+
+    } catch (error) {
+        console.error("Daily fact generation failed:", error);
+        // Fallback static data in case of error
+        return {
+            title: lang === 'tr' ? "Bitki Dostu İpucu" : "Plant Friendly Tip",
+            content: lang === 'tr' ?
+                "Bitkilerinizi sabah erken saatlerde sulamak, suyun buharlaşmadan köklere ulaşmasını sağlar." :
+                "Watering your plants early in the morning ensures water reaches the roots before evaporating.",
+            imageKeyword: "watering plants",
+            type: "tip"
+        };
+    }
+}
+
