@@ -493,7 +493,7 @@ export default function Profile() {
                 // Pass appropriate action handler
                 actionLabel={
                     isOwnProfile
-                        ? (listModalType === 'following' ? (t('unfollow') || 'Takipten Çık') : (t('remove') || 'Çıkar'))
+                        ? (listModalType === 'following' ? (t('unfollow') || 'Takipten Çıkar') : (t('remove') || 'Takipten Çıkar'))
                         : null
                 }
                 onAction={
