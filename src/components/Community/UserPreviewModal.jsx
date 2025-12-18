@@ -14,7 +14,7 @@ export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { addToast } = useToast();
 
     const [liveUser, setLiveUser] = useState(user);
