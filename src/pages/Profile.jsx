@@ -416,41 +416,42 @@ export default function Profile() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Right: Posts Grid */}
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                            <span>
-                                {isOwnProfile
-                                    ? (t('my_posts') || "Gönderilerim")
-                                    : (t('user_posts_title', { name: targetUser?.name || 'Kullanıcı' }) || `${targetUser?.name || 'Kullanıcı'} Gönderileri`)
-                                }
-                            </span>
-                        </h3>
-
-                        {postsLoading ? (
-                            <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
-                        ) : userPosts.length > 0 ? (
-                            <div className="columns-1 gap-6 space-y-6">
-                                {userPosts.map(post => (
-                                    <div key={post.id} className="break-inside-avoid">
-                                        <PostCard
-                                            post={{ ...post, hideAuthor: isOwnProfile }}
-                                            onViewAnalysis={() => { }}
-                                            onDelete={(deletedId) => setUserPosts(prev => prev.filter(p => p.id !== deletedId))}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
-                                <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-500">{t('no_posts_yet')}</p>
-                            </div>
-                        )}
-                    </div>
-
                 </div>
+
+                {/* Right: Posts Grid */}
+                <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                        <span>
+                            {isOwnProfile
+                                ? (t('my_posts') || "Gönderilerim")
+                                : (t('user_posts_title', { name: targetUser?.name || 'Kullanıcı' }) || `${targetUser?.name || 'Kullanıcı'} Gönderileri`)
+                            }
+                        </span>
+                    </h3>
+
+                    {postsLoading ? (
+                        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-gray-300" /></div>
+                    ) : userPosts.length > 0 ? (
+                        <div className="columns-1 gap-6 space-y-6">
+                            {userPosts.map(post => (
+                                <div key={post.id} className="break-inside-avoid">
+                                    <PostCard
+                                        post={{ ...post, hideAuthor: isOwnProfile }}
+                                        onViewAnalysis={() => { }}
+                                        onDelete={(deletedId) => setUserPosts(prev => prev.filter(p => p.id !== deletedId))}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
+                            <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">{t('no_posts_yet')}</p>
+                        </div>
+                    )}
+                </div>
+
             </div>
-            );
+        </div>
+    );
 }
