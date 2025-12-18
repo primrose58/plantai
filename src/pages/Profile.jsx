@@ -217,8 +217,10 @@ export default function Profile() {
             setAvatar(base64Avatar);
             await setDoc(doc(db, 'users', currentUser.uid), {
                 avatar: base64Avatar,
+                photoURL: base64Avatar, // Sync both
                 email: currentUser.email,
                 name: name || currentUser.displayName,
+                displayName: name || currentUser.displayName, // Sync both
                 updatedAt: new Date()
             }, { merge: true });
 
@@ -244,7 +246,11 @@ export default function Profile() {
         setLoading(true);
         try {
             await updateProfile(auth.currentUser, { displayName: name });
-            await setDoc(doc(db, 'users', currentUser.uid), { name: name, updatedAt: new Date() }, { merge: true });
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                name: name,
+                displayName: name, // Sync both
+                updatedAt: new Date()
+            }, { merge: true });
 
             // Sync posts
             updateUserPostsName(currentUser.uid, name, avatar);

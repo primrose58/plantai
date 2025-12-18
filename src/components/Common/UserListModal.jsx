@@ -53,13 +53,13 @@ const UserListModal = ({ isOpen, onClose, title, users, loading }) => {
                                 className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl cursor-pointer transition-colors"
                             >
                                 <img
-                                    src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=random`}
-                                    alt={user.displayName}
+                                    src={user.photoURL || user.avatar || `https://ui-avatars.com/api/?name=${user.displayName || user.name || 'User'}&background=random`}
+                                    alt={user.displayName || user.name}
                                     className="w-12 h-12 rounded-full object-cover border border-gray-100 dark:border-gray-700"
                                 />
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-bold text-gray-900 dark:text-white truncate">
-                                        {user.displayName || 'Unknown User'}
+                                        {user.displayName || user.name || 'Unknown User'}
                                     </h4>
                                     {/* Optional: Add bio or username if available */}
                                 </div>
