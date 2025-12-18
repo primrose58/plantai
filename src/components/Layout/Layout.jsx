@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp }
 
 import {
     Home,
-    Users,
+    Globe, // Changed from Users
     MessageCircle,
     User,
     LogOut,
@@ -16,7 +16,7 @@ import {
     Info,
     Sun,
     Moon,
-    Clock // Import Clock
+    Clock
 } from 'lucide-react';
 import ErrorBoundary from '../ErrorBoundary';
 
@@ -136,7 +136,7 @@ export default function Layout() {
 
     const navItems = [
         { path: '/', icon: Home, label: t('app_name'), public: true },
-        { path: '/community', icon: Users, label: t('community'), public: true },
+        { path: '/community', icon: Globe, label: t('community'), public: true },
         { path: '/analyses', icon: Clock, label: t('analyses'), public: false }, // New Tab
         { path: '/messages', icon: MessageCircle, label: t('messages'), public: false },
         { path: '/profile', icon: User, label: t('profile'), public: false },
