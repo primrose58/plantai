@@ -189,8 +189,9 @@ export default function Community() {
             // Client-side Sort (Robustness)
             // Even though 'All' comes sorted, sorting again is cheap and ensures consistency
             postsData.sort((a, b) => {
-                const timeA = a.createdAt?.seconds || 0;
-                const timeB = b.createdAt?.seconds || 0;
+                // If createdAt is null (local pending write), treat it as NOW so it stays at top
+                const timeA = a.createdAt?.seconds || (Date.now() / 1000);
+                const timeB = b.createdAt?.seconds || (Date.now() / 1000);
                 return timeB - timeA;
             });
 

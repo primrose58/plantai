@@ -129,12 +129,16 @@ export default function Home() {
 
         setIsSaving(true);
         try {
-            const docId = await saveAnalysis(currentUser.uid, plantType, images, result);
+            // Use user input, or AI detected name, or localized unknown
+            const finalPlantType = plantType || result.plant_name || t('unknown_plant') || 'Unknown Plant';
+
+            const docId = await saveAnalysis(currentUser.uid, finalPlantType, images, result);
             setIsSaved(true);
             addToast(t('treatment_started') || "Tedavi süreci başlatıldı!", "success");
 
             // Redirect to Analyses with onboarding flag
             setTimeout(() => {
+                setIsSaving(false); // Clear loading state before unmount/redirect
                 navigate('/analyses', {
                     state: {
                         showTreatmentGuide: true,

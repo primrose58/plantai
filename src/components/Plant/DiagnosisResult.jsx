@@ -32,7 +32,12 @@ export default function DiagnosisResult({ result, onReset }) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-3xl font-bold">{result.disease_name}</h2>
-                        <p className="opacity-90 italic text-lg">{result.latin_name}</p>
+                        <div className="flex flex-col">
+                            {result.plant_name && (
+                                <span className="text-lg font-medium opacity-90">{result.plant_name}</span>
+                            )}
+                            <span className="opacity-75 italic text-sm">{result.latin_name}</span>
+                        </div>
                     </div>
                     <div className="flex flex-col items-end">
                         <div className="text-2xl font-bold">{result.confidence}%</div>

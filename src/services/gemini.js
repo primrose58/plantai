@@ -62,6 +62,7 @@ async function executeAnalysis(images, lang, plantType) {
     3. If confident, return a valid JSON object:
     {
         "status": "success",
+        "plant_name": "Common Plant Name (e.g. Tomato, Rose)",
         "disease_name": "Disease Name",
         "latin_name": "Latin Name",
         "confidence": 90,
