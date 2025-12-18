@@ -22,6 +22,7 @@ import {
     Bell
 } from 'lucide-react';
 import ErrorBoundary from '../ErrorBoundary';
+import NotificationsModal from '../Common/NotificationsModal';
 
 import { useState, useEffect } from 'react';
 
