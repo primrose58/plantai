@@ -250,5 +250,9 @@
     "request_occurred": "Bir hata oluştu",
     "must_follow": "Mesaj İçin Takip Et",
     "remove": "Takipten Çıkar",
-    "unfollow": "Takipten Çıkar"
+    "unfollow": "Takipten Çıkar",
+    "confirm_remove_follower": "Bu takipçiyi listenizden çıkarmak istediğinize emin misiniz?",
+    "confirm_unfollow": "Takipten çıkmak istediğinize emin misiniz?",
+    "follower_removed": "Takipçi çıkarıldı",
+    "unfollowed_user": "Takipten çıkıldı"
 }
