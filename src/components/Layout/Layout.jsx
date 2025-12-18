@@ -32,6 +32,10 @@ export default function Layout() {
     const navigate = useNavigate();
     const { addToast } = useToast();
 
+    // Notifications State
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
     const toggleLang = () => {
         i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en');
     };
