@@ -254,7 +254,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
                     className="text-gray-500 hover:text-green-600 transition-colors flex items-center gap-1"
                 >
                     <Share2 className="w-5 h-5" />
-                    <span className="text-sm hidden sm:inline">{t('share') || "Paylaş"}</span>
+                    <span className="text-sm hidden sm:inline">{(t('share') || "paylaş").toLowerCase()}</span>
                 </button>
             </div>
 

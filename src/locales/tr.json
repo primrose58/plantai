@@ -212,5 +212,6 @@
     "description": "Açıklama",
     "urgency": "Aciliyet",
     "spread_risk": "Yayılma Riski",
-    "new_scan": "Yeni Tarama"
+    "new_scan": "Yeni Tarama",
+    "back_to_community": "Topluluğa Dön"
 }

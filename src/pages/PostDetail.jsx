@@ -82,7 +82,7 @@ export default function PostDetail() {
                     <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                 </button>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {t('post_details') || "Post Details"}
+                    {t('back_to_community') || "Topluluğa Dön"}
                 </h1>
             </div>
 
