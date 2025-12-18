@@ -333,35 +333,22 @@ export default function Profile() {
                                         : t('unknown_date')}
                                 </p>
 
-                                <button
-                                    onClick={() => {
-                                        if (!currentUser) {
-                                            addToast(t('login_to_message') || "Please login to send messages", 'info');
-                                            navigate('/login');
-                                            return;
-                                        }
-                                        // Requirement: Must be following to message
-                                        if (!isFollowing && !isOwnProfile) {
-                                            addToast(t('must_follow_to_message') || "Mesaj göndermek için takip etmelisiniz", 'warning');
-                                            return;
-                                        }
-
-                                        // Pass robust user object
-                                        const safeUser = {
-                                            uid: targetUser.uid || profileId,
-                                            name: targetUser.name || targetUser.displayName || (userPosts.length > 0 && userPosts[0].authorName) || 'Gardener',
-                                            photoURL: targetUser.photoURL || targetUser.avatar || null
-                                        };
-                                        navigate('/messages/new', { state: { targetUser: safeUser } });
-                                    }}
-                                    className={`w-full font-bold py-3 rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${(!isFollowing && !isOwnProfile)
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
-                                            : 'bg-green-600 text-white hover:bg-green-700'
-                                        }`}
-                                >
-                                    <MessageCircle className="w-5 h-5" />
-                                    <span>{t('send_message')}</span>
-                                </button>
+                                {isFollowing && (
+                                    <button
+                                        onClick={() => {
+                                            const safeUser = {
+                                                uid: targetUser.uid || profileId,
+                                                name: targetUser.name || targetUser.displayName || (userPosts.length > 0 && userPosts[0].authorName) || 'Gardener',
+                                                photoURL: targetUser.photoURL || targetUser.avatar || null
+                                            };
+                                            navigate('/messages/new', { state: { targetUser: safeUser } });
+                                        }}
+                                        className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="w-5 h-5" />
+                                        <span>{t('send_message')}</span>
+                                    </button>
+                                )}
                             </div>
                         )}
                         {/* Follow Stats */}

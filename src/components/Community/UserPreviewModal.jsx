@@ -9,6 +9,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { blockUser, unblockUser, isUserBlocked } from '../../services/safetyService';
+import { checkFollowStatus } from '../../services/userService';
 
 export default function UserPreviewModal({ user, onClose }) {
     const { currentUser } = useAuth();
@@ -38,6 +39,18 @@ export default function UserPreviewModal({ user, onClose }) {
 
     // Derived state or helpers
     const effectiveUser = user ? { ...user, ...liveUser, uid: liveUser?.uid || user.uid || user.id } : null;
+
+    const [isFollowing, setIsFollowing] = useState(false);
+
+    useEffect(() => {
+        const checkFollow = async () => {
+            if (currentUser && effectiveUser) {
+                const { isFollowing } = await checkFollowStatus(currentUser.uid, effectiveUser.uid);
+                setIsFollowing(isFollowing);
+            }
+        };
+        checkFollow();
+    }, [currentUser, effectiveUser]);
 
     // ... inside component ...
     const [isBlocked, setIsBlocked] = useState(false);
@@ -159,11 +172,28 @@ export default function UserPreviewModal({ user, onClose }) {
                         </button>
 
                         <button
-                            onClick={handleSendMessage}
-                            disabled={loading || isBlocked} // Disable if blocked
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 disabled:opacity-70"
+                            onClick={async () => {
+                                if (isFollowing) {
+                                    // Navigate to messages
+                                    onClose();
+                                    const safeUser = {
+                                        uid: effectiveUser.uid,
+                                        name: effectiveUser.name || effectiveUser.displayName || 'User',
+                                        photoURL: effectiveUser.photoURL || effectiveUser.avatar || null
+                                    };
+                                    navigate('/messages/new', { state: { targetUser: safeUser } });
+                                } else {
+                                    addToast(t('must_follow_to_message'), 'warning');
+                                }
+                            }}
+                            className={`w-full font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 ${isFollowing
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                                }`}
+                            disabled={!isFollowing}
                         >
-                            {loading ? (t('starting_chat') || 'Başlatılıyor...') : <> <MessageCircle className="w-5 h-5" /> {t('send_message') || 'Mesaj Gönder'} </>}
+                            <MessageCircle className="w-5 h-5" />
+                            {t('send_message')}
                         </button>
 
                         {currentUser && currentUser.uid !== effectiveUser.uid && (
