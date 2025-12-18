@@ -110,7 +110,7 @@ export default function PostCard({ post, onUserClick, onViewAnalysis, isDetailVi
         const shareData = {
             title: `Plant AI - ${post.title || post.authorName}`,
             text: post.content,
-            url: window.location.origin + '/community/post/' + post.id
+            url: window.location.origin + '/#/community/post/' + post.id
         };
 
         if (navigator.share) {
