@@ -177,39 +177,41 @@ export default function Analyses() {
                                 className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover bg-gray-100 shadow-sm shrink-0"
                             />
 
-                            <div className="flex justify-between items-start mb-2 gap-2">
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight break-words">
-                                        {item.plantType || 'Unknown Plant'}
-                                    </h3>
-                                    {/* Latin Name Display */}
-                                    {(item.result.plant_latin_name || item.result.latin_name) && (
-                                        <p className="text-sm text-gray-500 italic font-medium mt-0.5">
-                                            ({item.result.plant_latin_name || item.result.latin_name})
-                                        </p>
+                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                                <div className="flex justify-between items-start mb-2 gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight break-words">
+                                            {item.plantType || 'Unknown Plant'}
+                                        </h3>
+                                        {/* Latin Name Display */}
+                                        {(item.result.plant_latin_name || item.result.latin_name) && (
+                                            <p className="text-sm text-gray-500 italic font-medium mt-0.5">
+                                                ({item.result.plant_latin_name || item.result.latin_name})
+                                            </p>
+                                        )}
+                                    </div>
+                                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg shrink-0 h-fit mt-1">
+                                        <Clock className="w-3 h-3" />
+                                        {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Today'}
+                                    </span>
+                                </div>
+
+                                <p className="text-red-600 dark:text-red-400 font-bold mb-1 text-sm flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+                                    <span className="break-words line-clamp-2">{item.result.disease_name}</span>
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-400 mt-2">
+                                    <span className="text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
+                                        7 Günlük Program
+                                    </span>
+                                    {item.isPublic && (
+                                        <span className="text-blue-500 flex items-center gap-1">
+                                            <Share2 className="w-3 h-3" />
+                                            Paylaşıldı
+                                        </span>
                                     )}
                                 </div>
-                                <span className="text-xs font-medium text-gray-400 flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg shrink-0 h-fit mt-1">
-                                    <Clock className="w-3 h-3" />
-                                    {item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Today'}
-                                </span>
-                            </div>
-
-                            <p className="text-red-600 dark:text-red-400 font-bold mb-1 text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"></span>
-                                <span className="break-words line-clamp-2">{item.result.disease_name}</span>
-                            </p>
-
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-400 mt-2">
-                                <span className="text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
-                                    7 Günlük Program
-                                </span>
-                                {item.isPublic && (
-                                    <span className="text-blue-500 flex items-center gap-1">
-                                        <Share2 className="w-3 h-3" />
-                                        Paylaşıldı
-                                    </span>
-                                )}
                             </div>
                         </div>
 
