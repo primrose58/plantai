@@ -17,6 +17,8 @@ import AuthModal from './components/Auth/AuthModal';
 
 import { Analytics } from "@vercel/analytics/react";
 
+import LanguageSwitcher from './components/Common/LanguageSwitcher';
+
 function App() {
   return (
     <ToastProvider>
@@ -37,6 +39,7 @@ function App() {
           <Route path="/register" element={<Register />} />
         </Routes>
         <AuthModal />
+        <LanguageSwitcher />
         <Analytics />
       </AuthModalProvider>
     </ToastProvider>

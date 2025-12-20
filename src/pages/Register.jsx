@@ -35,6 +35,7 @@ export default function Register() {
             await updateProfile(result.user, { displayName: name });
 
             // 3. Create Firestore Document (Critical Sync Step)
+            // Use merge: true to avoid overwriting if auto-created by auth trigger
             await setDoc(doc(db, "users", result.user.uid), {
                 uid: result.user.uid,
                 name: name,
@@ -45,7 +46,7 @@ export default function Register() {
                 createdAt: serverTimestamp(),
                 lastSeen: serverTimestamp(),
                 bio: ""
-            });
+            }, { merge: true });
 
             // 4. Send Email
             await sendEmailVerification(result.user);

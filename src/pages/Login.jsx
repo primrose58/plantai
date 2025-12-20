@@ -44,7 +44,14 @@ export default function Login() {
         try {
             // Need to sign in temporarily to send the email
             const cred = await signInWithEmailAndPassword(auth, email, password);
-            await sendEmailVerification(cred.user);
+
+            // ActionCodeSettings to return to app (if possible)
+            const actionCodeSettings = {
+                url: window.location.origin + '/login', // Redirect back to login page
+                handleCodeInApp: true
+            };
+
+            await sendEmailVerification(cred.user, actionCodeSettings);
             await auth.signOut();
 
             addToast(t('verification_sent') || "Verification email sent! Check your inbox.", "success");

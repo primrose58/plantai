@@ -41,10 +41,10 @@ export function ToastProvider({ children }) {
                             min-w-[300px] max-w-sm
                         `}
                     >
-                        {/* Minimalist: No icon for chat messages (info), subtle dot for status */}
-                        {toast.type === 'success' && <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></div>}
-                        {toast.type === 'error' && <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>}
-                        {toast.type === 'info' && <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center shrink-0 text-xs font-bold text-green-600">AI</div>}
+                        {/* Improved Icons */}
+                        {toast.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />}
+                        {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />}
+                        {(toast.type === 'info' || toast.type === 'warning') && <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />}
 
                         <p className="text-sm font-medium leading-tight flex-1 tracking-tight font-sans">
                             {toast.message}

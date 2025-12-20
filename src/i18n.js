@@ -4,15 +4,21 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import tr from './locales/tr.json';
 
+import LanguageDetector from 'i18next-browser-languagedetector';
+
 i18n
+    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
         resources: {
             en: { translation: en },
             tr: { translation: tr },
         },
-        lng: 'tr', // Default language
         fallbackLng: 'en',
+        detection: {
+            order: ['localStorage', 'navigator'],
+            caches: ['localStorage'],
+        },
         interpolation: {
             escapeValue: false,
         },

@@ -254,5 +254,9 @@
     "confirm_remove_follower": "Bu takipçiyi listenizden çıkarmak istediğinize emin misiniz?",
     "confirm_unfollow": "Takipten çıkmak istediğinize emin misiniz?",
     "follower_removed": "Takipçi çıkarıldı",
-    "unfollowed_user": "Takipten çıkıldı"
+    "unfollowed_user": "Takipten çıkıldı",
+    "accuracy_badge": "%95 Doğruluk",
+    "macro_support": "Makro Desteği",
+    "reset": "Sıfırla",
+    "unknown_plant": "Bilinmeyen Bitki"
 }

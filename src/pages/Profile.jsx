@@ -55,36 +55,48 @@ export default function Profile() {
 
             try {
                 // 1. Load Profile Data
-                const docRef = doc(db, 'users', profileId);
-                const docSnap = await getDoc(docRef);
-
                 let userData = null;
 
-                if (docSnap.exists()) {
-                    userData = { uid: docSnap.id, ...docSnap.data() };
-                } else {
-                    // Fallback for both own and other profiles if doc missing
-                    userData = { uid: profileId };
-                    if (isOwnProfile && currentUser) {
-                        userData = { ...userData, ...currentUser };
-                    }
-                }
-
-                if (userData) {
+                if (isOwnProfile && currentUser) {
+                    // OPTIMIZATION: Use real-time context data for own profile
+                    // No need to fetch again
+                    userData = currentUser;
                     setTargetUser(userData);
-                    // If viewing own profile, sync state with DB/Auth
-                    if (isOwnProfile) {
-                        setName(userData.name || userData.displayName || currentUser.displayName || '');
-                        setAvatar(userData.avatar || userData.photoURL || currentUser.photoURL || '');
+
+                    // Sync local form state
+                    setName(userData.name || userData.displayName || '');
+                    setAvatar(userData.avatar || userData.photoURL || '');
+
+                    // Sync stats from currentUser if available (AuthContext onSnapshot provides this)
+                    if (userData.followersCount !== undefined) {
+                        setStats({
+                            followersCount: userData.followersCount || 0,
+                            followingCount: userData.followingCount || 0
+                        });
                     } else {
-                        // For others, just use DB data
-                        setName(userData.name || userData.displayName || 'Gardener');
-                        setAvatar(userData.avatar || userData.photoURL || '');
+                        // Fallback fetch stats if missing in auth object (rare with new sync)
+                        const userStats = await getUserStats(profileId);
+                        setStats(userStats);
                     }
+
+                } else {
+                    // Fetch for OTHER users
+                    const docRef = doc(db, 'users', profileId);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        userData = { uid: docSnap.id, ...docSnap.data() };
+                    } else {
+                        userData = { uid: profileId, name: 'Gardener' };
+                    }
+
+                    setTargetUser(userData);
+                    // Stats for others
+                    const userStats = await getUserStats(profileId);
+                    setStats(userStats);
                 }
 
-                // 2. Load User's Public Posts
-                // Ensure we query exactly by the string ID
+                // 2. Load User's Public Posts (Always fetch to get latest posts)
                 const q = query(
                     collection(db, 'posts'),
                     where('userId', '==', String(profileId))
@@ -92,7 +104,6 @@ export default function Profile() {
                 const querySnapshot = await getDocs(q);
                 let posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Sort by date desc (client-side to avoid index requirement)
                 posts.sort((a, b) => {
                     const timeA = a.createdAt?.seconds || 0;
                     const timeB = b.createdAt?.seconds || 0;
@@ -101,11 +112,7 @@ export default function Profile() {
 
                 setUserPosts(posts);
 
-                // 3. Load Follow Stats
-                const userStats = await getUserStats(profileId);
-                setStats(userStats);
-
-                // 4. Check Follow Status if logged in and not own profile
+                // 3. Check Follow Status (Only for others)
                 if (currentUser && !isOwnProfile) {
                     const { isFollowing, isRequested } = await checkFollowStatus(currentUser.uid, profileId);
                     setIsFollowing(isFollowing);

@@ -31,18 +31,48 @@ export default function Home() {
 
     // Restore state or Reset
     useEffect(() => {
+        // 1. Check for manual refresh signal
         if (location.state?.refreshId) {
             resetScan();
-            setStep('landing'); // FORCE LANDING PAGE
-        } else if (location.state?.restoredResult) {
+            setStep('landing');
+            return;
+        }
+
+        // 2. Check for Router State Restoration (Immediate return)
+        if (location.state?.restoredResult) {
             setResult(location.state.restoredResult);
             setStep('result');
             if (location.state?.restoredImages) {
                 setImages(location.state.restoredImages);
                 setPlantType(location.state.restoredPlantType || '');
             }
+            return;
         }
-    }, [location.state]);
+
+        // 3. Check for LocalStorage Backup (Post-Email Verification return)
+        // Only if we found a user (logged in)
+        if (currentUser) {
+            const savedAttempt = localStorage.getItem('pending_analysis_backup');
+            if (savedAttempt) {
+                try {
+                    const parsed = JSON.parse(savedAttempt);
+                    // Optional: Check timestamp to avoid restoring very old data?
+                    // For now, simpler is better. Restore it.
+                    setResult(parsed.result);
+                    setImages(parsed.images);
+                    setPlantType(parsed.plantType || '');
+                    setStep('result');
+
+                    // Allow user to see it, then clear it so it doesn't persist forever
+                    localStorage.removeItem('pending_analysis_backup');
+                    addToast(t('analysis_restored') || "Analysis restored!", "success");
+                } catch (e) {
+                    console.error("Failed to parse backup:", e);
+                    localStorage.removeItem('pending_analysis_backup');
+                }
+            }
+        }
+    }, [location.state, currentUser]);
 
     const handleNextStep = () => {
         if (step === 'input_type') setStep('capture_main');
@@ -174,6 +204,20 @@ export default function Home() {
     };
 
     const handleLoginRedirect = () => {
+        // BACKUP to LocalStorage before redirecting
+        // This survives verify email tabs / closed tabs
+        const backupData = {
+            result: result,
+            images: images,
+            plantType: plantType,
+            timestamp: Date.now()
+        };
+        try {
+            localStorage.setItem('pending_analysis_backup', JSON.stringify(backupData));
+        } catch (e) {
+            console.error("Storage full?", e);
+        }
+
         navigate('/login', {
             state: {
                 pendingResult: result,
@@ -282,10 +326,10 @@ export default function Home() {
                         </p>
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
-                                <Activity className="w-4 h-4 text-green-500" /> 95% Accuracy
+                                <Activity className="w-4 h-4 text-green-500" /> {t('accuracy_badge') || "95% Accuracy"}
                             </div>
                             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg">
-                                <ScanLine className="w-4 h-4 text-blue-500" /> Macro Support
+                                <ScanLine className="w-4 h-4 text-blue-500" /> {t('macro_support') || "Macro Support"}
                             </div>
                         </div>
                     </div>
@@ -428,7 +472,7 @@ export default function Home() {
                         onClick={resetScan}
                         className="mt-4 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-3 px-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm transition-all"
                     >
-                        {t('take_photo')} (Reset)
+                        {t('take_photo')} ({t('reset')})
                     </button>
                 </div>
             </div>
