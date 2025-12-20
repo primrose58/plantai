@@ -41,19 +41,25 @@ export default function Layout() {
         i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en');
     };
 
-    // Dark Mode Logic
+    // Theme Logic: Light | Dark | OLED
     const [theme, setTheme] = useState(() => {
         const saved = localStorage.getItem('theme');
         if (saved) return saved;
+        // Default to dark if prefers dark, else light
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
     useEffect(() => {
+        // Reset classes
+        document.documentElement.classList.remove('dark', 'oled');
+
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+        } else if (theme === 'oled') {
+            document.documentElement.classList.add('dark', 'oled');
         }
+        // 'light' has no class
+
         localStorage.setItem('theme', theme);
     }, [theme]);
 
@@ -62,8 +68,8 @@ export default function Layout() {
     // Nature-like Notification Sound (Short Bird Chirp)
     const [sound] = useState(() => new Audio('https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3'));
 
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    const handleThemeChange = (newTheme) => {
+        setTheme(newTheme);
     };
 
     // User Presence Heartbeat
@@ -172,7 +178,7 @@ export default function Layout() {
     const visibleNavItems = navItems.filter(item => item.public || currentUser);
 
     return (
-        <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
+        <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-300">
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
                 <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -234,7 +240,7 @@ export default function Layout() {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
                     {/* Language Switcher */}
                     <button
                         onClick={toggleLang}
@@ -246,14 +252,43 @@ export default function Layout() {
                         <span>{t('language') || 'Language'}</span>
                     </button>
 
-                    {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
-                    >
-                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                        <span>{theme === 'dark' ? t('light_mode') : t('dark_mode')}</span>
-                    </button>
+                    {/* 3-Way Theme Toggle: OLED | Dark | Light */}
+                    <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-900 rounded-full p-1 relative w-full h-10 border border-gray-200 dark:border-gray-700">
+                        {/* Sliding Background */}
+                        <div
+                            className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white dark:bg-gray-700 rounded-full shadow-sm transition-all duration-300 ease-out z-0`}
+                            style={{
+                                left: theme === 'oled' ? '4px' : theme === 'dark' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 0px)'
+                            }}
+                        />
+
+                        {/* OLED Button */}
+                        <button
+                            onClick={() => handleThemeChange('oled')}
+                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'oled' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                            title="OLED Mode"
+                        >
+                            <span className="text-[10px] font-bold">OLED</span>
+                        </button>
+
+                        {/* Dark Button */}
+                        <button
+                            onClick={() => handleThemeChange('dark')}
+                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'dark' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                            title="Dark Mode"
+                        >
+                            <Moon className="w-4 h-4" />
+                        </button>
+
+                        {/* Light Button */}
+                        <button
+                            onClick={() => handleThemeChange('light')}
+                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'light' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                            title="Light Mode"
+                        >
+                            <Sun className="w-4 h-4" />
+                        </button>
+                    </div>
 
                     {/* User Info / Auth */}
                     {currentUser ? (
