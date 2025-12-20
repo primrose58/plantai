@@ -170,5 +170,8 @@
   "wants_to_follow": "Wants to follow you",
   "no_notifications": "No new notifications",
   "error_occurred": "An error occurred",
-  "must_follow": "Follow to Message"
+  "must_follow": "Follow to Message",
+  "login_prompt": "Sign in to your account",
+  "creating_account": "Creating Account...",
+  "join_community": "Create an account to join the community"
 }
