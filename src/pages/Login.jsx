@@ -159,7 +159,7 @@ export default function Login() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Email
+                                    {t('email')}
                                 </label>
                                 <input
                                     type="email"
@@ -172,7 +172,7 @@ export default function Login() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Password
+                                    {t('password')}
                                 </label>
                                 <input
                                     type="password"
@@ -195,7 +195,7 @@ export default function Login() {
                     )}
 
                     <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                        Don't have an account?{' '}
+                        {t('no_account')}{' '}
                         <Link
                             to="/register"
                             state={location.state} // Pass the pending state to Register

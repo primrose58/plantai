@@ -258,5 +258,8 @@
     "accuracy_badge": "%95 Doğruluk",
     "macro_support": "Makro Desteği",
     "reset": "Sıfırla",
-    "unknown_plant": "Bilinmeyen Bitki"
+    "unknown_plant": "Bilinmeyen Bitki",
+    "login_prompt": "Hesabınıza giriş yapın",
+    "creating_account": "Hesap Oluşturuluyor...",
+    "join_community": "Topluluğa katılmak için hesap oluşturun"
 }
