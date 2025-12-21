@@ -226,7 +226,7 @@ export default function Community() {
 
         // Cleanup
         return () => unsubscribe();
-    }, [filterType]);
+    }, [filterType, location.state?.refreshId]);
 
     // Fetch Daily Fact
     useEffect(() => {
