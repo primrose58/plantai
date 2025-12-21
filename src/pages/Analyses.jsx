@@ -43,7 +43,7 @@ export default function Analyses() {
         if (currentUser) {
             loadAnalyses();
         }
-    }, [currentUser]);
+    }, [currentUser, location.state?.refreshId]);
 
     // Check for "Start Treatment" redirect
     useEffect(() => {

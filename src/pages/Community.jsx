@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, query, orderBy, getDocs, onSnapshot, limit, doc, getDoc, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -136,6 +137,7 @@ function AnalysisDetailModal({ analysisId, onClose }) {
 export default function Community() {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
+    const location = useLocation();
 
     // State
     const [posts, setPosts] = useState([]);
@@ -164,6 +166,22 @@ export default function Community() {
         const label = p.value === 'All' ? t('community') + ' (All)' : t(p.labelKey);
         return label.toLowerCase().includes(filterSearch.toLowerCase());
     });
+
+    useEffect(() => {
+        // Handle Manual Refresh
+        if (location.state?.refreshId) {
+            setFilterType('All');
+            setFilterSearch('');
+            // The loading dependency below will trigger data fetch when filterType changes.
+            // But if filterType was already All, we need to force re-fetch.
+            // Since we use onSnapshot, we can't "force fetch" easily without unsubscribing/resubscribing.
+            // Actually, onSnapshot keeps it fresh. 
+            // The user just wants a "reset" UI experience.
+            window.scrollTo(0, 0);
+            // If they want to see new posts that might not have appeared? onSnapshot handles that.
+            // So just resetting filters is enough visual feedback.
+        }
+    }, [location.state]);
 
     useEffect(() => {
         setLoading(true);

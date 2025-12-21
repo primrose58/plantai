@@ -13,12 +13,13 @@ import imageCompression from 'browser-image-compression';
 import { useToast } from '../contexts/ToastContext';
 import { updateUserPostsName } from '../services/analysisService';
 import PostCard from '../components/Community/PostCard';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageLoader from '../components/Common/PageLoader';
 
 export default function Profile() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const { currentUser, refreshUser } = useAuth();
     const { addToast } = useToast();
     const { userId } = useParams(); // Get ID from URL if present
@@ -126,7 +127,7 @@ export default function Profile() {
             }
         };
         loadData();
-    }, [profileId, isOwnProfile, currentUser]);
+    }, [profileId, isOwnProfile, currentUser, location.state?.refreshId]);
 
     // Handle Follow/Unfollow/Request
     const handleFollowToggle = async () => {

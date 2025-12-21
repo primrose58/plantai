@@ -169,6 +169,30 @@ export default function Layout() {
 
     const visibleNavItems = navItems.filter(item => item.public || currentUser);
 
+    const handleNavClick = (e, path) => {
+        e.preventDefault();
+        if (location.pathname === path) {
+            // Same page -> Force Refresh Logic
+            // For Home, we want to reset the scan wizard.
+            if (path === '/') {
+                // Home.jsx listens to state.refreshId
+                navigate('/', { state: { refreshId: Date.now() }, replace: true });
+            } else {
+                // For other pages, navigate with refreshId and replace
+                navigate(path, { state: { refreshId: Date.now() }, replace: true });
+                window.scrollTo(0, 0);
+            }
+        } else {
+            // Different page -> Normal navigation but ensure fresh state
+            navigate(path, { state: { refreshId: Date.now() } });
+            window.scrollTo(0, 0);
+        }
+
+        if (window.innerWidth < 768) {
+            // Optional: Close menu if needed
+        }
+    };
+
     return (
         <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-300">
             {/* Sidebar (Desktop) */}
@@ -177,7 +201,15 @@ export default function Layout() {
                 {/* Header: Menu Toggle + Logo */}
                 <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} h-20`}>
                     {isSidebarOpen && (
-                        <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <Link
+                            to="/"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigate('/', { state: { refreshId: Date.now() }, replace: location.pathname === '/' });
+                                window.scrollTo(0, 0);
+                            }}
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                        >
                             <Sprout className="w-8 h-8 text-green-600" />
                             <h1 className="text-2xl font-bold tracking-tight whitespace-nowrap">
                                 <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -241,15 +273,14 @@ export default function Layout() {
                         }
 
                         return (
-                            <Link
+                            <button
                                 key={item.path}
-                                to={item.path}
-                                state={{ refreshId: new Date().getTime() }}
+                                onClick={(e) => handleNavClick(e, item.path)}
                                 className={commonClasses}
                                 title={!isSidebarOpen ? item.label : ''}
                             >
                                 {Content}
-                            </Link>
+                            </button>
                         );
                     })}
                 </nav>
@@ -347,7 +378,11 @@ export default function Layout() {
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Mobile Header for Lang Switch & Logo */}
                 <header className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-10">
-                    <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <Link
+                        to="/"
+                        onClick={(e) => handleNavClick(e, '/')}
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
                         <Sprout className="w-6 h-6 text-green-600" />
                         <span className="font-bold text-lg">
                             <span className="text-green-700 dark:text-green-500">Plant</span>
@@ -374,15 +409,14 @@ export default function Layout() {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
                         return (
-                            <Link
+                            <button
                                 key={item.path}
-                                to={item.path}
-                                state={{ refreshId: new Date().getTime() }}
+                                onClick={(e) => handleNavClick(e, item.path)}
                                 className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all ${isActive ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-400 dark:text-gray-500'
                                     }`}
                             >
                                 <Icon className="w-7 h-7" />
-                            </Link>
+                            </button>
                         );
                     })}
                     {!currentUser && (
