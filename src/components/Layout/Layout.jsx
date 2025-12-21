@@ -33,6 +33,9 @@ export default function Layout() {
     const navigate = useNavigate();
     const { addToast } = useToast();
 
+    // Sidebar State
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
     // Notifications State
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -64,12 +67,16 @@ export default function Layout() {
     }, [theme]);
 
     // Shorter Notification Sound (Pop)
-    // Shorter Notification Sound (Pop)
-    // Nature-like Notification Sound (Short Bird Chirp)
     const [sound] = useState(() => new Audio('https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3'));
 
     const handleThemeChange = (newTheme) => {
         setTheme(newTheme);
+    };
+
+    const cycleTheme = () => {
+        if (theme === 'light') handleThemeChange('dark');
+        else if (theme === 'dark') handleThemeChange('oled');
+        else handleThemeChange('light');
     };
 
     // User Presence Heartbeat
@@ -109,21 +116,6 @@ export default function Layout() {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'modified') {
                     const data = change.doc.data();
-
-                    // Simple check: logic relies on lastMessage update time vs now? 
-                    // Or simplified: if modified and I am not the sender of last update (if senderId stored in top level or check diff)
-                    // Firestore 'chats' doc update usually has lastMessage. 
-                    // Let's assume ANY modification that is NOT from me is a new message.
-                    // But 'chats' doc doesn't strictly store senderId of last message unless we added it (we didn't in previous step, only in messages subcollection).
-                    // WAIT: I only updated lastMessage text in Chat.jsx.
-                    // To do this properly, I should check if the modification time is recent.
-
-                    // A better way for notifications typically involves listening to 'messages' subcollections (expensive) or storing 'lastSenderId' on chat doc.
-                    // Let's rely on a smart client-side diff or just trigger for now.
-                    // Actually, let's just assume if it's modified and path is not current chat, show it?
-                    // But we need to know WHO sent it to show name.
-
-                    // Let's check update time to avoid initial load trigger
                     const updatedAt = data.updatedAt?.seconds * 1000;
                     if (Date.now() - updatedAt > 5000) return; // Ignore old updates (initial load)
 
@@ -180,31 +172,57 @@ export default function Layout() {
     return (
         <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans overflow-hidden transition-colors duration-300">
             {/* Sidebar (Desktop) */}
-            <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300">
-                <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="p-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <Sprout className="w-8 h-8 text-green-600" />
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        <span className="text-green-700 dark:text-green-500">Plant</span>
-                        <span className="text-blue-500 dark:text-blue-400">AI</span>
-                    </h1>
-                </Link>
+            <aside className={`hidden md:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
 
-                <nav className="flex-1 px-4 space-y-2">
+                {/* Header: Menu Toggle + Logo */}
+                <div className={`p-4 flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} h-20`}>
+                    {isSidebarOpen && (
+                        <Link to="/" onClick={() => window.scrollTo(0, 0)} state={{ refreshId: new Date().getTime() }} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <Sprout className="w-8 h-8 text-green-600" />
+                            <h1 className="text-2xl font-bold tracking-tight whitespace-nowrap">
+                                <span className="text-green-700 dark:text-green-500">Plant</span>
+                                <span className="text-blue-500 dark:text-blue-400">AI</span>
+                            </h1>
+                        </Link>
+                    )}
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Toggle Menu"
+                    >
+                        <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                    </button>
+                    {!isSidebarOpen && (
+                        <div className="hidden"></div> /* Spacer if needed */
+                    )}
+                </div>
+
+                <nav className="flex-1 px-3 space-y-2 mt-2">
                     {visibleNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
 
+                        // Content for Link/Button
                         const Content = (
                             <>
-                                <Icon className="w-5 h-5" />
-                                <span>{item.label}</span>
+                                <Icon className={`w-6 h-6 ${isSidebarOpen ? '' : 'mx-auto'}`} />
+                                {isSidebarOpen && <span className="truncate">{item.label}</span>}
                                 {item.badge && (
-                                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                                        {item.badge}
-                                    </span>
+                                    isSidebarOpen ? (
+                                        <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                                            {item.badge}
+                                        </span>
+                                    ) : (
+                                        <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                                    )
                                 )}
                             </>
                         );
+
+                        const commonClasses = `w-full flex items-center ${isSidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-xl transition-all relative group ${isActive
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                            }`;
 
                         if (item.action) {
                             return (
@@ -214,10 +232,8 @@ export default function Layout() {
                                         e.preventDefault();
                                         item.action();
                                     }}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold shadow-sm'
-                                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                                        }`}
+                                    className={commonClasses}
+                                    title={!isSidebarOpen ? item.label : ''}
                                 >
                                     {Content}
                                 </button>
@@ -229,10 +245,8 @@ export default function Layout() {
                                 key={item.path}
                                 to={item.path}
                                 state={{ refreshId: new Date().getTime() }}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive
-                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                                    }`}
+                                className={commonClasses}
+                                title={!isSidebarOpen ? item.label : ''}
                             >
                                 {Content}
                             </Link>
@@ -240,90 +254,90 @@ export default function Layout() {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                <div className={`p-4 border-t border-gray-200 dark:border-gray-700 space-y-4 ${isSidebarOpen ? '' : 'flex flex-col items-center'}`}>
                     {/* Language Switcher */}
                     <button
                         onClick={toggleLang}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
+                        className={`flex items-center gap-3 w-full text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-colors ${isSidebarOpen ? 'px-4 py-2' : 'p-2 justify-center'}`}
+                        title={t('language')}
                     >
                         <span className="font-bold border border-gray-300 dark:border-gray-600 rounded px-1 text-xs">
                             {i18n.language.toUpperCase()}
                         </span>
-                        <span>{t('language') || 'Language'}</span>
+                        {isSidebarOpen && <span>{t('language') || 'Language'}</span>}
                     </button>
 
-                    {/* 3-Way Theme Toggle: OLED | Dark | Light */}
-                    <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-900 rounded-full p-1 relative w-full h-10 border border-gray-200 dark:border-gray-700">
-                        {/* Sliding Background */}
-                        <div
-                            className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white dark:bg-gray-700 rounded-full shadow-sm transition-all duration-300 ease-out z-0`}
-                            style={{
-                                left: theme === 'oled' ? '4px' : theme === 'dark' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 0px)'
-                            }}
-                        />
-
-                        {/* OLED Button */}
+                    {/* Theme Toggle */}
+                    {isSidebarOpen ? (
+                        // 3-Way Theme Toggle: OLED | Dark | Light (Expanded)
+                        <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-900 rounded-full p-1 relative w-full h-10 border border-gray-200 dark:border-gray-700">
+                            <div
+                                className={`absolute top-1 bottom-1 w-[calc(33.33%-4px)] bg-white dark:bg-gray-700 rounded-full shadow-sm transition-all duration-300 ease-out z-0`}
+                                style={{
+                                    left: theme === 'oled' ? '4px' : theme === 'dark' ? 'calc(33.33% + 2px)' : 'calc(66.66% + 0px)'
+                                }}
+                            />
+                            <button onClick={() => handleThemeChange('oled')} className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'oled' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`} title="OLED Mode"><span className="text-[10px] font-bold">OLED</span></button>
+                            <button onClick={() => handleThemeChange('dark')} className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'dark' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`} title="Dark Mode"><Moon className="w-4 h-4" /></button>
+                            <button onClick={() => handleThemeChange('light')} className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'light' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`} title="Light Mode"><Sun className="w-4 h-4" /></button>
+                        </div>
+                    ) : (
+                        // Cycle Button (Collapsed)
                         <button
-                            onClick={() => handleThemeChange('oled')}
-                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'oled' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                            title="OLED Mode"
+                            onClick={cycleTheme}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl text-gray-600 dark:text-gray-400 transition-colors bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            title={`Theme: ${theme.toUpperCase()} (Click to cycle)`}
                         >
-                            <span className="text-[10px] font-bold">OLED</span>
+                            {theme === 'oled' ? <span className="text-[10px] font-bold">OLED</span> : theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
                         </button>
-
-                        {/* Dark Button */}
-                        <button
-                            onClick={() => handleThemeChange('dark')}
-                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'dark' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                            title="Dark Mode"
-                        >
-                            <Moon className="w-4 h-4" />
-                        </button>
-
-                        {/* Light Button */}
-                        <button
-                            onClick={() => handleThemeChange('light')}
-                            className={`flex-1 relative z-10 flex items-center justify-center transition-colors duration-200 ${theme === 'light' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                            title="Light Mode"
-                        >
-                            <Sun className="w-4 h-4" />
-                        </button>
-                    </div>
+                    )}
 
                     {/* User Info / Auth */}
                     {currentUser ? (
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-3 mb-2">
+                        <div className={`flex ${isSidebarOpen ? 'flex-col gap-2' : 'flex-col gap-2 items-center'}`}>
+                            {isSidebarOpen ? (
+                                <div className="flex items-center gap-3 mb-2">
+                                    <img
+                                        src={currentUser.photoURL || currentUser.avatar || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}`}
+                                        alt="Avatar"
+                                        className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                    />
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{t('welcome_user')}</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={currentUser.displayName || currentUser.email}>
+                                            {currentUser.displayName || currentUser.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
                                 <img
                                     src={currentUser.photoURL || currentUser.avatar || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}`}
                                     alt="Avatar"
-                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600 mb-2 cursor-pointer"
+                                    title={currentUser.displayName || currentUser.email}
                                 />
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{t('welcome_user')}</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={currentUser.displayName || currentUser.email}>
-                                        {currentUser.displayName || currentUser.email}
-                                    </p>
-                                </div>
-                            </div>
+                            )}
+
                             <button
                                 onClick={async () => {
                                     await logout();
                                     navigate('/');
                                 }}
-                                className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+                                className={`flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm ${isSidebarOpen ? '' : 'justify-center p-2'}`}
+                                title={t('logout')}
                             >
                                 <LogOut className="w-5 h-5" />
-                                <span>{t('logout')}</span>
+                                {isSidebarOpen && <span>{t('logout')}</span>}
                             </button>
                         </div>
                     ) : (
                         <Link
                             to="/login"
-                            className="flex items-center gap-3 w-full px-4 py-3 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors font-semibold"
+                            className={`flex items-center gap-3 w-full px-4 py-3 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl transition-colors font-semibold ${isSidebarOpen ? '' : 'justify-center p-2'}`}
+                            title={t('login')}
                         >
                             <LogIn className="w-5 h-5" />
-                            <span>{t('login')}</span>
+                            {isSidebarOpen && <span>{t('login')}</span>}
                         </Link>
                     )}
                 </div>
