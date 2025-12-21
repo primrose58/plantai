@@ -111,7 +111,7 @@ const DailyBotCard = ({ fact }) => {
                             className="text-gray-500 hover:text-green-600 transition-colors flex items-center gap-1"
                         >
                             <Share2 className="w-5 h-5" />
-                            <span className="text-sm font-medium">{(t('share') || "paylaş").toLowerCase()}</span>
+                            <span className="text-sm font-medium">{(t('share_generic') || "paylaş")}</span>
                         </button>
                     </div>
                 </div>

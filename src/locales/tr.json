@@ -250,7 +250,7 @@
     "request_occurred": "Bir hata oluştu",
     "must_follow": "Mesaj İçin Takip Et",
     "remove": "Takipten Çıkar",
-    "unfollow": "Takipten Çıkar",
+    "remove": "Takipten Çıkar",
     "confirm_remove_follower": "Bu takipçiyi listenizden çıkarmak istediğinize emin misiniz?",
     "confirm_unfollow": "Takipten çıkmak istediğinize emin misiniz?",
     "follower_removed": "Takipçi çıkarıldı",
@@ -261,5 +261,6 @@
     "unknown_plant": "Bilinmeyen Bitki",
     "login_prompt": "Hesabınıza giriş yapın",
     "creating_account": "Hesap Oluşturuluyor...",
-    "join_community": "Topluluğa katılmak için hesap oluşturun"
+    "join_community": "Topluluğa katılmak için hesap oluşturun",
+    "share_generic": "Paylaş"
 }
